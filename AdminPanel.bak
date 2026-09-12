@@ -1,0 +1,798 @@
+import { useState } from 'react';
+import { useAppContext } from '../../store';
+import { LogOut, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2 } from 'lucide-react';
+import { Candidate, Role } from '../../types';
+
+export default function AdminPanel() {
+  const { currentUser, login, logout } = useAppContext();
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (login(username)) {
+      setError('');
+    } else {
+      setError('Sila masukkan ID Pengguna yang sah (cth: admin, tahfiz1, akademik1, pentadbir1)');
+    }
+  };
+
+    if (!currentUser) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-slate-200/60 p-8 sm:p-12 max-w-md w-full animate-in zoom-in-95 duration-300">
+          <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-emerald-200/60">
+             <Lock className="w-10 h-10" />
+          </div>
+          <h2 className="text-3xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">Log Masuk Admin</h2>
+          <p className="text-center text-slate-500 mb-10 text-lg font-medium">Sila masukkan ID Pengguna untuk mengakses sistem.</p>
+          
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">ID Pengguna</label>
+              <input 
+                type="text" 
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800"
+                placeholder="cth: tahfiz1"
+                required
+              />
+            </div>
+            {error && <p className="text-red-600 text-sm font-bold text-center bg-red-50 py-2 rounded-lg border border-red-100">{error}</p>}
+            <button 
+              type="submit"
+              className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] text-lg mt-2"
+            >
+              Log Masuk
+            </button>
+          </form>
+         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           {infographics?.map(info => (
+             <div key={info.id} className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm group">
+               <img src={info.url} alt={info.title} className="w-full h-48 object-cover" />
+               <div className="p-4 bg-white">
+                 <h4 className="font-bold text-slate-800 truncate">{info.title}</h4>
+               </div>
+               <button onClick={() => deleteInfographic(info.id)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><XCircle className="w-4 h-4" /></button>
+             </div>
+           ))}
+         </div>
+
+          
+          <div className="mt-8 p-4 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-500 text-center font-medium">
+             ID Demo: <span className="font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">admin</span>, <span className="font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">tahfiz1</span>, <span className="font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">akademik1</span>, <span className="font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-sm">pentadbir1</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in">
+      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden mb-10 flex flex-col md:flex-row justify-between items-center p-8 transition-all hover:shadow-2xl hover:shadow-slate-200/50">
+         <div className="flex items-center gap-5 mb-6 md:mb-0">
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center text-emerald-700 font-extrabold text-2xl shadow-inner">
+               {currentUser.name.charAt(0)}
+            </div>
+            <div>
+               <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">{currentUser.name}</h2>
+               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 mt-1 border border-emerald-200/60 uppercase tracking-wider">
+                  Peranan: {currentUser.role.replace('_', ' ')}
+               </span>
+            </div>
+         </div>
+         <button 
+           onClick={logout}
+           className="text-slate-600 hover:text-red-700 font-bold flex items-center gap-2 transition-all duration-300 bg-slate-50 hover:bg-red-50 border-2 border-slate-200 hover:border-red-200 px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-red-100/50 w-full md:w-auto justify-center"
+         >
+           <LogOut className="w-5 h-5" /> Log Keluar
+         </button>
+      </div>
+
+      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 p-8 sm:p-12 transition-all hover:shadow-2xl hover:shadow-slate-200/50">
+        {currentUser.role === 'TAHFIZ' && <TahfizView />}
+        {currentUser.role === 'AKADEMIK' && <AkademikView />}
+        {currentUser.role === 'PENTADBIR' && <PentadbirView />}
+        {currentUser.role === 'SUPER_ADMIN' && <SuperAdminView />}
+      </div>
+    </div>
+  );
+}
+
+// ================= TAHFIZ VIEW =================
+function TahfizView() {
+  const { candidates, updateCandidate, currentUser } = useAppContext();
+  const [selectedCandidate, setSelectedCandidate] = useState('');
+  
+  // Only show candidates who are LAYAK temuduga and haven't been marked by Tahfiz yet
+  const pendingCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK' && !c.markahTahfiz);
+  const currentC = candidates.find(c => c.ic === selectedCandidate);
+
+  const [markah, setMarkah] = useState({ hafazan: 0, tilawah: 0, sahsiah: 0 });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentC) return;
+    
+    updateCandidate(currentC.ic, {
+      markahTahfiz: {
+        ...markah,
+        jumlah: Number(markah.hafazan) + Number(markah.tilawah) + Number(markah.sahsiah),
+        dinilaiOleh: currentUser?.name
+      }
+    });
+    alert('Markah berjaya disimpan!');
+    setSelectedCandidate('');
+    setMarkah({ hafazan: 0, tilawah: 0, sahsiah: 0 });
+  };
+
+  return (
+    <div>
+       <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-8">
+         <div className="p-3 bg-emerald-100 rounded-xl">
+           <FileSignature className="w-7 h-7 text-emerald-700" />
+         </div>
+         <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Penilaian Temuduga (Tahfiz)</h3>
+         <span className="ml-auto font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">{new Date().toLocaleDateString('ms-MY')}</span>
+       </div>
+
+       <div className="max-w-3xl">
+         <div className="mb-10 bg-slate-50 p-6 rounded-2xl border border-slate-200/60">
+           <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">Pilih Calon Penilaian</label>
+           <select 
+             className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 font-medium text-slate-800 bg-white shadow-sm appearance-none"
+             value={selectedCandidate}
+             onChange={(e) => setSelectedCandidate(e.target.value)}
+           >
+             <option value="">-- Pilih Calon --</option>
+             {pendingCandidates.map(c => (
+               <option key={c.id} value={c.ic}>{c.name} ({c.ic})</option>
+             ))}
+           </select>
+           {pendingCandidates.length === 0 && (
+             <p className="text-sm font-bold text-amber-700 mt-3 bg-amber-50 px-4 py-2 rounded-lg inline-block border border-amber-200">Tiada calon yang perlu dinilai buat masa ini.</p>
+           )}
+         </div>
+
+         {currentC && (
+           <div className="bg-emerald-50/50 rounded-[2rem] p-8 border-2 border-emerald-100 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-emerald-100/30">
+             <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/50">
+                <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-1">Maklumat Calon:</span>
+                <span className="font-extrabold text-2xl text-slate-900 block mb-1">{currentC.name}</span>
+                <span className="font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-md inline-block">{currentC.ic}</span>
+             </div>
+             
+             <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Hafazan (70%)</label>
+                    <input type="number" max="70" min="0" required value={markah.hafazan} onChange={e=>setMarkah({...markah, hafazan: Number(e.target.value)})} className="w-full p-4 rounded-xl border-2 border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-white font-bold text-lg text-slate-800 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Tilawah (25%)</label>
+                    <input type="number" max="25" min="0" required value={markah.tilawah} onChange={e=>setMarkah({...markah, tilawah: Number(e.target.value)})} className="w-full p-4 rounded-xl border-2 border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-white font-bold text-lg text-slate-800 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Sahsiah (5%)</label>
+                    <input type="number" max="5" min="0" required value={markah.sahsiah} onChange={e=>setMarkah({...markah, sahsiah: Number(e.target.value)})} className="w-full p-4 rounded-xl border-2 border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-white font-bold text-lg text-slate-800 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Jumlah Keseluruhan</label>
+                    <input type="text" readOnly value={Number(markah.hafazan) + Number(markah.tilawah) + Number(markah.sahsiah)} className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-100 font-extrabold text-xl text-slate-900" />
+                  </div>
+                </div>
+                <div className="pt-6 flex justify-end">
+                  <button type="submit" className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-600/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-lg w-full sm:w-auto">Simpan Markah</button>
+                </div>
+             </form>
+         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+           {infographics?.map(info => (
+             <div key={info.id} className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm group">
+               <img src={info.url} alt={info.title} className="w-full h-48 object-cover" />
+               <div className="p-4 bg-white">
+                 <h4 className="font-bold text-slate-800 truncate">{info.title}</h4>
+               </div>
+               <button onClick={() => deleteInfographic(info.id)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><XCircle className="w-4 h-4" /></button>
+             </div>
+           ))}
+         </div>
+
+           </div>
+         )}
+       </div>
+
+       <div className="mt-16">
+          <h4 className="text-xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Calon Yang Telah Dinilai Oleh Anda Hari Ini</h4>
+          <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
+         <div className="bg-slate-50 p-6 border-b border-slate-200">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const username = fd.get("username") as string;
+              const name = fd.get("name") as string;
+              const role = fd.get("role") as string as any;
+              if (username && name && role) {
+                 addUser({ id: "user-" + Date.now(), username, name, role });
+                 e.currentTarget.reset();
+              }
+            }} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">ID Pengguna</label>
+                 <input type="text" name="username" className="w-full border-2 border-slate-200 rounded-xl px-4 py-2" required />
+               </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Nama Penuh</label>
+                 <input type="text" name="name" className="w-full border-2 border-slate-200 rounded-xl px-4 py-2" required />
+               </div>
+               <div>
+                 <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Peranan</label>
+                 <select name="role" className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 bg-white" required>
+                    <option value="">-- Pilih Peranan --</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                    <option value="PENTADBIR">Pentadbir</option>
+                    <option value="TAHFIZ">Tahfiz</option>
+                    <option value="AKADEMIK">Akademik</option>
+                 </select>
+               </div>
+               <button type="submit" className="bg-cyan-600 text-white font-bold px-6 py-2 h-11 rounded-xl hover:bg-cyan-700">Tambah Pengguna</button>
+            </form>
+         </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Calon</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">No. KP</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Hafazan</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tilawah</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Sahsiah</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-emerald-700 uppercase tracking-widest bg-emerald-50">Jumlah</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {candidates.filter(c => c.markahTahfiz?.dinilaiOleh === currentUser?.name).map(c => (
+                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-5 whitespace-nowrap font-bold text-slate-900">{c.name}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-500">{c.ic}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-700">{c.markahTahfiz?.hafazan}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-700">{c.markahTahfiz?.tilawah}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-700">{c.markahTahfiz?.sahsiah}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-extrabold text-emerald-600 bg-emerald-50/30 text-lg">{c.markahTahfiz?.jumlah}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// ================= AKADEMIK VIEW =================
+function AkademikView() {
+  const { candidates, updateCandidate, currentUser } = useAppContext();
+  const [selectedCandidate, setSelectedCandidate] = useState('');
+  
+  const pendingCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK' && !c.markahAkademik);
+  const currentC = candidates.find(c => c.ic === selectedCandidate);
+
+  const [markah, setMarkah] = useState({ bm: 0, bi: 0, sains: 0, matematik: 0 });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentC) return;
+    
+    updateCandidate(currentC.ic, {
+      markahAkademik: {
+        ...markah,
+        jumlah: Number(markah.bm) + Number(markah.bi) + Number(markah.sains) + Number(markah.matematik),
+        dinilaiOleh: currentUser?.name
+      }
+    });
+    alert('Markah berjaya disimpan!');
+    setSelectedCandidate('');
+    setMarkah({ bm: 0, bi: 0, sains: 0, matematik: 0 });
+  };
+
+  return (
+    <div>
+       <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-8">
+         <div className="p-3 bg-blue-100 rounded-xl">
+           <CheckSquare className="w-7 h-7 text-blue-700" />
+         </div>
+         <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Penilaian Ujian Akademik</h3>
+         <span className="ml-auto font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">{new Date().toLocaleDateString('ms-MY')}</span>
+       </div>
+
+       <div className="max-w-3xl">
+         <div className="mb-10 bg-slate-50 p-6 rounded-2xl border border-slate-200/60">
+           <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">Pilih Calon Penilaian</label>
+           <select 
+             className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 font-medium text-slate-800 bg-white shadow-sm appearance-none"
+             value={selectedCandidate}
+             onChange={(e) => setSelectedCandidate(e.target.value)}
+           >
+             <option value="">-- Pilih Calon --</option>
+             {pendingCandidates.map(c => (
+               <option key={c.id} value={c.ic}>{c.name} ({c.ic})</option>
+             ))}
+           </select>
+           {pendingCandidates.length === 0 && (
+             <p className="text-sm font-bold text-amber-700 mt-3 bg-amber-50 px-4 py-2 rounded-lg inline-block border border-amber-200">Tiada calon yang perlu dinilai buat masa ini.</p>
+           )}
+         </div>
+
+         {currentC && (
+           <div className="bg-blue-50/50 rounded-[2rem] p-8 border-2 border-blue-100 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-blue-100/30">
+             <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-blue-100/50">
+                <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-1">Maklumat Calon:</span>
+                <span className="font-extrabold text-2xl text-slate-900 block mb-1">{currentC.name}</span>
+                <span className="font-medium text-slate-500 bg-slate-50 px-3 py-1 rounded-md inline-block">{currentC.ic}</span>
+             </div>
+             
+             <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">B. Melayu (25%)</label>
+                    <input type="number" max="25" min="0" required value={markah.bm} onChange={e=>setMarkah({...markah, bm: Number(e.target.value)})} className="w-full p-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 bg-white font-bold text-lg text-slate-800 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">B. Inggeris (25%)</label>
+                    <input type="number" max="25" min="0" required value={markah.bi} onChange={e=>setMarkah({...markah, bi: Number(e.target.value)})} className="w-full p-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 bg-white font-bold text-lg text-slate-800 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Sains (25%)</label>
+                    <input type="number" max="25" min="0" required value={markah.sains} onChange={e=>setMarkah({...markah, sains: Number(e.target.value)})} className="w-full p-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 bg-white font-bold text-lg text-slate-800 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Matematik (25%)</label>
+                    <input type="number" max="25" min="0" required value={markah.matematik} onChange={e=>setMarkah({...markah, matematik: Number(e.target.value)})} className="w-full p-4 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 bg-white font-bold text-lg text-slate-800 transition-all" />
+                  </div>
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Jumlah Markah (100%)</label>
+                    <input type="text" readOnly value={Number(markah.bm) + Number(markah.bi) + Number(markah.sains) + Number(markah.matematik)} className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-100 font-extrabold text-xl text-slate-900" />
+                  </div>
+                </div>
+                <div className="pt-6 flex justify-end">
+                  <button type="submit" className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-lg w-full sm:w-auto">Simpan Markah</button>
+                </div>
+             </form>
+           </div>
+         )}
+       </div>
+
+       <div className="mt-16">
+          <h4 className="text-xl font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4">Calon Yang Telah Dinilai Oleh Anda Hari Ini</h4>
+          <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Calon</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">BM</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">BI</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Sains</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Math</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-widest bg-blue-50">Jumlah</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {candidates.filter(c => c.markahAkademik?.dinilaiOleh === currentUser?.name).map(c => (
+                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-5 whitespace-nowrap font-bold text-slate-900">{c.name}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-700">{c.markahAkademik?.bm}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-700">{c.markahAkademik?.bi}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-700">{c.markahAkademik?.sains}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-medium text-slate-700">{c.markahAkademik?.matematik}</td>
+                      <td className="px-6 py-5 whitespace-nowrap font-extrabold text-blue-600 bg-blue-50/30 text-lg">{c.markahAkademik?.jumlah}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// ================= PENTADBIR VIEW =================
+function PentadbirView() {
+  const { candidates } = useAppContext();
+  const [filter, setFilter] = useState('ALL');
+
+  let filtered = candidates;
+  if (filter === 'BERJAYA') filtered = candidates.filter(c => c.statusTawaran === 'BERJAYA');
+  if (filter === 'GAGAL') filtered = candidates.filter(c => c.statusTawaran === 'GAGAL');
+  if (filter === 'TERIMA') filtered = candidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
+  if (filter === 'TOLAK') filtered = candidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
+
+  return (
+    <div>
+       <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-8">
+         <div className="p-3 bg-purple-100 rounded-xl">
+           <Users className="w-7 h-7 text-purple-700" />
+         </div>
+         <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Senarai Penuh Calon (Pentadbir)</h3>
+       </div>
+
+       <div className="mb-8 flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
+         {['ALL', 'BERJAYA', 'GAGAL', 'TERIMA', 'TOLAK'].map(f => (
+           <button 
+             key={f}
+             onClick={() => setFilter(f)}
+             className={`px-6 py-3 rounded-xl text-sm font-bold whitespace-nowrap border-2 transition-all duration-300 shadow-sm ${
+               filter === f ? 'bg-purple-100 border-purple-300 text-purple-800 shadow-purple-200/50' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+             }`}
+           >
+             {f === 'ALL' ? 'Semua Calon' : f}
+           </button>
+         ))}
+       </div>
+
+       <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Sekolah Asal</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Temuduga (Tahfiz)</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Akademik</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status Tawaran</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Maklum Balas</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-100">
+                {filtered.map(c => (
+                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-5">
+                       <span className="font-bold text-slate-900 block mb-1">{c.name}</span>
+                       <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded inline-block">{c.ic}</span>
+                    </td>
+                    <td className="px-6 py-5 font-medium text-slate-600 truncate max-w-[150px]">{c.namaSekolahRendah}</td>
+                    <td className="px-6 py-5">
+                       {c.markahTahfiz ? <span className="font-extrabold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-md">{c.markahTahfiz.jumlah}/100</span> : <span className="text-sm font-medium text-slate-400">Belum Dinilai</span>}
+                       {c.markahTahfiz?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahTahfiz.dinilaiOleh}</div>}
+                    </td>
+                    <td className="px-6 py-5">
+                       {c.markahAkademik ? <span className="font-extrabold text-blue-600 bg-blue-50 px-3 py-1 rounded-md">{c.markahAkademik.jumlah}/100</span> : <span className="text-sm font-medium text-slate-400">Belum Dinilai</span>}
+                       {c.markahAkademik?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahAkademik.dinilaiOleh}</div>}
+                    </td>
+                    <td className="px-6 py-5">
+                       <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                         c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                         c.statusTawaran === 'GAGAL' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                       }`}>
+                         {c.statusTawaran.replace('_', ' ')}
+                       </span>
+                    </td>
+                    <td className="px-6 py-5 font-bold text-slate-700">
+                       {c.maklumBalasTawaran ? (
+                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                           c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'
+                         }`}>
+                           {c.maklumBalasTawaran}
+                         </span>
+                       ) : <span className="text-slate-400">-</span>}
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">Tiada rekod ditemui untuk tapisan ini.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// ================= SUPER ADMIN VIEW =================
+function SuperAdminView() {
+  const { settings, updateSettings, candidates, updateCandidate, users, addUser, deleteUser, infographics, addInfographic, deleteInfographic, currentUser } = useAppContext();
+
+  // Settings Handlers
+  const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    updateSettings({
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  // Eligibility Handler
+  const setKelayakan = (ic: string, layak: boolean) => {
+    updateCandidate(ic, { statusTemuduga: layak ? 'LAYAK' : 'TIDAK_LAYAK' });
+  };
+
+  // Tawaran Handler (based on >59 mark)
+  const setTawaran = (ic: string, berjaya: boolean) => {
+    updateCandidate(ic, { statusTawaran: berjaya ? 'BERJAYA' : 'GAGAL' });
+  };
+
+  return (
+    <div className="space-y-16">
+       {/* Dashboard Controls */}
+       <section className="bg-slate-50/50 p-8 rounded-[2rem] border border-slate-100">
+         <div className="flex items-center gap-4 border-b border-slate-200/60 pb-6 mb-8">
+           <div className="p-3 bg-slate-200/50 rounded-xl">
+             <Settings className="w-7 h-7 text-slate-800" />
+           </div>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Kawalan Sistem</h3>
+         </div>
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+               <h4 className="font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-3 tracking-wide text-lg">Borang Permohonan</h4>
+               <label className="flex items-center justify-between mb-6 cursor-pointer bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <span className="font-bold text-sm text-slate-700 tracking-widest uppercase">{settings.borangBuka ? 'DIBUKA' : 'DITUTUP'}</span>
+                  <div className="relative">
+                    <input type="checkbox" name="borangBuka" checked={settings.borangBuka} onChange={handleSettingsChange} className="sr-only" />
+                    <div className={`block w-12 h-7 rounded-full transition-colors duration-300 ${settings.borangBuka ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-300 shadow-sm ${settings.borangBuka ? 'transform translate-x-5' : ''}`}></div>
+                  </div>
+               </label>
+               <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Tarikh Paparan Dibuka</label>
+                  <input type="text" name="tarikhBukaBorang" value={settings.tarikhBukaBorang} onChange={handleSettingsChange} className="w-full text-sm border-2 border-slate-200 rounded-xl p-3 font-medium text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none" />
+               </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+               <h4 className="font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-3 tracking-wide text-lg">Semakan Temuduga</h4>
+               <label className="flex items-center justify-between mb-6 cursor-pointer bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <span className="font-bold text-sm text-slate-700 tracking-widest uppercase">{settings.temudugaBuka ? 'DIBUKA' : 'DITUTUP'}</span>
+                  <div className="relative">
+                    <input type="checkbox" name="temudugaBuka" checked={settings.temudugaBuka} onChange={handleSettingsChange} className="sr-only" />
+                    <div className={`block w-12 h-7 rounded-full transition-colors duration-300 ${settings.temudugaBuka ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-300 shadow-sm ${settings.temudugaBuka ? 'transform translate-x-5' : ''}`}></div>
+                  </div>
+               </label>
+               <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Tarikh Paparan Dibuka</label>
+                  <input type="text" name="tarikhBukaTemuduga" value={settings.tarikhBukaTemuduga} onChange={handleSettingsChange} className="w-full text-sm border-2 border-slate-200 rounded-xl p-3 font-medium text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none" />
+               </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+               <h4 className="font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-3 tracking-wide text-lg">Semakan Tawaran</h4>
+               <label className="flex items-center justify-between mb-6 cursor-pointer bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <span className="font-bold text-sm text-slate-700 tracking-widest uppercase">{settings.tawaranBuka ? 'DIBUKA' : 'DITUTUP'}</span>
+                  <div className="relative">
+                    <input type="checkbox" name="tawaranBuka" checked={settings.tawaranBuka} onChange={handleSettingsChange} className="sr-only" />
+                    <div className={`block w-12 h-7 rounded-full transition-colors duration-300 ${settings.tawaranBuka ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-300 shadow-sm ${settings.tawaranBuka ? 'transform translate-x-5' : ''}`}></div>
+                  </div>
+               </label>
+               <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Tarikh Paparan Dibuka</label>
+                  <input type="text" name="tarikhBukaTawaran" value={settings.tarikhBukaTawaran} onChange={handleSettingsChange} className="w-full text-sm border-2 border-slate-200 rounded-xl p-3 font-medium text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none" />
+               </div>
+            </div>
+         </div>
+       </section>
+
+       {/* Saringan Temuduga */}
+       <section>
+         <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-8 mt-12">
+           <div className="p-3 bg-amber-100 rounded-xl">
+             <Users className="w-7 h-7 text-amber-700" />
+           </div>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Saringan Kelayakan Temuduga</h3>
+         </div>
+         <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Calon</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">UPKK (Al-Quran)</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status Semasa</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tindakan Admin</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {candidates.map(c => (
+                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-5 font-bold text-slate-900">{c.name}</td>
+                      <td className="px-6 py-5 font-extrabold text-slate-700">{c.upkk.alquran}</td>
+                      <td className="px-6 py-5">
+                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase border ${
+                           c.statusTemuduga === 'LAYAK' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                           c.statusTemuduga === 'TIDAK_LAYAK' ? 'bg-red-100 text-red-800 border-red-200' : 'bg-amber-100 text-amber-800 border-amber-200'
+                         }`}>
+                           {c.statusTemuduga.replace('_', ' ')}
+                         </span>
+                      </td>
+                      <td className="px-6 py-5">
+                         <div className="flex gap-3">
+                            <button onClick={() => setKelayakan(c.ic, true)} className="bg-white text-emerald-600 border-2 border-emerald-200 px-4 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors text-xs font-extrabold uppercase shadow-sm">LAYAK</button>
+                            <button onClick={() => setKelayakan(c.ic, false)} className="bg-white text-red-600 border-2 border-red-200 px-4 py-1.5 rounded-lg hover:bg-red-50 transition-colors text-xs font-extrabold uppercase shadow-sm">TIDAK LAYAK</button>
+                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+         </div>
+       </section>
+
+       {/* Keputusan Akhir */}
+       <section>
+         <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6 mt-16">
+           <div className="p-3 bg-indigo-100 rounded-xl">
+             <CheckSquare className="w-7 h-7 text-indigo-700" />
+           </div>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Keputusan Akhir (Gabungan Markah)</h3>
+         </div>
+         <p className="text-sm font-medium text-slate-500 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200/60 inline-block">Markah purata 59 - 100 dikira sebagai <span className="font-bold text-emerald-600">LULUS</span> secara automatik sebagai panduan, namun Admin boleh override keputusan akhir tawaran.</p>
+         
+         <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Calon</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tahfiz (100)</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Akademik (100)</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-indigo-700 uppercase tracking-widest bg-indigo-50">Purata</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status Tawaran</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tindakan Tawaran</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {candidates.filter(c => c.markahTahfiz && c.markahAkademik).map(c => {
+                    const tahfiz = c.markahTahfiz?.jumlah || 0;
+                    const akademik = c.markahAkademik?.jumlah || 0;
+                    const purata = (tahfiz + akademik) / 2;
+                    
+                    return (
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-5 font-bold text-slate-900">{c.name}</td>
+                        <td className="px-6 py-5 font-medium text-slate-700">
+                           {tahfiz}
+                           {c.markahTahfiz?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahTahfiz.dinilaiOleh}</div>}
+                        </td>
+                        <td className="px-6 py-5 font-medium text-slate-700">
+                           {akademik}
+                           {c.markahAkademik?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahAkademik.dinilaiOleh}</div>}
+                        </td>
+                        <td className="px-6 py-5 font-extrabold text-indigo-600 bg-indigo-50/30 text-lg">{purata.toFixed(1)}</td>
+                        <td className="px-6 py-5">
+                           <span className={`px-3 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase border ${
+                             c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                             c.statusTawaran === 'GAGAL' ? 'bg-red-100 text-red-800 border-red-200' : 'bg-slate-100 text-slate-700 border-slate-200'
+                           }`}>
+                             {c.statusTawaran.replace('_', ' ')}
+                           </span>
+                        </td>
+                        <td className="px-6 py-5">
+                           <div className="flex gap-3">
+                              <button onClick={() => setTawaran(c.ic, true)} className="bg-white text-emerald-600 border-2 border-emerald-200 px-4 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors text-xs font-extrabold uppercase shadow-sm">BERJAYA</button>
+                              <button onClick={() => setTawaran(c.ic, false)} className="bg-white text-red-600 border-2 border-red-200 px-4 py-1.5 rounded-lg hover:bg-red-50 transition-colors text-xs font-extrabold uppercase shadow-sm">TIDAK BERJAYA</button>
+                           </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+         </div>
+       </section>
+
+       {/* Pengurusan Pengguna */}
+       <section>
+         <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6 mt-16">
+           <div className="p-3 bg-cyan-100 rounded-xl">
+             <Users className="w-7 h-7 text-cyan-700" />
+           </div>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Pengurusan Pengguna</h3>
+         </div>
+         <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <div className="bg-slate-50 p-6 border-b border-slate-200">
+             <form onSubmit={(e) => {
+               e.preventDefault();
+               const fd = new FormData(e.currentTarget);
+               const username = fd.get("username") as string;
+               const name = fd.get("name") as string;
+               const role = fd.get("role") as string as any;
+               if (username && name && role) {
+                  addUser({ id: "user-" + Date.now(), username, name, role });
+                  e.currentTarget.reset();
+               }
+             }} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">ID Pengguna</label>
+                  <input type="text" name="username" className="w-full border-2 border-slate-200 rounded-xl px-4 py-2" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Nama Penuh</label>
+                  <input type="text" name="name" className="w-full border-2 border-slate-200 rounded-xl px-4 py-2" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Peranan</label>
+                  <select name="role" className="w-full border-2 border-slate-200 rounded-xl px-4 py-2 bg-white" required>
+                     <option value="">-- Pilih Peranan --</option>
+                     <option value="SUPER_ADMIN">Super Admin</option>
+                     <option value="PENTADBIR">Pentadbir</option>
+                     <option value="TAHFIZ">Tahfiz</option>
+                     <option value="AKADEMIK">Akademik</option>
+                  </select>
+                </div>
+                <button type="submit" className="bg-cyan-600 text-white font-bold px-6 py-2 h-11 rounded-xl hover:bg-cyan-700">Tambah Pengguna</button>
+             </form>
+          </div>
+          <div className="overflow-x-auto p-4">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Username</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Penuh</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Peranan</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {users.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-5 font-bold text-slate-900">{u.username}</td>
+                      <td className="px-6 py-5 text-slate-700">{u.name}</td>
+                      <td className="px-6 py-5"><span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">{u.role}</span></td>
+                      <td className="px-6 py-5">
+                         <button disabled={u.id === currentUser?.id} onClick={() => deleteUser(u.id)} className="text-red-500 hover:text-red-700 p-2 disabled:opacity-50"><Trash2 className="w-5 h-5" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+          </div>
+         </div>
+       </section>
+
+       {/* Pengurusan Infografik */}
+       <section>
+         <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6 mt-16">
+           <div className="p-3 bg-pink-100 rounded-xl">
+             <FileSignature className="w-7 h-7 text-pink-700" />
+           </div>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Pengurusan Infografik Panduan</h3>
+         </div>
+         <div className="bg-white p-6 border border-slate-200 rounded-2xl shadow-sm mb-6">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const title = fd.get("title") as string;
+              const url = fd.get("url") as string;
+              if (title && url) {
+                 addInfographic({ id: Date.now().toString(), title, url });
+                 e.currentTarget.reset();
+              }
+            }} className="flex flex-col sm:flex-row gap-4">
+               <input type="text" name="title" placeholder="Tajuk Infografik" className="flex-1 border-2 border-slate-200 rounded-xl px-4 py-3" required />
+               <input type="url" name="url" placeholder="URL Imej (cth: https://...)" className="flex-1 border-2 border-slate-200 rounded-xl px-4 py-3" required />
+               <button type="submit" className="bg-emerald-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-emerald-700">Tambah</button>
+            </form>
+            
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {infographics?.map(info => (
+                <div key={info.id} className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm group">
+                  <img src={info.url} alt={info.title} className="w-full h-48 object-cover" />
+                  <div className="p-4 bg-white">
+                    <h4 className="font-bold text-slate-800 truncate">{info.title}</h4>
+                  </div>
+                  <button onClick={() => deleteInfographic(info.id)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><XCircle className="w-4 h-4" /></button>
+                </div>
+              ))}
+            </div>
+         </div>
+       </section>
+    </div>
+  );
+}

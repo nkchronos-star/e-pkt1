@@ -1,0 +1,90 @@
+const fs = require('fs');
+let code = fs.readFileSync('src/components/dashboard/Borang.tsx', 'utf8');
+
+const oldHandleChange = `             const cleanIC = value.replace(/\\D/g, '');
+             if (cleanIC.length >= 8 && (!prev.tempatLahir || !prev.negeri)) {
+                 const stateCode = cleanIC.substring(6, 8);
+                 const codeMap: Record<string, string> = {
+                    '01': 'Johor', '21': 'Johor', '22': 'Johor', '23': 'Johor', '24': 'Johor',
+                    '02': 'Kedah', '25': 'Kedah', '26': 'Kedah', '27': 'Kedah',
+                    '03': 'Kelantan', '28': 'Kelantan', '29': 'Kelantan',
+                    '04': 'Melaka', '30': 'Melaka',
+                    '05': 'Negeri Sembilan', '31': 'Negeri Sembilan', '59': 'Negeri Sembilan',
+                    '06': 'Pahang', '32': 'Pahang', '33': 'Pahang',
+                    '07': 'Pulau Pinang', '34': 'Pulau Pinang', '35': 'Pulau Pinang',
+                    '08': 'Perak', '36': 'Perak', '37': 'Perak', '38': 'Perak', '39': 'Perak',
+                    '09': 'Perlis', '40': 'Perlis',
+                    '10': 'Selangor', '41': 'Selangor', '42': 'Selangor', '43': 'Selangor', '44': 'Selangor',
+                    '11': 'Terengganu', '45': 'Terengganu', '46': 'Terengganu',
+                    '12': 'Sabah', '47': 'Sabah', '48': 'Sabah', '49': 'Sabah',
+                    '13': 'Sarawak', '50': 'Sarawak', '51': 'Sarawak', '52': 'Sarawak', '53': 'Sarawak',
+                    '14': 'W.P. Kuala Lumpur', '54': 'W.P. Kuala Lumpur', '55': 'W.P. Kuala Lumpur', '56': 'W.P. Kuala Lumpur', '57': 'W.P. Kuala Lumpur',
+                    '15': 'W.P. Labuan', '58': 'W.P. Labuan',
+                    '16': 'W.P. Putrajaya'
+                 };
+                 const stateName = codeMap[stateCode];
+                 if (stateName) {
+                     if(!prev.tempatLahir) updates.tempatLahir = stateName;
+                     if(!prev.negeri) updates.negeri = stateName;
+                 }
+             }
+         }
+         return { ...prev, ...updates };`;
+
+const newHandleChange = `             const cleanIC = value.replace(/\\D/g, '');
+             
+             // 1. Tarikh Lahir (6 digit awal)
+             if (cleanIC.length >= 6) {
+                 const yy = parseInt(cleanIC.substring(0, 2), 10);
+                 const mm = cleanIC.substring(2, 4);
+                 const dd = cleanIC.substring(4, 6);
+                 if (!isNaN(yy) && parseInt(mm) > 0 && parseInt(mm) <= 12 && parseInt(dd) > 0 && parseInt(dd) <= 31) {
+                    const year = yy > 50 ? 1900 + yy : 2000 + yy;
+                    updates.tarikhLahir = \`\${year}-\${mm}-\${dd}\`;
+                 }
+             }
+
+             // 2. Negeri sahaja (digit 7-8) - Tempat lahir tak perlu auto
+             if (cleanIC.length >= 8) {
+                 const stateCode = cleanIC.substring(6, 8);
+                 const codeMap: Record<string, string> = {
+                    '01': 'Johor', '21': 'Johor', '22': 'Johor', '23': 'Johor', '24': 'Johor',
+                    '02': 'Kedah', '25': 'Kedah', '26': 'Kedah', '27': 'Kedah',
+                    '03': 'Kelantan', '28': 'Kelantan', '29': 'Kelantan',
+                    '04': 'Melaka', '30': 'Melaka',
+                    '05': 'Negeri Sembilan', '31': 'Negeri Sembilan', '59': 'Negeri Sembilan',
+                    '06': 'Pahang', '32': 'Pahang', '33': 'Pahang',
+                    '07': 'Pulau Pinang', '34': 'Pulau Pinang', '35': 'Pulau Pinang',
+                    '08': 'Perak', '36': 'Perak', '37': 'Perak', '38': 'Perak', '39': 'Perak',
+                    '09': 'Perlis', '40': 'Perlis',
+                    '10': 'Selangor', '41': 'Selangor', '42': 'Selangor', '43': 'Selangor', '44': 'Selangor',
+                    '11': 'Terengganu', '45': 'Terengganu', '46': 'Terengganu',
+                    '12': 'Sabah', '47': 'Sabah', '48': 'Sabah', '49': 'Sabah',
+                    '13': 'Sarawak', '50': 'Sarawak', '51': 'Sarawak', '52': 'Sarawak', '53': 'Sarawak',
+                    '14': 'W.P. Kuala Lumpur', '54': 'W.P. Kuala Lumpur', '55': 'W.P. Kuala Lumpur', '56': 'W.P. Kuala Lumpur', '57': 'W.P. Kuala Lumpur',
+                    '15': 'W.P. Labuan', '58': 'W.P. Labuan',
+                    '16': 'W.P. Putrajaya'
+                 };
+                 const stateName = codeMap[stateCode];
+                 if (stateName) {
+                     updates.negeri = stateName;
+                 }
+             }
+
+             // 3. Jantina (digit 12 - ganjil = lelaki, genap = perempuan)
+             if (cleanIC.length === 12) {
+                 const lastDigit = parseInt(cleanIC.substring(11, 12), 10);
+                 if (!isNaN(lastDigit)) {
+                     updates.jantina = lastDigit % 2 === 0 ? 'Perempuan' : 'Lelaki';
+                 }
+             }
+         }
+         return { ...prev, ...updates };`;
+
+if (code.includes(oldHandleChange)) {
+    code = code.replace(oldHandleChange, newHandleChange);
+    fs.writeFileSync('src/components/dashboard/Borang.tsx', code);
+    console.log("Patched IC logic successfully!");
+} else {
+    console.log("Could not find the old HandleChange logic to replace.");
+}

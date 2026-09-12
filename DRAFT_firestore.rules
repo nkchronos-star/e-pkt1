@@ -1,0 +1,191 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- PRIMITIVE HELPERS ---
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() { return isSignedIn() && getUserRole() == 'admin'; }
+    function isStaff() { return isSignedIn() && getUserRole() == 'staff'; }
+    function isAdminOrStaff() { return isSignedIn() && (getUserRole() == 'admin' || getUserRole() == 'staff'); }
+
+    // --- VALIDATION BLUEPRINTS (Anti-Update-Gap) ---
+    
+    function isValidPengguna(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt', 'updatedAt']) &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.role is string && (data.role == 'admin' || data.role == 'staff' || data.role == 'calon') &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidPermohonan(data) {
+      return data.keys().hasAll(['userId', 'status', 'studentName', 'icNumber', 'createdAt', 'updatedAt']) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.status is string && (data.status == 'draft' || data.status == 'submitted' || data.status == 'rejected' || data.status == 'accepted_for_interview') &&
+             data.studentName is string && data.studentName.size() <= 256 &&
+             data.icNumber is string && data.icNumber.size() <= 14 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidTemuduga(data) {
+      return data.keys().hasAll(['permohonanId', 'date', 'time', 'location', 'status', 'createdAt', 'updatedAt']) &&
+             data.permohonanId is string && data.permohonanId.size() <= 128 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.time is string && data.time.size() <= 32 &&
+             data.location is string && data.location.size() <= 256 &&
+             data.status is string && (data.status == 'scheduled' || data.status == 'completed' || data.status == 'absent') &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidMarkah(data) {
+      return data.keys().hasAll(['permohonanId', 'interviewerId', 'scoreAcademic', 'scoreQuran', 'scoreAkhlak', 'totalScore', 'createdAt', 'updatedAt']) &&
+             data.permohonanId is string && data.permohonanId.size() <= 128 &&
+             data.interviewerId is string && data.interviewerId.size() <= 128 &&
+             data.scoreAcademic is number &&
+             data.scoreQuran is number &&
+             data.scoreAkhlak is number &&
+             data.totalScore is number &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidTawaran(data) {
+      return data.keys().hasAll(['permohonanId', 'status', 'offerDate', 'createdAt', 'updatedAt']) &&
+             data.permohonanId is string && data.permohonanId.size() <= 128 &&
+             data.status is string && (data.status == 'offered' || data.status == 'accepted' || data.status == 'declined') &&
+             data.offerDate is string && data.offerDate.size() <= 32 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidKawalanSistem(data) {
+      return data.keys().hasAll(['applicationOpen', 'interviewOpen', 'offerOpen', 'academicYear', 'updatedBy', 'createdAt', 'updatedAt']) &&
+             data.applicationOpen is bool &&
+             data.interviewOpen is bool &&
+             data.offerOpen is bool &&
+             data.academicYear is string && data.academicYear.size() <= 16 &&
+             data.updatedBy is string && data.updatedBy.size() <= 128 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    // --- COLLECTION RULES ---
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdminOrStaff());
+      allow list: if isAdminOrStaff(); // For admin dashboard
+      
+      allow create: if isValidId(userId) && isOwner(userId) && isValidPengguna(incoming()) &&
+                    incoming().uid == userId &&
+                    incoming().role == 'calon' && // Prevents self-assigning admin
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    incoming().keys().size() == 5;
+                    
+      allow update: if isValidId(userId) && isValidPengguna(incoming()) &&
+                    (
+                      (isAdmin() && incoming().uid == existing().uid && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time) ||
+                      (isOwner(userId) && incoming().uid == existing().uid && incoming().role == existing().role && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt']))
+                    );
+    }
+
+    match /permohonan/{permohonanId} {
+      allow get: if isValidId(permohonanId) && (isOwner(existing().userId) || isAdminOrStaff());
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid; 
+      // Note: Admin list needs a special structure or we accept isAdmin() lookup here since we don't delegate to client.
+      
+      allow create: if isValidId(permohonanId) && isOwner(incoming().userId) && isValidPermohonan(incoming()) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    incoming().status == 'draft' &&
+                    incoming().keys().size() == 6;
+                    
+      allow update: if isValidId(permohonanId) && isValidPermohonan(incoming()) &&
+                    (
+                      (isAdminOrStaff() && incoming().userId == existing().userId && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time) ||
+                      (isOwner(existing().userId) && incoming().userId == existing().userId && existing().status == 'draft' && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'studentName', 'icNumber', 'updatedAt']))
+                    );
+    }
+
+    match /temuduga/{temudugaId} {
+      allow get: if isValidId(temudugaId) && (isAdminOrStaff() || isOwner(get(/databases/$(database)/documents/permohonan/$(existing().permohonanId)).data.userId));
+      allow list: if isAdminOrStaff();
+
+      allow create: if isValidId(temudugaId) && isAdminOrStaff() && isValidTemuduga(incoming()) &&
+                    exists(/databases/$(database)/documents/permohonan/$(incoming().permohonanId)) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    incoming().keys().size() == 7;
+                    
+      allow update: if isValidId(temudugaId) && isAdminOrStaff() && isValidTemuduga(incoming()) &&
+                    incoming().permohonanId == existing().permohonanId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time;
+    }
+
+    match /markah/{markahId} {
+      allow get: if isValidId(markahId) && isAdminOrStaff();
+      allow list: if isAdminOrStaff();
+
+      allow create: if isValidId(markahId) && isAdminOrStaff() && isValidMarkah(incoming()) &&
+                    exists(/databases/$(database)/documents/permohonan/$(incoming().permohonanId)) &&
+                    incoming().interviewerId == request.auth.uid &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    incoming().keys().size() == 8;
+                    
+      allow update: if isValidId(markahId) && isAdminOrStaff() && isValidMarkah(incoming()) &&
+                    incoming().permohonanId == existing().permohonanId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time;
+    }
+
+    match /tawaran/{tawaranId} {
+      allow get: if isValidId(tawaranId) && (isAdminOrStaff() || isOwner(get(/databases/$(database)/documents/permohonan/$(existing().permohonanId)).data.userId));
+      allow list: if isAdminOrStaff();
+
+      allow create: if isValidId(tawaranId) && isAdmin() && isValidTawaran(incoming()) &&
+                    exists(/databases/$(database)/documents/permohonan/$(incoming().permohonanId)) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    incoming().keys().size() == 5;
+                    
+      allow update: if isValidId(tawaranId) && isValidTawaran(incoming()) &&
+                    (
+                      (isAdmin() && incoming().permohonanId == existing().permohonanId && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time) ||
+                      (isOwner(get(/databases/$(database)/documents/permohonan/$(existing().permohonanId)).data.userId) && incoming().permohonanId == existing().permohonanId && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
+                    );
+    }
+
+    match /kawalan/{kawalanId} {
+      // Anyone authenticated can read system controls to check if forms are open
+      allow get, list: if isSignedIn();
+
+      allow create: if isValidId(kawalanId) && isAdmin() && isValidKawalanSistem(incoming()) &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time &&
+                    incoming().keys().size() == 7;
+                    
+      allow update: if isValidId(kawalanId) && isAdmin() && isValidKawalanSistem(incoming()) &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time;
+    }
+  }
+}

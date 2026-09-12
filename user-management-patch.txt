@@ -1,0 +1,27 @@
+       {/* Pengurusan Pengguna (User Management) */}
+       <section>
+         <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6 mt-16">
+           <div className="p-3 bg-cyan-100 rounded-xl">
+             <Users className="w-7 h-7 text-cyan-700" />
+           </div>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Pengurusan Pengguna</h3>
+         </div>
+         
+         <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div className="overflow-x-auto p-6">
+              <p className="text-sm font-medium text-slate-500 mb-6">Senarai pengguna sistem. (Fungsi penuh tambah/padam boleh dibina dalam komponen berasingan)</p>
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">ID / Username</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Penuh</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Peranan</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {/* We need to get users from context in SuperAdminView */}
+                </tbody>
+              </table>
+            </div>
+         </div>
+       </section>

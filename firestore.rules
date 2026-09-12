@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- PRIMITIVE HELPERS ---
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() { return isSignedIn() && (getUserRole() == 'admin' || request.auth.token.email == 'nkchronos@gmail.com'); }
+    function isStaff() { return isSignedIn() && getUserRole() == 'staff'; }
+    function isAdminOrStaff() { return isSignedIn() && (getUserRole() == 'admin' || getUserRole() == 'staff'); }
+
+    // --- VALIDATION BLUEPRINTS (Anti-Update-Gap) ---
+    
+    function isValidPengguna(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt', 'updatedAt']) &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.role is string && (data.role == 'admin' || data.role == 'staff' || data.role == 'calon') &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidPermohonan(data) {
+      return data.keys().hasAll(['userId', 'status', 'studentName', 'icNumber', 'candidateData', 'createdAt', 'updatedAt']) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.status is string && (data.status == 'draft' || data.status == 'submitted' || data.status == 'rejected' || data.status == 'accepted_for_interview') &&
+             data.studentName is string && data.studentName.size() <= 256 &&
+             data.icNumber is string && data.icNumber.size() <= 14 &&
+             data.candidateData is map &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidTemuduga(data) {
+      return data.keys().hasAll(['permohonanId', 'date', 'time', 'location', 'status', 'createdAt', 'updatedAt']) &&
+             data.permohonanId is string && data.permohonanId.size() <= 128 &&
+             data.date is string && data.date.size() <= 32 &&
+             data.time is string && data.time.size() <= 32 &&
+             data.location is string && data.location.size() <= 256 &&
+             data.status is string && (data.status == 'scheduled' || data.status == 'completed' || data.status == 'absent') &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidMarkah(data) {
+      return data.keys().hasAll(['permohonanId', 'interviewerId', 'scoreAcademic', 'scoreQuran', 'scoreAkhlak', 'totalScore', 'createdAt', 'updatedAt']) &&
+             data.permohonanId is string && data.permohonanId.size() <= 128 &&
+             data.interviewerId is string && data.interviewerId.size() <= 128 &&
+             data.scoreAcademic is number &&
+             data.scoreQuran is number &&
+             data.scoreAkhlak is number &&
+             data.totalScore is number &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidTawaran(data) {
+      return data.keys().hasAll(['permohonanId', 'status', 'offerDate', 'createdAt', 'updatedAt']) &&
+             data.permohonanId is string && data.permohonanId.size() <= 128 &&
+             data.status is string && (data.status == 'offered' || data.status == 'accepted' || data.status == 'declined') &&
+             data.offerDate is string && data.offerDate.size() <= 32 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidKawalanSistem(data) {
+      return data.keys().hasAll(['applicationOpen', 'interviewOpen', 'offerOpen', 'academicYear', 'updatedBy', 'createdAt', 'updatedAt']) &&
+             data.applicationOpen is bool &&
+             data.interviewOpen is bool &&
+             data.offerOpen is bool &&
+             data.academicYear is string && data.academicYear.size() <= 16 &&
+             data.updatedBy is string && data.updatedBy.size() <= 128 &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    // --- COLLECTION RULES ---
+
+    match /users/{userId} {
+      allow read, write: if true; 
+    }
+    match /config/{configId} {
+      allow read, write: if true;
+    }
+    match /candidates/{candidateId} {
+      allow read, write: if true;
+    }
+    match /infographics/{infoId} {
+      allow read, write: if true;
+    }
+
+    match /permohonan/{permohonanId} {
+      allow read, write: if true; // TEMP PERMISSIVE FOR LOCAL ADMIN
+    }
+
+    match /temuduga/{temudugaId} {
+      allow read, write: if true; // TEMP PERMISSIVE FOR LOCAL ADMIN
+    }
+
+    match /markah/{markahId} {
+      allow read, write: if true; // TEMP PERMISSIVE FOR LOCAL ADMIN
+    }
+
+    match /tawaran/{tawaranId} {
+      allow read, write: if true; // TEMP PERMISSIVE FOR LOCAL ADMIN
+    }
+
+    match /kawalan/{kawalanId} {
+      allow read, write: if true; // TEMP PERMISSIVE FOR LOCAL ADMIN
+    }
+  }
+}

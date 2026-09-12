@@ -1,0 +1,8 @@
+{
+  "name": "Remix Sistem Permohonan Kemasukan Tingkatan 1  SMAG3",
+  "description": "Sistem Permohonan Kemasukan Tingkatan 1 ke SMA Kota Gelanggi 3",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

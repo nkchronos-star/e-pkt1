@@ -1,0 +1,18 @@
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setState(prev => ({ ...prev, firebaseUser: user }));
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setState(prev => ({ ...prev, userRole: userDoc.data().role }));
+          }
+        } catch (e) {
+          console.error("Error fetching user role", e);
+        }
+      } else {
+        setState(prev => ({ ...prev, firebaseUser: null, userRole: null }));
+      }
+    });
+    return () => unsubscribe();
+  }, []);

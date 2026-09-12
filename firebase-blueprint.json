@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Pengguna": {
+      "title": "Pengguna",
+      "description": "User accounts and roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "role": { "type": "string", "enum": ["admin", "staff", "calon"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "role", "createdAt", "updatedAt"]
+    },
+    "Permohonan": {
+      "title": "Permohonan",
+      "description": "Student admission applications",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["draft", "submitted", "rejected", "accepted_for_interview"] },
+        "studentName": { "type": "string", "maxLength": 256 },
+        "icNumber": { "type": "string", "maxLength": 14 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "status", "studentName", "icNumber", "createdAt", "updatedAt"]
+    },
+    "Temuduga": {
+      "title": "Temuduga",
+      "description": "Interview schedules for applicants",
+      "type": "object",
+      "properties": {
+        "permohonanId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 32 },
+        "time": { "type": "string", "maxLength": 32 },
+        "location": { "type": "string", "maxLength": 256 },
+        "status": { "type": "string", "enum": ["scheduled", "completed", "absent"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["permohonanId", "date", "time", "location", "status", "createdAt", "updatedAt"]
+    },
+    "Markah": {
+      "title": "Markah",
+      "description": "Interview scores",
+      "type": "object",
+      "properties": {
+        "permohonanId": { "type": "string", "maxLength": 128 },
+        "interviewerId": { "type": "string", "maxLength": 128 },
+        "scoreAcademic": { "type": "number" },
+        "scoreQuran": { "type": "number" },
+        "scoreAkhlak": { "type": "number" },
+        "totalScore": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["permohonanId", "interviewerId", "scoreAcademic", "scoreQuran", "scoreAkhlak", "totalScore", "createdAt", "updatedAt"]
+    },
+    "Tawaran": {
+      "title": "Tawaran",
+      "description": "Admission offers",
+      "type": "object",
+      "properties": {
+        "permohonanId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["offered", "accepted", "declined"] },
+        "offerDate": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["permohonanId", "status", "offerDate", "createdAt", "updatedAt"]
+    },
+    "KawalanSistem": {
+      "title": "KawalanSistem",
+      "description": "System-wide settings",
+      "type": "object",
+      "properties": {
+        "applicationOpen": { "type": "boolean" },
+        "interviewOpen": { "type": "boolean" },
+        "offerOpen": { "type": "boolean" },
+        "academicYear": { "type": "string", "maxLength": 16 },
+        "updatedBy": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["applicationOpen", "interviewOpen", "offerOpen", "academicYear", "updatedBy", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/Pengguna" },
+      "description": "User profiles and RBAC roles"
+    },
+    "permohonan/{permohonanId}": {
+      "schema": { "$ref": "#/entities/Permohonan" },
+      "description": "Student applications"
+    },
+    "temuduga/{temudugaId}": {
+      "schema": { "$ref": "#/entities/Temuduga" },
+      "description": "Interview details"
+    },
+    "markah/{markahId}": {
+      "schema": { "$ref": "#/entities/Markah" },
+      "description": "Interview scores"
+    },
+    "tawaran/{tawaranId}": {
+      "schema": { "$ref": "#/entities/Tawaran" },
+      "description": "Admission offers"
+    },
+    "kawalan/{kawalanId}": {
+      "schema": { "$ref": "#/entities/KawalanSistem" },
+      "description": "System control and configuration"
+    }
+  }
+}
