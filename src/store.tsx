@@ -15,9 +15,9 @@ interface AppState {
 interface AppContextType extends AppState {
   updateSettings: (settings: Partial<ApplicationSettings>) => void;
   syncSettingsToServer: () => void; // Kept for API compatibility, but will auto-sync
-  saveCandidate: (candidate: Candidate) => void;
-  updateCandidate: (ic: string, data: Partial<Candidate>) => void;
-  deleteCandidate: (ic: string) => void;
+  saveCandidate: (candidate: Candidate) => Promise<void>;
+  updateCandidate: (ic: string, data: Partial<Candidate>) => Promise<void>;
+  deleteCandidate: (ic: string) => Promise<void>;
   login: (username: string, password?: string) => boolean;
   logout: () => void;
   addUser: (user: User) => void;
@@ -151,16 +151,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const saveCandidate = async (candidate: Candidate) => {
     try {
-      await setDoc(doc(db, 'candidates', candidate.ic), candidate);
+      const cleanData = JSON.parse(JSON.stringify(candidate));
+      // Remove any slashes from IC if used as document ID
+      const safeId = String(cleanData.ic || cleanData.id).replace(/[^a-zA-Z0-9_-]/g, '');
+      await setDoc(doc(db, 'candidates', safeId), cleanData);
     } catch (e) {
       console.error("Error saving candidate:", e);
-      alert('Ralat menyimpan data permohonan.');
+      alert('Ralat menyimpan data permohonan: ' + (e as any).message);
+      throw e;
     }
   };
 
   const updateCandidate = async (ic: string, data: Partial<Candidate>) => {
     try {
-      await updateDoc(doc(db, 'candidates', ic), data);
+      const cleanData = JSON.parse(JSON.stringify(data));
+      const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
+      await updateDoc(doc(db, 'candidates', safeId), cleanData);
     } catch (e) {
       console.error("Error updating candidate:", e);
     }
@@ -168,7 +174,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteCandidate = async (ic: string) => {
     try {
-      await deleteDoc(doc(db, 'candidates', ic));
+      const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
+      await deleteDoc(doc(db, 'candidates', safeId));
     } catch (e) {
       console.error("Error deleting candidate:", e);
     }

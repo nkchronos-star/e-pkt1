@@ -241,7 +241,7 @@ export default function Borang() {
         statusTawaran: 'DALAM_PERTIMBANGAN'
       };
       
-      saveCandidate(newCandidate);
+      await saveCandidate(newCandidate);
       
       setSubmitted(true);
       localStorage.removeItem('borang_draft');

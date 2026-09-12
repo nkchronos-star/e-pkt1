@@ -577,6 +577,8 @@ function PentadbirView() {
 
   const { candidates, settings } = useAppContext();
   const [filter, setFilter] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const tahfizTotal = settings.tahfizItems?.reduce((a, b) => a + b.weight, 0) || 100;
   const akademikTotal = settings.akademikItems?.reduce((a, b) => a + b.weight, 0) || 100;
@@ -605,10 +607,10 @@ function PentadbirView() {
       c.namaSekolahRendah || '',
       c.icBapa || '',
       c.namaBapa || '',
-      c.noTelBapa || '',
+      c.telefonBapa || '',
       c.icIbu || '',
       c.namaIbu || '',
-      c.noTelIbu || '',
+      c.telefonIbu || '',
       c.statusTemuduga || '',
       c.markahTahfiz?.jumlah || '0',
       c.markahAkademik?.jumlah || '0',
@@ -668,7 +670,7 @@ function PentadbirView() {
        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
          <select 
            value={filter}
-           onChange={(e) => setFilter(e.target.value)}
+           onChange={(e) => { setFilter(e.target.value); setCurrentPage(1); }}
            className="px-6 py-3 rounded-xl text-sm font-bold border-2 border-slate-200 bg-white text-slate-800 shadow-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-200 min-w-[200px]"
          >
            <option value="ALL">Semua Calon</option>
@@ -782,6 +784,9 @@ function SuperAdminView() {
 
   // Pengguna State
   const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'TAHFIZ' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
   const handleAddUser = (e: React.FormEvent) => {
      e.preventDefault();
      addUser({
@@ -804,7 +809,7 @@ function SuperAdminView() {
          <button onClick={() => setActiveTab('KAWALAN')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'KAWALAN' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Kawalan Sistem</button>
          <button onClick={() => setActiveTab('PENGGUNA')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENGGUNA' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Daftar Pengguna</button>
          <button onClick={() => setActiveTab('PENILAIAN' as any)} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENILAIAN' as any ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Penilaian</button>
-         <button onClick={() => setActiveTab('PERMOHONAN')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Senarai Pemohon</button>
+         <button onClick={() => { setActiveTab('PERMOHONAN'); setCurrentPage(1); }} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Senarai Pemohon</button>
          <button onClick={() => setActiveTab('MARKAH')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'MARKAH' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Keputusan</button>
        </div>
 
@@ -1081,8 +1086,8 @@ function SuperAdminView() {
                     ];
                     const rows = candidates.map((c, i) => [
                       i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
-                      c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.noTelBapa || '', 
-                      c.icIbu || '', c.namaIbu || '', c.noTelIbu || '', c.statusTemuduga || '', 
+                      c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
+                      c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
                       c.markahTahfiz?.jumlah || '0', c.markahAkademik?.jumlah || '0', 
                       c.statusTawaran || '', c.maklumBalasTawaran || ''
                     ]);
@@ -1111,7 +1116,7 @@ function SuperAdminView() {
                          {candidates.length === 0 ? (
                             <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500">Tiada permohonan.</td></tr>
                          ) : (
-                            candidates.map(c => (
+                            candidates.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(c => (
                                <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
                                   <td className="px-4 py-4">
                                      <div className="font-bold text-slate-800 text-sm">{c.name}</div>
@@ -1167,6 +1172,29 @@ function SuperAdminView() {
                       </tbody>
                    </table>
                 </div>
+                {candidates.length > itemsPerPage && (
+                   <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
+                     <span className="text-sm text-slate-500">
+                       Memaparkan {((currentPage - 1) * itemsPerPage) + 1} hingga {Math.min(currentPage * itemsPerPage, candidates.length)} daripada {candidates.length} rekod
+                     </span>
+                     <div className="flex gap-2">
+                       <button
+                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                         disabled={currentPage === 1}
+                         className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                         Sebelumnya
+                       </button>
+                       <button
+                         onClick={() => setCurrentPage(p => Math.min(Math.ceil(candidates.length / itemsPerPage), p + 1))}
+                         disabled={currentPage === Math.ceil(candidates.length / itemsPerPage)}
+                         className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                         Seterusnya
+                       </button>
+                     </div>
+                   </div>
+                )}
              </div>
           </div>
        )}
