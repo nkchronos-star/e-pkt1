@@ -39,45 +39,44 @@ export default function BorangPukalCetakPDF({ candidates, onClose }: { candidate
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page { size: A4 portrait; margin: 0.5cm; }
-          body * { visibility: hidden !important; }
+          @page { size: A4 portrait; margin: 2.54cm 1cm 1cm 1cm; }
           
-          .fixed.inset-0 { 
-             position: absolute !important;
-             left: 0 !important;
-             top: 0 !important;
-             padding: 0 !important;
-             margin: 0 !important;
-             background: transparent !important;
-             overflow: visible !important;
-             display: block !important;
+          /* Hide everything in the body by default */
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+          body * { 
+            visibility: hidden; 
           }
           
-          #printable-pukal-area, #printable-pukal-area * { visibility: visible !important; }
-          
-          #printable-pukal-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            /* Transform for A4 fitting */
-            transform: scale(0.90) !important;
-            transform-origin: top left !important;
+          /* Show only our printable areas */
+          #printable-area, #printable-area *,
+          #printable-pukal-area, #printable-pukal-area * { 
+            visibility: visible; 
           }
           
-          .break-after-page { 
-              page-break-after: always !important; 
-              break-after: page !important;
-              display: block !important;
+          /* Position the printable area at the top left of the page */
+          #printable-area, #printable-pukal-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
           }
-          .break-after-page:last-child { 
-              page-break-after: auto !important; 
-              break-after: auto !important;
-          }
+
+          .print\:hidden { display: none !important; }
           
-          .print\\:hidden { display: none !important; }
+          .break-after-page {
+             page-break-after: always;
+             break-after: page;
+          }
+          .break-after-page:last-child {
+             page-break-after: auto;
+             break-after: auto;
+          }
         }
       `}} />
     </div>

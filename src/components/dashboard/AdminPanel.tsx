@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, BarChart2, Link as LinkIcon, FileText, Download, Search } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
+import EditCandidateModal from './EditCandidateModal';
 
 import PenilaianView from './PenilaianView';
 import { Candidate, Role } from '../../types';
@@ -630,6 +631,7 @@ export function downloadCSV(data: any[], filename: string) {
 function PentadbirView() {
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
+  const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
 
   const { candidates, settings } = useAppContext();
   const [filter, setFilter] = useState('LAYAK_TEMUDUGA');
@@ -786,6 +788,7 @@ function SuperAdminView() {
   const [activeTab, setActiveTab] = useState<'KAWALAN' | 'PENGGUNA' | 'ANALISIS' | 'PERMOHONAN' | 'MARKAH'>('KAWALAN');
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
+  const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -1249,7 +1252,15 @@ function SuperAdminView() {
       <FileText className="w-5 h-5" />
     </button>
 
+    
     <button
+      onClick={() => setEditCandidate(c)}
+      className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg"
+      title="Kemaskini Maklumat"
+    >
+      <Edit className="w-5 h-5" />
+    </button>
+<button
       onClick={() => {
         if (confirm('Padam calon ini?')) deleteCandidate(c.ic);
       }}
@@ -1258,6 +1269,7 @@ function SuperAdminView() {
     >
       <Trash2 className="w-5 h-5" />
     </button>
+
 
   </div>
 </td>
@@ -1302,7 +1314,14 @@ function SuperAdminView() {
              <PentadbirView />
           </div>
        )}
+
+       {editCandidate && (
+         <EditCandidateModal 
+            candidate={editCandidate} 
+            onClose={() => setEditCandidate(null)} 
+            onUpdated={() => setEditCandidate(null)}
+         />
+       )}
     </div>
   );
 }
-
