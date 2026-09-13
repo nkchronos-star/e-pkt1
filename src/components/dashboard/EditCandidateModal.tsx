@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Candidate } from '../../types';
-import { db } from '../../lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { useAppContext } from '../../store';
 
 export default function EditCandidateModal({ candidate, onClose, onUpdated }: { candidate: Candidate, onClose: () => void, onUpdated: () => void }) {
+  const { updateCandidate } = useAppContext();
   const [formData, setFormData] = useState({
     name: candidate.name || '',
     ic: candidate.ic || '',
@@ -24,8 +25,9 @@ export default function EditCandidateModal({ candidate, onClose, onUpdated }: { 
     e.preventDefault();
     setLoading(true);
     try {
-      if (candidate.id) {
-         await updateDoc(doc(db, 'candidates', candidate.id), {
+      if (candidate.ic) {
+         // Use the central store update function which handles API calls properly
+         await updateCandidate(candidate.ic, {
            name: formData.name,
            ic: formData.ic,
            alamat1: formData.alamat1,
@@ -35,7 +37,7 @@ export default function EditCandidateModal({ candidate, onClose, onUpdated }: { 
            negeri: formData.negeri
          });
       } else {
-         alert("ID calon tidak dijumpai.");
+         alert("IC calon tidak dijumpai.");
       }
       onUpdated();
       onClose();
@@ -46,6 +48,7 @@ export default function EditCandidateModal({ candidate, onClose, onUpdated }: { 
       setLoading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -94,22 +97,22 @@ export default function EditCandidateModal({ candidate, onClose, onUpdated }: { 
                 <label className="block text-sm font-bold text-slate-700 mb-1">Negeri</label>
                 <select name="negeri" value={formData.negeri} onChange={handleChange} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
                   <option value="">Pilih Negeri</option>
-                  <option value="Johor">Johor</option>
-                  <option value="Kedah">Kedah</option>
-                  <option value="Kelantan">Kelantan</option>
-                  <option value="Melaka">Melaka</option>
-                  <option value="Negeri Sembilan">Negeri Sembilan</option>
-                  <option value="Pahang">Pahang</option>
-                  <option value="Perak">Perak</option>
-                  <option value="Perlis">Perlis</option>
-                  <option value="Pulau Pinang">Pulau Pinang</option>
-                  <option value="Sabah">Sabah</option>
-                  <option value="Sarawak">Sarawak</option>
-                  <option value="Selangor">Selangor</option>
-                  <option value="Terengganu">Terengganu</option>
-                  <option value="Kuala Lumpur">W.P. Kuala Lumpur</option>
-                  <option value="Labuan">W.P. Labuan</option>
-                  <option value="Putrajaya">W.P. Putrajaya</option>
+                  <option value="JOHOR">JOHOR</option>
+                  <option value="KEDAH">KEDAH</option>
+                  <option value="KELANTAN">KELANTAN</option>
+                  <option value="MELAKA">MELAKA</option>
+                  <option value="NEGERI SEMBILAN">NEGERI SEMBILAN</option>
+                  <option value="PAHANG">PAHANG</option>
+                  <option value="PERAK">PERAK</option>
+                  <option value="PERLIS">PERLIS</option>
+                  <option value="PULAU PINANG">PULAU PINANG</option>
+                  <option value="SABAH">SABAH</option>
+                  <option value="SARAWAK">SARAWAK</option>
+                  <option value="SELANGOR">SELANGOR</option>
+                  <option value="TERENGGANU">TERENGGANU</option>
+                  <option value="W.P. KUALA LUMPUR">W.P. KUALA LUMPUR</option>
+                  <option value="W.P. LABUAN">W.P. LABUAN</option>
+                  <option value="W.P. PUTRAJAYA">W.P. PUTRAJAYA</option>
                 </select>
              </div>
           </div>
