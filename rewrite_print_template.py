@@ -1,4 +1,5 @@
-import React from 'react';
+with open('src/components/dashboard/PrintTemplate.tsx', 'w') as f:
+    f.write("""import React from 'react';
 import { Candidate } from '../../types';
 
 export default function PrintTemplate({ candidate }: { candidate: Partial<Candidate> }) {
@@ -23,7 +24,7 @@ export default function PrintTemplate({ candidate }: { candidate: Partial<Candid
              </div>
              <div className="col-span-1 row-span-4 flex justify-end">
                 {candidate.gambarUrl ? (
-                   <img src={candidate.gambarUrl} alt="Passport" className="w-24 h-32  object-cover border border-gray-300" style={{ width: '90px', height: '120px' }} />
+                   <img src={candidate.gambarUrl} alt="Passport" className="w-24 h-32 print:w-[2.5in] print:h-[3.3in] object-cover border border-gray-300" style={{ width: '90px', height: '120px' }} />
                 ) : (
                    <div className="border border-gray-300 flex items-center justify-center bg-gray-50 text-gray-400 text-xs" style={{ width: '90px', height: '120px' }}>Gambar</div>
                 )}
@@ -173,3 +174,4 @@ export default function PrintTemplate({ candidate }: { candidate: Partial<Candid
     </div>
   );
 }
+""")

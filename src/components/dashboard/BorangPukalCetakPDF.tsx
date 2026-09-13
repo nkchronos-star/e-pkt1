@@ -1,4 +1,8 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
+
+
 import { Candidate } from '../../types';
 import PrintTemplate from './PrintTemplate';
 
@@ -11,8 +15,8 @@ export default function BorangPukalCetakPDF({ candidates, onClose }: { candidate
     return () => clearTimeout(timer);
   }, []);
 
-  return (
-    <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+  return createPortal(
+    <div className="print-modal-wrapper fixed inset-0 z-50 bg-white overflow-y-auto print:static print:h-auto print:overflow-visible">
       
       {/* Action Bar (Not printed) */}
       <div className="sticky top-0 bg-slate-800 text-white p-4 flex justify-between items-center print:hidden shadow-md z-10">
@@ -41,44 +45,38 @@ export default function BorangPukalCetakPDF({ candidates, onClose }: { candidate
         @media print {
           @page { size: A4 portrait; margin: 2.54cm 1cm 1cm 1cm; }
           
-          /* Hide everything in the body by default */
+          /* Hide the main app root */
+          #root {
+             display: none !important;
+          }
+          
           body {
-            margin: 0;
-            padding: 0;
             background: white;
-          }
-          body * { 
-            visibility: hidden; 
-          }
-          
-          /* Show only our printable areas */
-          #printable-area, #printable-area *,
-          #printable-pukal-area, #printable-pukal-area * { 
-            visibility: visible; 
-          }
-          
-          /* Position the printable area at the top left of the page */
-          #printable-area, #printable-pukal-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+            -webkit-print-color-adjust: exact;
             margin: 0;
             padding: 0;
           }
-
+          
+          /* The modal wrapper is directly in body now, make it static so it paginates! */
+          .print-modal-wrapper {
+             position: static !important;
+             overflow: visible !important;
+             height: auto !important;
+          }
+          
           .print\:hidden { display: none !important; }
           
-          .break-after-page {
-             page-break-after: always;
+          .break-after-page { 
+             page-break-after: always; 
              break-after: page;
           }
-          .break-after-page:last-child {
-             page-break-after: auto;
+          .break-after-page:last-child { 
+             page-break-after: auto; 
              break-after: auto;
           }
         }
       `}} />
     </div>
-  );
+  , document.body
+);
 }

@@ -1,59 +1,54 @@
 import re
 
-with open('src/components/dashboard/BorangCetakPDF.tsx', 'r') as f:
-    content = f.read()
+for filename in ['src/components/dashboard/BorangPukalCetakPDF.tsx', 'src/components/dashboard/BorangCetakPDF.tsx']:
+    with open(filename, 'r') as f:
+        content = f.read()
 
-# Remove all `<style dangerouslySetInnerHTML... />` entirely up to the closing `</div>` and `); }`
-start_idx = content.find('<style dangerouslySetInnerHTML')
-end_idx = content.rfind('</div>')
-
-if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
-    clean_content = content[:start_idx] + """
-      <style dangerouslySetInnerHTML={{__html: `
+    # We will remove the old style block and replace it
+    pattern = r'<style dangerouslySetInnerHTML=\{\{__html: `.*?`\}\} />'
+    
+    style_block = """<style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page { size: A4 portrait; margin: 0.5cm; }
-          body * { visibility: hidden !important; }
+          @page { size: A4 portrait; margin: 2.54cm 1cm 1cm 1cm; }
           
-          .fixed.inset-0 {
-             position: absolute !important;
-             left: 0 !important;
-             top: 0 !important;
-             padding: 0 !important;
-             margin: 0 !important;
-             background: transparent !important;
-             overflow: visible !important;
-             display: block !important;
+          /* Hide everything outside of our modal */
+          body {
+            background: white;
+            -webkit-print-color-adjust: exact;
           }
           
-          .bg-white.max-w-4xl {
-             display: block !important;
-             box-shadow: none !important;
-             border: none !important;
-             margin: 0 !important;
-             max-width: none !important;
-             width: 100% !important;
+          /* The key to fixing truncation is NOT using absolute positioning, 
+             but we must hide siblings so it doesn't get pushed down. 
+             Since we can't easily hide siblings in React without refs, 
+             we use absolute but apply it to a fixed wrapper? No, absolute clips. 
+             Wait, if we set #root to display: contents, it removes the box! */
+          #root {
+             display: contents;
           }
           
-          #printable-area, #printable-area * { visibility: visible !important; }
-          
-          #printable-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            transform: scale(0.90) !important;
-            transform-origin: top center !important;
-          }
-          
+          /* Hide non-printable elements */
           .print\\\\:hidden { display: none !important; }
+          
+          /* We hide siblings of the modal container */
+          #root > div > div:not(.print-modal-wrapper) {
+             display: none !important;
+          }
+          
+          .break-after-page { 
+             page-break-after: always; 
+             break-after: page;
+          }
+          .break-after-page:last-child { 
+             page-break-after: auto; 
+             break-after: auto;
+          }
         }
-      `}} />
-    </div>
-  );
-}
-"""
-    with open('src/components/dashboard/BorangCetakPDF.tsx', 'w') as f:
-        f.write(clean_content)
-
+      `}} />"""
+      
+    content = re.sub(pattern, style_block, content, flags=re.DOTALL)
+    
+    # add class to the outermost div
+    content = content.replace('className="fixed inset-0', 'className="print-modal-wrapper fixed inset-0')
+    
+    with open(filename, 'w') as f:
+        f.write(content)
