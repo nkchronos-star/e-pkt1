@@ -131,7 +131,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const updatedSettings = { ...prev.settings, ...newSettings };
         
         // 2. Also try to push to Firebase in background to be safe
-        updateDoc(doc(db, 'config', 'main'), newSettings).catch(e => {
+        setDoc(doc(db, 'config', 'main'), updatedSettings, { merge: true }).catch(e => {
             console.error("Firebase background sync failed:", e);
         });
         

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, BarChart2, Link as LinkIcon, FileText, Download } from 'lucide-react';
-import { BorangCetakPDF } from './BorangCetakPDF';
-import { BorangPukalCetakPDF } from './BorangPukalCetakPDF';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, BarChart2, Link as LinkIcon, FileText, Download, Search } from 'lucide-react';
+import BorangCetakPDF from './BorangCetakPDF';
+import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 
 import PenilaianView from './PenilaianView';
 import { Candidate, Role } from '../../types';
@@ -577,6 +577,7 @@ function PentadbirView() {
 
   const { candidates, settings } = useAppContext();
   const [filter, setFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -589,6 +590,11 @@ function PentadbirView() {
   if (filter === 'TERIMA') filtered = candidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
   if (filter === 'TOLAK') filtered = candidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
   if (filter === 'LAYAK_TEMUDUGA') filtered = candidates.filter(c => c.statusTemuduga === 'LAYAK');
+  
+  if (searchQuery.trim() !== '') {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(c => c.name?.toLowerCase().includes(q) || c.ic?.includes(q) || c.studentName?.toLowerCase().includes(q) || c.icNumber?.includes(q));
+  }
 
   const handleDownloadExcel = () => {
     const headers = [
@@ -754,9 +760,18 @@ function PentadbirView() {
 // ================= SUPER ADMIN VIEW =================
 function SuperAdminView() {
   const { settings, updateSettings, syncSettingsToServer, candidates, updateCandidate, deleteCandidate, users, addUser, updateUser, deleteUser, infographics, addInfographic, deleteInfographic, currentUser } = useAppContext();
-  const [activeTab, setActiveTab] = useState<'KAWALAN' | 'PENGGUNA' | 'PERMOHONAN' | 'MARKAH'>('KAWALAN');
+  const [activeTab, setActiveTab] = useState<'KAWALAN' | 'PENGGUNA' | 'ANALISIS' | 'PERMOHONAN' | 'MARKAH'>('KAWALAN');
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  const filteredPermohonan = candidates.filter(c => {
+     const searchLower = searchQuery.toLowerCase();
+     return c.studentName?.toLowerCase().includes(searchLower) || c.name?.toLowerCase().includes(searchLower) || c.ic?.includes(searchQuery) || c.icNumber?.includes(searchQuery);
+  });
+
 
 
   // Kawalan Handlers
@@ -784,8 +799,6 @@ function SuperAdminView() {
 
   // Pengguna State
   const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'TAHFIZ' });
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
 
   const handleAddUser = (e: React.FormEvent) => {
      e.preventDefault();
@@ -1062,23 +1075,33 @@ function SuperAdminView() {
           <PenilaianView />
        )}
 
-       {activeTab === 'PERMOHONAN' && (
+       {activeTab === 'ANALISIS' && (
           <div className="space-y-6 animate-in fade-in">
              <AnalisisKemasukan candidates={candidates} />
-             <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+          </div>
+       )}
+       {activeTab === 'PERMOHONAN' && (
+             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                   <Users className="w-6 h-6 text-slate-500" />
                   <h3 className="text-xl font-bold">Senarai Keseluruhan Permohonan</h3>
                 </div>
-                <button 
-                  onClick={() => setPrintPukalBorang(true)}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-sm"
-                >
-                  <Printer className="w-4 h-4" />
-                  Cetak Borang Pukal
-                </button>
-                <button 
-                  onClick={() => {
+                
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                       <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                       <input type="text" placeholder="Cari nama atau No. KP..." value={searchQuery} onChange={(e) => {setSearchQuery(e.target.value); setCurrentPage(1);}} className="w-full pl-10 pr-4 py-2 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 font-medium" />
+                    </div>
+                    <button 
+                      onClick={() => setPrintPukalBorang(true)}
+                      className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm text-sm whitespace-nowrap"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Cetak Pukal
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
                     const headers = [
                       "No", "No. Kad Pengenalan", "Nama Calon", "Jantina", "Tarikh Lahir", "Tempat Lahir", 
                       "Sekolah Asal", "No. KP Bapa", "Nama Bapa", "No. Tel Bapa", "No. KP Ibu", "Nama Ibu", "No. Tel Ibu",
@@ -1113,10 +1136,10 @@ function SuperAdminView() {
                          </tr>
                       </thead>
                       <tbody>
-                         {candidates.length === 0 ? (
+                         {filteredPermohonan.length === 0 ? (
                             <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500">Tiada permohonan.</td></tr>
                          ) : (
-                            candidates.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(c => (
+                            filteredPermohonan.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(c => (
                                <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
                                   <td className="px-4 py-4">
                                      <div className="font-bold text-slate-800 text-sm">{c.name}</div>
