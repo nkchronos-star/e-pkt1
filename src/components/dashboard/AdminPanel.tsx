@@ -460,7 +460,7 @@ function AkademikView() {
 
        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-10">
           <div className="overflow-x-auto">
-             <table className="w-full text-left border-collapse min-w-max">
+             <table className="w-full text-left border-collapse min-w-full">
                 <thead className="bg-slate-50 border-b-2 border-slate-200">
                    <tr>
                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Nama Calon & IC</th>
@@ -520,6 +520,19 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
   const belumL = belum.filter(c => c.jantina?.toUpperCase() === 'LELAKI').length;
   const belumP = belum.filter(c => c.jantina?.toUpperCase() === 'PEREMPUAN').length;
 
+  const demografiData = permohonan.reduce((acc, c) => {
+    const n = c.negeri ? c.negeri.toUpperCase() : 'TIADA MAKLUMAT';
+    const d = c.daerah ? c.daerah.toUpperCase() : 'TIADA MAKLUMAT';
+    if (!acc[n]) acc[n] = {};
+    if (!acc[n][d]) acc[n][d] = { jumlah: 0, layak: 0, tawaran: 0 };
+    acc[n][d].jumlah++;
+    if (c.statusTemuduga === 'LAYAK') acc[n][d].layak++;
+    if (c.statusTawaran === 'BERJAYA') acc[n][d].tawaran++;
+    return acc;
+  }, {} as Record<string, Record<string, {jumlah: number, layak: number, tawaran: number}>>);
+
+  const sortedNegeri = Object.keys(demografiData).sort();
+
   return (
     <div className="mb-12 mt-4">
       <h4 className="font-bold text-lg text-slate-800 mb-4">Analisis Kemasukan Tahun Semasa</h4>
@@ -555,6 +568,49 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
             <div className="text-amber-600/80 font-bold">(L: {belumL} / P: {belumP})</div>
          </div>
       </div>
+      
+      <div className="mt-10">
+        <h4 className="font-bold text-lg text-slate-800 mb-4">Analisis Mengikut Negeri & Daerah</h4>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+           <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-max">
+                 <thead className="bg-slate-50 border-b-2 border-slate-200">
+                    <tr>
+                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Negeri</th>
+                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Daerah</th>
+                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Permohonan</th>
+                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Layak Temuduga</th>
+                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Ditawarkan</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-slate-100 bg-white">
+                    {sortedNegeri.length === 0 ? (
+                       <tr>
+                          <td colSpan={5} className="px-6 py-8 text-center text-slate-500 font-medium">Tiada data demografi.</td>
+                       </tr>
+                    ) : (
+                       sortedNegeri.map((negeri) => {
+                          const daerahs = Object.keys(demografiData[negeri]).sort();
+                          return daerahs.map((daerah, idx) => (
+                             <tr key={`${negeri}-${daerah}`} className="hover:bg-slate-50 transition-colors">
+                                {idx === 0 ? (
+                                   <td className="px-4 py-3 border-r border-slate-100 font-bold text-slate-700 align-top" rowSpan={daerahs.length}>
+                                      {negeri}
+                                   </td>
+                                ) : null}
+                                <td className="px-4 py-3 font-medium text-slate-600 border-r border-slate-50">{daerah}</td>
+                                <td className="px-4 py-3 text-center font-bold text-slate-700 bg-slate-50/50">{demografiData[negeri][daerah].jumlah}</td>
+                                <td className="px-4 py-3 text-center font-bold text-purple-600 bg-purple-50/30">{demografiData[negeri][daerah].layak}</td>
+                                <td className="px-4 py-3 text-center font-bold text-blue-600 bg-blue-50/30">{demografiData[negeri][daerah].tawaran}</td>
+                             </tr>
+                          ));
+                       })
+                    )}
+                 </tbody>
+              </table>
+           </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -576,20 +632,23 @@ function PentadbirView() {
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
 
   const { candidates, settings } = useAppContext();
-  const [filter, setFilter] = useState('ALL');
+  const [filter, setFilter] = useState('LAYAK_TEMUDUGA');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   const tahfizTotal = settings.tahfizItems?.reduce((a, b) => a + b.weight, 0) || 100;
   const akademikTotal = settings.akademikItems?.reduce((a, b) => a + b.weight, 0) || 100;
 
-  let filtered = candidates;
-  if (filter === 'BERJAYA') filtered = candidates.filter(c => c.statusTawaran === 'BERJAYA');
-  if (filter === 'GAGAL') filtered = candidates.filter(c => c.statusTawaran === 'GAGAL');
-  if (filter === 'TERIMA') filtered = candidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
-  if (filter === 'TOLAK') filtered = candidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
-  if (filter === 'LAYAK_TEMUDUGA') filtered = candidates.filter(c => c.statusTemuduga === 'LAYAK');
+  // Hanya paparkan calon yang layak temuduga
+  let baseCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK');
+  let filtered = baseCandidates;
+
+  if (filter === 'BERJAYA') filtered = baseCandidates.filter(c => c.statusTawaran === 'BERJAYA');
+  if (filter === 'GAGAL') filtered = baseCandidates.filter(c => c.statusTawaran === 'GAGAL');
+  if (filter === 'TERIMA') filtered = baseCandidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
+  if (filter === 'TOLAK') filtered = baseCandidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
+  if (filter === 'LAYAK_TEMUDUGA') filtered = baseCandidates; // all layak
   
   if (searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase();
@@ -629,47 +688,13 @@ function PentadbirView() {
 
   return (
     <div>
-       <AnalisisKemasukan candidates={candidates} />
-
-       {/* Analisa Penerimaan Tawaran (Pentadbir) */}
-       <div className="mb-12">
-         <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6">
-           <div className="p-3 bg-blue-100 rounded-xl">
-             <CheckSquare className="w-7 h-7 text-blue-700" />
+       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-8">
+         <div className="flex items-center gap-4">
+           <div className="p-3 bg-emerald-100 rounded-xl">
+             <CheckSquare className="w-7 h-7 text-emerald-700" />
            </div>
-           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Analisa Penerimaan Tawaran</h3>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Keputusan Temuduga & Tawaran</h3>
          </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center">
-              <div className="text-slate-500 font-bold mb-2 uppercase tracking-wide text-xs">Jumlah Ditawarkan</div>
-              <div className="text-4xl font-extrabold text-blue-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA').length}</div>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm text-center">
-              <div className="text-emerald-600 font-bold mb-2 uppercase tracking-wide text-xs">Tawaran Diterima</div>
-              <div className="text-4xl font-extrabold text-emerald-600">{candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length}</div>
-              <div className="text-xs text-slate-500 mt-2 font-medium">
-                (L: {candidates.filter(c => c.maklumBalasTawaran === 'TERIMA' && c.jantina === 'Lelaki').length} / P: {candidates.filter(c => c.maklumBalasTawaran === 'TERIMA' && c.jantina === 'Perempuan').length})
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-red-200 shadow-sm text-center">
-              <div className="text-red-600 font-bold mb-2 uppercase tracking-wide text-xs">Tawaran Ditolak</div>
-              <div className="text-4xl font-extrabold text-red-600">{candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length}</div>
-              <div className="text-xs text-slate-500 mt-2 font-medium">
-                (L: {candidates.filter(c => c.maklumBalasTawaran === 'TOLAK' && c.jantina === 'Lelaki').length} / P: {candidates.filter(c => c.maklumBalasTawaran === 'TOLAK' && c.jantina === 'Perempuan').length})
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-amber-200 shadow-sm text-center">
-              <div className="text-amber-600 font-bold mb-2 uppercase tracking-wide text-xs">Belum Maklum Balas</div>
-              <div className="text-4xl font-extrabold text-amber-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran).length}</div>
-            </div>
-         </div>
-       </div>
-
-       <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-8">
-         <div className="p-3 bg-purple-100 rounded-xl">
-           <Users className="w-7 h-7 text-purple-700" />
-         </div>
-         <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Senarai Penuh Calon (Pentadbir)</h3>
        </div>
 
 
@@ -679,11 +704,9 @@ function PentadbirView() {
            onChange={(e) => { setFilter(e.target.value); setCurrentPage(1); }}
            className="px-6 py-3 rounded-xl text-sm font-bold border-2 border-slate-200 bg-white text-slate-800 shadow-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-200 min-w-[200px]"
          >
-           <option value="ALL">Semua Calon</option>
-           <option value="LAYAK_TEMUDUGA">Layak Temuduga</option>
-           <option value="BERJAYA">Tawaran Berjaya</option>
-           <option value="GAGAL">Tawaran Gagal</option>
-           <option value="TERIMA">Terima Tawaran</option>
+           <option value="LAYAK_TEMUDUGA">Semua Calon Temuduga</option>
+           <option value="BERJAYA">Ditawarkan</option>
+           <option value="GAGAL">Tidak Berjaya</option>
            <option value="TOLAK">Tolak Tawaran</option>
          </select>
 
@@ -701,11 +724,11 @@ function PentadbirView() {
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Sekolah Asal</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Temuduga (Tahfiz)</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Akademik</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status Tawaran</th>
+                  <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest w-12">Bil</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Calon</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tahfiz/Penilai</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Akademik/Penilai</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Maklum Balas</th>
                 </tr>
               </thead>
@@ -765,7 +788,7 @@ function SuperAdminView() {
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   const filteredPermohonan = candidates.filter(c => {
      const searchLower = searchQuery.toLowerCase();
@@ -821,10 +844,10 @@ function SuperAdminView() {
        <div className="flex gap-4 border-b border-slate-200 pb-4 overflow-x-auto custom-scrollbar">
          <button onClick={() => setActiveTab('KAWALAN')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'KAWALAN' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Kawalan Sistem</button>
          <button onClick={() => setActiveTab('PENGGUNA')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENGGUNA' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Daftar Pengguna</button>
+         <button onClick={() => { setActiveTab('PERMOHONAN'); setCurrentPage(1); }} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Permohonan</button>
          <button onClick={() => setActiveTab('PENILAIAN' as any)} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENILAIAN' as any ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Penilaian</button>
-         <button onClick={() => setActiveTab('ANALISIS')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'ANALISIS' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Analisis</button>
-         <button onClick={() => { setActiveTab('PERMOHONAN'); setCurrentPage(1); }} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Senarai Pemohon</button>
          <button onClick={() => setActiveTab('MARKAH')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'MARKAH' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Keputusan</button>
+         <button onClick={() => setActiveTab('ANALISIS')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'ANALISIS' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Analisis</button>
        </div>
 
        {activeTab === 'KAWALAN' && (
@@ -1079,16 +1102,52 @@ function SuperAdminView() {
        {activeTab === 'ANALISIS' && (
           <div className="space-y-6 animate-in fade-in">
              <AnalisisKemasukan candidates={candidates} />
+                    {/* Analisa Penerimaan Tawaran (Pentadbir) */}
+       <div className="mt-8 mb-12">
+         <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6">
+           <div className="p-3 bg-blue-100 rounded-xl">
+             <CheckSquare className="w-7 h-7 text-blue-700" />
+           </div>
+           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Analisa Penerimaan Tawaran</h3>
+         </div>
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center">
+              <div className="text-slate-500 font-bold mb-2 uppercase tracking-wide text-xs">Jumlah Ditawarkan</div>
+              <div className="text-4xl font-extrabold text-blue-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA').length}</div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm text-center">
+              <div className="text-emerald-600 font-bold mb-2 uppercase tracking-wide text-xs">Tawaran Diterima</div>
+              <div className="text-4xl font-extrabold text-emerald-600">{candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length}</div>
+              <div className="text-xs text-slate-500 mt-2 font-medium">
+                (L: {candidates.filter(c => c.maklumBalasTawaran === 'TERIMA' && c.jantina?.toUpperCase() === 'LELAKI').length} / P: {candidates.filter(c => c.maklumBalasTawaran === 'TERIMA' && c.jantina?.toUpperCase() === 'PEREMPUAN').length})
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-red-200 shadow-sm text-center">
+              <div className="text-red-600 font-bold mb-2 uppercase tracking-wide text-xs">Tawaran Ditolak</div>
+              <div className="text-4xl font-extrabold text-red-600">{candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length}</div>
+              <div className="text-xs text-slate-500 mt-2 font-medium">
+                (L: {candidates.filter(c => c.maklumBalasTawaran === 'TOLAK' && c.jantina?.toUpperCase() === 'LELAKI').length} / P: {candidates.filter(c => c.maklumBalasTawaran === 'TOLAK' && c.jantina?.toUpperCase() === 'PEREMPUAN').length})
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-amber-200 shadow-sm text-center">
+              <div className="text-amber-600 font-bold mb-2 uppercase tracking-wide text-xs">Belum Maklum Balas</div>
+              <div className="text-4xl font-extrabold text-amber-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran).length}</div>
+            </div>
+         </div>
+       </div>
           </div>
        )}
        {activeTab === 'PERMOHONAN' && (
-             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-2">
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <Users className="w-6 h-6 text-slate-500" />
-                  <h3 className="text-xl font-bold">Senarai Keseluruhan Permohonan</h3>
+          <div className="space-y-6 animate-in fade-in">
+             <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3 w-full xl:w-auto">
+                  <div className="p-3 bg-blue-100 rounded-xl hidden sm:block flex-shrink-0">
+                    <Users className="w-7 h-7 text-blue-700" />
+                  </div>
+                  <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Senarai Keseluruhan Permohonan</h3>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-start xl:justify-end">
                     <div className="relative w-full sm:w-64">
                        <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                        <input type="text" placeholder="Cari nama atau No. KP..." value={searchQuery} onChange={(e) => {setSearchQuery(e.target.value); setCurrentPage(1);}} className="w-full pl-10 pr-4 py-2 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 font-medium" />
@@ -1126,33 +1185,44 @@ function SuperAdminView() {
              
              <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
                 <div className="overflow-x-auto">
-                   <table className="w-full text-left border-collapse min-w-max">
+                   <table className="w-full text-left border-collapse min-w-full">
                       <thead className="bg-slate-100/50">
                          <tr>
+                            <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase w-12 text-center">Bil</th>
                             <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase">Nama & IC</th>
                             <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase">Daerah / Negeri</th>
                             <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase text-center">UPKK</th>
-                            <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase text-center">Status Temuduga</th>
+                            <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase text-center">Status</th>
                             <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase text-center">Tindakan</th>
                          </tr>
                       </thead>
                       <tbody>
                          {filteredPermohonan.length === 0 ? (
-                            <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500">Tiada permohonan.</td></tr>
+                            <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">Tiada permohonan.</td></tr>
                          ) : (
-                            filteredPermohonan.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(c => (
+                            filteredPermohonan.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((c, index) => (
                                <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                                  <td className="px-4 py-4 text-center text-sm font-medium text-slate-500">
+                                     {(currentPage - 1) * itemsPerPage + index + 1}
+                                  </td>
                                   <td className="px-4 py-4">
-                                     <div className="font-bold text-slate-800 text-sm">{c.name}</div>
-                                     <div className="text-xs text-slate-500">{c.ic}</div>
+                                     <div className="font-bold text-slate-800 text-sm">{c.name || c.studentName}</div>
+                                     <div className="text-xs text-slate-500">{c.ic || c.icNumber}</div>
                                   </td>
                                   <td className="px-4 py-4 text-sm text-slate-600">
-                                     {c.daerah}, {c.negeri}
+                                     {c.daerah || '-'}, {c.negeri || '-'}
                                   </td>
                                   <td className="px-4 py-4 text-center">
-                                     {c.upkk ? (
-                                        <div className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block">Ada</div>
-                                     ) : <span className="text-xs text-slate-400">Tiada</span>}
+                                     {(() => {
+                                        if(!c.upkk) return <span className="text-xs text-slate-400">Tiada</span>;
+                                        const grades = Object.values(c.upkk).filter(v => v && typeof v === 'string' && v.trim() !== '');
+                                        if(grades.length === 0) return <span className="text-xs text-slate-400">Tiada</span>;
+                                        
+                                        const counts: Record<string, number> = {};
+                                        grades.forEach(g => { counts[g as string] = (counts[g as string] || 0) + 1; });
+                                        const formatted = Object.entries(counts).sort().map(([g, count]) => `${count}${g}`).join(', ');
+                                        return <div className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-1 rounded inline-block whitespace-nowrap">{formatted}</div>;
+                                     })()}
                                   </td>
                                   <td className="px-4 py-4 text-center">
                                      {c.statusTemuduga === 'LAYAK' ? (
@@ -1163,8 +1233,8 @@ function SuperAdminView() {
                                         <span className="bg-slate-100 text-slate-600 font-bold px-3 py-1 rounded-full text-xs">MENUNGGU</span>
                                      )}
                                      <div className="flex justify-center gap-1 mt-2">
-                                        <button onClick={()=>setKelayakan(c.ic, true)} className="text-[10px] bg-emerald-50 text-emerald-600 hover:bg-emerald-200 px-2 py-1 rounded font-bold border border-emerald-200">Set Layak</button>
-                                        <button onClick={()=>setKelayakan(c.ic, false)} className="text-[10px] bg-red-50 text-red-600 hover:bg-red-200 px-2 py-1 rounded font-bold border border-red-200">Set Gagal</button>
+                                        <button onClick={()=>setKelayakan(c.ic, true)} className="text-[10px] bg-emerald-50 text-emerald-600 hover:bg-emerald-200 px-2 py-1 rounded font-bold border border-emerald-200">LAYAK</button>
+                                        <button onClick={()=>setKelayakan(c.ic, false)} className="text-[10px] bg-red-50 text-red-600 hover:bg-red-200 px-2 py-1 rounded font-bold border border-red-200">TIDAK LAYAK</button>
                                      </div>
                                   </td>
                                  <td className="px-4 py-4 text-center">
@@ -1196,10 +1266,10 @@ function SuperAdminView() {
                       </tbody>
                    </table>
                 </div>
-                {candidates.length > itemsPerPage && (
+                {filteredPermohonan.length > itemsPerPage && (
                    <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
                      <span className="text-sm text-slate-500">
-                       Memaparkan {((currentPage - 1) * itemsPerPage) + 1} hingga {Math.min(currentPage * itemsPerPage, candidates.length)} daripada {candidates.length} rekod
+                       Memaparkan {((currentPage - 1) * itemsPerPage) + 1} hingga {Math.min(currentPage * itemsPerPage, filteredPermohonan.length)} daripada {filteredPermohonan.length} rekod
                      </span>
                      <div className="flex gap-2">
                        <button
@@ -1210,8 +1280,8 @@ function SuperAdminView() {
                          Sebelumnya
                        </button>
                        <button
-                         onClick={() => setCurrentPage(p => Math.min(Math.ceil(candidates.length / itemsPerPage), p + 1))}
-                         disabled={currentPage === Math.ceil(candidates.length / itemsPerPage)}
+                         onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredPermohonan.length / itemsPerPage), p + 1))}
+                         disabled={currentPage >= Math.ceil(filteredPermohonan.length / itemsPerPage)}
                          className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
                        >
                          Seterusnya
@@ -1220,6 +1290,7 @@ function SuperAdminView() {
                    </div>
                 )}
              </div>
+          </div>
           </div>
        )}
 
