@@ -1182,6 +1182,7 @@ function SuperAdminView() {
                   Muat Turun Semua
                 </button>
              </div>
+             </div>
              
              <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -1290,7 +1291,6 @@ function SuperAdminView() {
                    </div>
                 )}
              </div>
-          </div>
           </div>
        )}
 
