@@ -739,13 +739,13 @@ function PentadbirView() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
-                {filtered.map(c => (
+                {filtered.map((c, idx) => (
                   <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-5 text-center text-sm font-medium text-slate-500">{idx + 1}</td>
                     <td className="px-6 py-5">
                        <span className="font-bold text-slate-900 block mb-1">{c.name}</span>
                        <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded inline-block">{c.ic}</span>
                     </td>
-                    <td className="px-6 py-5 font-medium text-slate-600 truncate max-w-[150px]">{c.namaSekolahRendah}</td>
                     <td className="px-6 py-5">
                        {c.markahTahfiz ? <span className="font-extrabold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-md">{c.markahTahfiz.jumlah}/{tahfizTotal}</span> : <span className="text-sm font-medium text-slate-400">Belum Dinilai</span>}
                        {c.markahTahfiz?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahTahfiz.dinilaiOleh}</div>}
