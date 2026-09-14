@@ -12,7 +12,7 @@ export default function BorangPukalCetakPDF({ candidates, onClose }: { candidate
   }, []);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-slate-100 overflow-y-auto print:static print:bg-white print:overflow-visible print:block">
+    <div className="fixed inset-0 z-[100] bg-slate-100 overflow-y-auto print:static print:bg-white print:overflow-visible print:block printable-area">
       {/* Action Bar (Not printed) */}
       <div className="sticky top-0 bg-slate-800 text-white p-4 flex justify-between items-center print:hidden shadow-md z-10">
         <h2 className="font-bold">Pratonton Cetakan Pukal ({candidates.length} Calon)</h2>
@@ -36,25 +36,15 @@ export default function BorangPukalCetakPDF({ candidates, onClose }: { candidate
         </div>
       </div>
       <style dangerouslySetInnerHTML={{__html: `
-                @media print {
+        @media print {
           @page { size: A4 portrait; margin: 1cm; }
-          #root { display: none !important; }
-          body, html { 
-            background: white !important; 
-            margin: 0 !important; 
-            padding: 0 !important; 
-            height: auto !important; 
-            min-height: auto !important;
-            overflow: visible !important; 
-            position: static !important;
+          .break-after-page {
+              page-break-after: always !important;
+              break-after: page !important;
           }
-          .break-after-page { 
-             page-break-after: always !important; 
-             break-after: page !important;
-          }
-          .break-after-page:last-child { 
-             page-break-after: auto !important; 
-             break-after: auto !important;
+          .break-after-page:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
           }
         }
       `}} />
