@@ -1,23 +1,17 @@
 import React, { useEffect } from 'react';
-import { createPortal } from 'react-dom';
-
-
-
 import { Candidate } from '../../types';
 import PrintTemplate from './PrintTemplate';
 
 export default function BorangPukalCetakPDF({ candidates, onClose }: { candidates: Candidate[], onClose: () => void }) {
-  
   useEffect(() => {
     const timer = setTimeout(() => {
       window.print();
-    }, 1000); // give a bit more time for bulk images
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
-  return createPortal(
-    <div className="print-modal-wrapper fixed inset-0 z-50 bg-white overflow-y-auto print:static print:h-auto print:overflow-visible">
-      
+  return (
+    <div className="bg-white min-h-screen w-full">
       {/* Action Bar (Not printed) */}
       <div className="sticky top-0 bg-slate-800 text-white p-4 flex justify-between items-center print:hidden shadow-md z-10">
         <h2 className="font-bold">Pratonton Cetakan Pukal ({candidates.length} Calon)</h2>
@@ -31,41 +25,18 @@ export default function BorangPukalCetakPDF({ candidates, onClose }: { candidate
         </div>
       </div>
 
-      <div id="printable-pukal-area" className="w-full bg-slate-100 print:bg-white py-8 print:py-0">
+      <div className="w-full bg-slate-100 print:bg-white py-8 print:py-0">
         <div className="max-w-4xl mx-auto flex flex-col gap-8 print:block print:gap-0">
-          {candidates.map((candidate, index) => (
+          {candidates.map((candidate) => (
             <div key={candidate.id} className="bg-white shadow-lg print:shadow-none break-after-page print:mb-0">
                <PrintTemplate candidate={candidate} />
             </div>
           ))}
         </div>
       </div>
-
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page { size: A4 portrait; margin: 2.54cm 1cm 1cm 1cm; }
-          
-          /* Hide the main app root */
-          #root {
-             display: none !important;
-          }
-          
-          body {
-            background: white;
-            -webkit-print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
-          }
-          
-          /* The modal wrapper is directly in body now, make it static so it paginates! */
-          .print-modal-wrapper {
-             position: static !important;
-             overflow: visible !important;
-             height: auto !important;
-          }
-          
-          .print\:hidden { display: none !important; }
-          
+          @page { size: A4 portrait; margin: 1cm; }
           .break-after-page { 
              page-break-after: always; 
              break-after: page;
@@ -77,6 +48,5 @@ export default function BorangPukalCetakPDF({ candidates, onClose }: { candidate
         }
       `}} />
     </div>
-  , document.body
-);
+  );
 }

@@ -688,6 +688,10 @@ function PentadbirView() {
     downloadCSV([headers, ...rows], `Senarai_Calon_${filter}.csv`);
   };
 
+
+  if (printCandidate) return <BorangCetakPDF candidate={printCandidate} onClose={() => setPrintCandidate(null)} />;
+  if (printPukalBorang) return <BorangPukalCetakPDF candidates={filtered} onClose={() => setPrintPukalBorang(false)} />;
+
   return (
     <div>
        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-8">
@@ -841,6 +845,10 @@ function SuperAdminView() {
         alert('Kata laluan berjaya ditukar!');
      }
   };
+
+
+  if (printCandidate) return <BorangCetakPDF candidate={printCandidate} onClose={() => setPrintCandidate(null)} />;
+  if (printPukalBorang) return <BorangPukalCetakPDF candidates={filteredPermohonan} onClose={() => setPrintPukalBorang(false)} />;
 
   return (
     <div className="space-y-8">
@@ -1306,8 +1314,8 @@ function SuperAdminView() {
           </div>
        )}
 
-       {printCandidate && <BorangCetakPDF candidate={printCandidate} onClose={() => setPrintCandidate(null)} />}
-       {printPukalBorang && <BorangPukalCetakPDF candidates={candidates} onClose={() => setPrintPukalBorang(false)} />}
+       
+       
 
        {activeTab === 'MARKAH' && (
           <div className="space-y-6 animate-in fade-in">
