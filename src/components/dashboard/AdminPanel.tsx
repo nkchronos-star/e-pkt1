@@ -947,6 +947,46 @@ function SuperAdminView() {
            </div>
 
            <div>
+             <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><FileText className="w-6 h-6 text-slate-500" /> Tetapan Surat Tawaran</h3>
+             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Pautan Borang Pendaftaran</label>
+                    <input type="text" name="borangTingkatan1Link" value={settings.borangTingkatan1Link || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="https://..." />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Rujukan Surat (Atas Kanan)</label>
+                    <input type="text" name="rujukanSuratTawaran" value={settings.rujukanSuratTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: JPNP.SPI.800-1/1/4 Jld.2 (18)" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Surat (Atas Kanan)</label>
+                    <input type="text" name="tarikhSuratTawaran" value={settings.tarikhSuratTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 17 November 2025" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Lapor Diri</label>
+                    <input type="text" name="tarikhLaporDiri" value={settings.tarikhLaporDiri || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 11 JANUARI 2026 (AHAD)" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Nama Penandatangan (Surat Tawaran)</label>
+                    <input type="text" name="namaPengarahTawaran" value={settings.namaPengarahTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: YAHAYA BIN TAHIR" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 1</label>
+                    <input type="text" name="jawatanPengarahTawaran1" value={settings.jawatanPengarahTawaran1 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: Ketua Penolong Pengarah Kanan" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 2</label>
+                    <input type="text" name="jawatanPengarahTawaran2" value={settings.jawatanPengarahTawaran2 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: Sektor Pendidikan Islam" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 3</label>
+                    <input type="text" name="jawatanPengarahTawaran3" value={settings.jawatanPengarahTawaran3 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: b.p Pengarah Pendidikan Pahang" />
+                  </div>
+                </div>
+             </div>
+           </div>
+
+           <div>
              <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><LinkIcon className="w-6 h-6 text-slate-500" /> Pengurusan Maklumat Paparan & Infografik</h3>
              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>

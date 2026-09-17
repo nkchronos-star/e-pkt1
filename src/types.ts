@@ -37,6 +37,12 @@ export interface ApplicationSettings {
   utamaPanduanLink?: string;
   utamaContent?: string;
   panduanContent?: string;
+  rujukanSuratTawaran?: string;
+  tarikhSuratTawaran?: string;
+  namaPengarahTawaran?: string;
+  jawatanPengarahTawaran1?: string;
+  jawatanPengarahTawaran2?: string;
+  jawatanPengarahTawaran3?: string;
   tahfizItems?: AssessmentItem[];
   akademikItems?: AssessmentItem[];
 }
