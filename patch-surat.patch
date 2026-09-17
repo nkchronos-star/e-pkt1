@@ -1,0 +1,12 @@
+--- src/components/dashboard/SuratTawaran.tsx
++++ src/components/dashboard/SuratTawaran.tsx
+@@ -62,8 +62,7 @@
+ 
+       <div className="mb-8 font-bold uppercase text-[14px] leading-tight">
+         <p>KEPADA :</p>
+-        <p className="mt-4">&lt;&lt;NAMA&gt;&gt;</p>
+-        <p>{candidate.name}</p>
++        <p className="mt-4">{candidate.name}</p>
+         <p>{candidate.alamat1},</p>
+         {candidate.alamat2 && <p>{candidate.alamat2},</p>}
+         <p>{candidate.poskod} {candidate.daerah},</p>

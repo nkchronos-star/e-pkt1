@@ -39,6 +39,7 @@ export interface ApplicationSettings {
   panduanContent?: string;
   rujukanSuratTawaran?: string;
   tarikhSuratTawaran?: string;
+  masaLaporDiri?: string;
   namaPengarahTawaran?: string;
   jawatanPengarahTawaran1?: string;
   jawatanPengarahTawaran2?: string;

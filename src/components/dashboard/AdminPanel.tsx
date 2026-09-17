@@ -955,8 +955,8 @@ function SuperAdminView() {
                     <input type="text" name="borangTingkatan1Link" value={settings.borangTingkatan1Link || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="https://..." />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Rujukan Surat (Atas Kanan)</label>
-                    <input type="text" name="rujukanSuratTawaran" value={settings.rujukanSuratTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: JPNP.SPI.800-1/1/4 Jld.2 (18)" />
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Rujukan Surat (Sistem akan tambah (xx) automatik)</label>
+                    <input type="text" name="rujukanSuratTawaran" value={settings.rujukanSuratTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: JPNP.SPI.800-1/1/4 Jld.2" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Surat (Atas Kanan)</label>
@@ -965,6 +965,10 @@ function SuperAdminView() {
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Lapor Diri</label>
                     <input type="text" name="tarikhLaporDiri" value={settings.tarikhLaporDiri || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 11 JANUARI 2026 (AHAD)" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Masa Lapor Diri</label>
+                    <input type="text" name="masaLaporDiri" value={settings.masaLaporDiri || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 8.30 PAGI" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Nama Penandatangan (Surat Tawaran)</label>

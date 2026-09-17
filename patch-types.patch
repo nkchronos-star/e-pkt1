@@ -1,15 +1,10 @@
 --- src/types.ts
 +++ src/types.ts
-@@ -29,6 +29,11 @@
-   sesiKemasukan?: string;
-   borangTingkatan1Link?: string;
-   utamaPanduanLink?: string;
-+  rujukanSuratTawaran?: string;
-+  tarikhSuratTawaran?: string;
-+  namaPengarahTawaran?: string;
-+  jawatanPengarahTawaran1?: string;
-+  jawatanPengarahTawaran2?: string;
-+  jawatanPengarahTawaran3?: string;
- 
-   tahfizItems: {
-     id: string;
+@@ -39,6 +39,7 @@
+   panduanContent?: string;
+   rujukanSuratTawaran?: string;
+   tarikhSuratTawaran?: string;
++  masaLaporDiri?: string;
+   namaPengarahTawaran?: string;
+   jawatanPengarahTawaran1?: string;
+   jawatanPengarahTawaran2?: string;
