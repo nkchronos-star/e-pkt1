@@ -12,7 +12,7 @@ import AdminPanel from './components/dashboard/AdminPanel';
 type View = 'utama' | 'panduan' | 'borang' | 'temuduga' | 'tawaran' | 'admin';
 
 function AppContent() {
-  const { settings } = useAppContext();
+  const { settings, isInitialized } = useAppContext();
   const sesiKemasukan = settings?.sesiKemasukan || 'Sesi Kemasukan 2026/2027';
   const [activeView, setActiveView] = useState<View>('utama');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,6 +25,17 @@ function AppContent() {
     { id: 'tawaran', label: 'Semak Tawaran', icon: GraduationCap },
     { id: 'admin', label: 'Admin', icon: Settings },
   ];
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f4f7ee]">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-emerald-800 font-bold">Memuatkan Sistem...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f4f7ee] text-slate-800 font-sans selection:bg-emerald-100 selection:text-emerald-900">

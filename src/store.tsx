@@ -10,6 +10,7 @@ interface AppState {
   currentUser: User | null;
   userRole: 'SUPER_ADMIN' | 'PENTADBIR' | 'TAHFIZ' | 'AKADEMIK' | null;
   infographics: Infographic[];
+  isInitialized: boolean;
 }
 
 interface AppContextType extends AppState {
@@ -71,6 +72,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     currentUser: null,
     userRole: null,
     infographics: [],
+    isInitialized: false,
   });
 
   // Listen to Firestore
@@ -78,10 +80,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // 1. Settings
     const unsubSettings = onSnapshot(doc(db, 'config', 'main'), (docSnap) => {
       if (docSnap.exists()) {
-        setState(prev => ({ ...prev, settings: { ...defaultSettings, ...docSnap.data() as ApplicationSettings } }));
+        setState(prev => ({ ...prev, settings: { ...defaultSettings, ...docSnap.data() as ApplicationSettings }, isInitialized: true }));
       } else {
         // Initialize default settings in Firestore
         setDoc(doc(db, 'config', 'main'), defaultSettings).catch(console.error);
+        setState(prev => ({ ...prev, isInitialized: true }));
       }
     });
 

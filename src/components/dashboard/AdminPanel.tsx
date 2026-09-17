@@ -633,7 +633,7 @@ function PentadbirView() {
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
 
-  const { candidates, settings } = useAppContext();
+  const { candidates, settings, updateCandidate } = useAppContext();
   const [filter, setFilter] = useState('LAYAK_TEMUDUGA');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -755,12 +755,18 @@ function PentadbirView() {
                        {c.markahAkademik?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahAkademik.dinilaiOleh}</div>}
                     </td>
                     <td className="px-6 py-5">
-                       <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                         c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                         c.statusTawaran === 'GAGAL' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                       }`}>
-                         {c.statusTawaran.replace('_', ' ')}
-                       </span>
+                       <select
+                         value={c.statusTawaran || 'DALAM_PERTIMBANGAN'}
+                         onChange={(e) => updateCandidate(c.ic, { statusTawaran: e.target.value as any })}
+                         className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border cursor-pointer outline-none transition-colors appearance-none text-center ${
+                           c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200' :
+                           c.statusTawaran === 'GAGAL' ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                         }`}
+                       >
+                         <option value="DALAM_PERTIMBANGAN">DALAM PERTIMBANGAN</option>
+                         <option value="BERJAYA">DITAWARKAN</option>
+                         <option value="GAGAL">TIDAK DITAWARKAN</option>
+                       </select>
                     </td>
                     <td className="px-6 py-5 font-bold text-slate-700">
                        {c.maklumBalasTawaran ? (
