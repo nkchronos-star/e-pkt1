@@ -23,46 +23,44 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
 
   return (
     <div 
-      className="bg-white p-8 sm:p-12 print:p-0 w-[210mm] min-h-[297mm] mx-auto shadow-2xl printable-area text-black relative"
+      className="bg-white p-8 sm:p-12 print:p-0 w-full max-w-[210mm] mx-auto shadow-2xl printable-area text-black relative text-left"
       style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
     >
       {/* Header Surat */}
-      <div className="flex items-start mb-6 border-b-[1.5px] border-[#0e4394] pb-2">
-        <div className="flex items-center gap-6 w-full">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Coat_of_arms_of_Pahang.svg/400px-Coat_of_arms_of_Pahang.svg.png" alt="Jata Negara" className="w-[100px] h-auto object-contain " />
-          <div className="flex-1 flex justify-between items-start pt-2">
-            <div className="text-[#0e4394]">
-              <h1 className="font-bold text-[16px] mb-0 tracking-wide">KEMENTERIAN PENDIDIKAN MALAYSIA</h1>
-              <h2 className="mb-0 text-[14px]">Jabatan Pendidikan Negeri Pahang</h2>
-              <p className="leading-snug text-[14px]">
-                Bandar Indera Mahkota<br/>
-                25604 Kuantan<br/>
-                Pahang Darul Makmur
-              </p>
-            </div>
-            <div className="text-[#0e4394] text-[13px] leading-snug mt-6">
-              <table>
-                <tbody>
-                  <tr>
-                    <td className="pr-4">Tel</td>
-                    <td>: 09-5715700</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Faks</td>
-                    <td>: 09-5734857</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Laman Web</td>
-                    <td>: <em>jpnpahang.moe.gov.my</em></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+      <div className="flex items-start gap-4 mb-4 border-b-[1.5px] border-[#0e4394] pb-3 w-full">
+        <div className="w-[85px] flex-shrink-0">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" referrerPolicy="no-referrer" alt="Jata Negara" className="w-full h-auto object-contain" />
+        </div>
+        <div className="flex-1 pt-1">
+          <h1 className="font-bold text-[15px] mb-0 tracking-wide text-[#0e4394]">KEMENTERIAN PENDIDIKAN MALAYSIA</h1>
+          <h2 className="mb-0 text-[13px] text-[#0e4394]">Jabatan Pendidikan Negeri Pahang</h2>
+          <p className="leading-snug text-[13px] text-[#0e4394]">
+            Bandar Indera Mahkota<br/>
+            25604 Kuantan<br/>
+            Pahang Darul Makmur
+          </p>
+        </div>
+        <div className="w-[180px] text-[12px] leading-snug text-[#0e4394] mt-5">
+          <table className="w-full">
+            <tbody>
+              <tr>
+                <td className="w-12">Tel</td>
+                <td>: 09-5715700</td>
+              </tr>
+              <tr>
+                <td>Faks</td>
+                <td>: 09-5734857</td>
+              </tr>
+              <tr>
+                <td>Laman Web</td>
+                <td>: <em>jpnpahang.moe.gov.my</em></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="flex justify-end mb-10 text-[14px]">
+      <div className="flex justify-end mb-4 text-[14px]">
         <table>
           <tbody>
             <tr>
@@ -77,15 +75,15 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
         </table>
       </div>
 
-      <div className="mb-8 font-bold uppercase text-[14px] leading-tight">
+      <div className="mb-5 font-bold uppercase text-[14px] leading-tight">
         <p>KEPADA :</p>
-        <p className="mt-4">{candidate.name}</p>
+        <p className="mt-2">{candidate.name || '<<NAMA>>'}</p>
         <p>{candidate.alamat1},</p>
         {candidate.alamat2 && <p>{candidate.alamat2},</p>}
         <p>{candidate.poskod} {candidate.daerah},</p>
-        <p>{candidate.negeri} .</p>
+        <p>{candidate.negeri}.</p>
         
-        <p className="mt-6">NO.KP : {candidate.ic}</p>
+        <p className="mt-2">NO.KP : {candidate.ic || '<<NO. KAD PENGENALAN>>'}</p>
       </div>
 
       <div className="mb-4 text-[14px]">
@@ -140,23 +138,24 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
           2.<span className="ml-4 inline-block">Tawaran ini adalah <strong>MUKTAMAD</strong> dan <strong>TERBATAL</strong> sekiranya tidak melapor diri pada tarikh dan masa yang telah ditetapkan di atas melainkan pihak tuan dapat menghubungi pihak sekolah untuk memaklumkan kegagalan hadir pada tarikh tersebut. Pertukaran ke SABK yang lain <strong>TIDAK DIBENARKAN</strong>.</span>
         </p>
 
-        <p className="mb-8 text-justify">
+        <p className="mb-5 text-justify">
           3.<span className="ml-4 inline-block">Jabatan Pendidikan Negeri Pahang berhak menarik balik tawaran bila-bila masa sekiranya terdapat percanggahan maklumat dalam borang permohonan dengan dokumen asal.</span>
         </p>
 
-        <p className="mb-8">Sekian, terima kasih.</p>
+        <p className="mb-5">Sekian, terima kasih.</p>
       </div>
 
-      <div className="mt-8 text-[14px]">
+      <div className="mt-5 text-[14px]">
         <p className="font-bold mb-4">"MALAYSIA MADANI"</p>
-        <p className="font-bold mb-6">"BERKHIDMAT UNTUK NEGARA"</p>
+        <p className="font-bold mb-4">"BERKHIDMAT UNTUK NEGARA"</p>
         <p className="mb-4">Saya yang menjalankan amanah,</p>
         
         <div className="mb-2">
-          {/* Mock Signature matching the image somewhat */}
-          <svg className="w-24 h-16 ml-2" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 40,80 C 20,40 60,10 70,30 C 80,50 60,90 50,80 C 40,70 60,40 80,40 C 100,40 120,60 110,80 C 100,100 80,80 90,60 C 100,40 130,30 140,50 C 150,70 130,90 120,80 C 110,70 130,40 150,40 C 170,40 180,60 170,80 M 30,60 L 180,60 M 60,20 L 70,90 M 110,20 L 120,90" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          {settings.tandatanganPengarahTawaran ? (
+            <img src={settings.tandatanganPengarahTawaran} alt="Tandatangan" className="h-16 w-auto object-contain ml-2" />
+          ) : (
+            <div className="h-16 w-24"></div>
+          )}
         </div>
 
         <div>
@@ -166,7 +165,7 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
           <p>{settings.jawatanPengarahTawaran3 || 'b.p Pengarah Pendidikan Pahang'}</p>
         </div>
 
-        <div className="mt-8">
+        <div className="mt-5">
           <p>s.k.</p>
           <p>Pengetua</p>
           <p>SABK</p>
@@ -175,18 +174,37 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          body { -webkit-print-color-adjust: exact; }
+          @page { size: A4; margin: 10mm 15mm; }
+          
+          body { 
+            -webkit-print-color-adjust: exact; 
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          
+          /* Hide everything outside the printable area using standard display none 
+             to prevent empty space from taking up the layout */
+          .no-print {
+            display: none !important;
+          }
+
+          /* Ensure the printable area has no constraints */
           .printable-area { 
-             margin: 0 !important; 
+             position: static !important;
+             margin: 0 !important;
              padding: 0 !important;
              box-shadow: none !important;
-             transform: none !important;
              width: 100% !important;
-             min-height: 100vh !important;
-             page-break-after: avoid;
-             page-break-inside: avoid;
+             max-width: 100% !important;
           }
-          @page { size: A4; margin: 15mm; }
+          
+          /* Reset any layout wrappers that might cause spacing */
+          #root, main, .bg-\\[\\#f4f7ee\\] {
+             background: white !important;
+             padding: 0 !important;
+             margin: 0 !important;
+          }
         }
       `}} />
     </div>

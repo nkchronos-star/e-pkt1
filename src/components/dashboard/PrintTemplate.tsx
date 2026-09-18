@@ -19,7 +19,7 @@ export default function PrintTemplate({ candidate }: { candidate: Partial<Candid
           <div className="grid grid-cols-3 gap-y-4 print:gap-y-2 gap-x-4 text-sm print:text-[11px]">
              <div className="col-span-2">
                 <div className="text-gray-500 text-xs print:text-[10px] mb-0.5">Nama Penuh</div>
-                <div className="font-bold uppercase">{candidate.name || candidate.studentName || '-'}</div>
+                <div className="font-bold uppercase">{candidate.name || candidate.name || '-'}</div>
              </div>
              <div className="col-span-1 row-span-4 flex justify-end">
                 {candidate.gambarUrl ? (
@@ -31,7 +31,7 @@ export default function PrintTemplate({ candidate }: { candidate: Partial<Candid
              
              <div className="col-span-1">
                 <div className="text-gray-500 text-xs print:text-[10px] mb-0.5">No. Kad Pengenalan</div>
-                <div className="font-bold">{candidate.ic || candidate.icNumber || '-'}</div>
+                <div className="font-bold">{candidate.ic || candidate.ic || '-'}</div>
              </div>
              <div className="col-span-1">
                 <div className="text-gray-500 text-xs print:text-[10px] mb-0.5">Tarikh Lahir</div>

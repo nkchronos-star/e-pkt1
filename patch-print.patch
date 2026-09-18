@@ -1,0 +1,35 @@
+--- src/components/dashboard/SuratTawaran.tsx
++++ src/components/dashboard/SuratTawaran.tsx
+@@ -165,15 +165,19 @@
+ 
+       <style dangerouslySetInnerHTML={{__html: `
+         @media print {
+-          body { -webkit-print-color-adjust: exact; }
++          body { 
++            -webkit-print-color-adjust: exact; 
++          }
++          body * {
++            visibility: hidden;
++          }
+           .printable-area { 
+-             margin: 0 !important; 
++             position: absolute !important;
++             left: 0 !important;
++             top: 0 !important;
+              padding: 0 !important;
+              box-shadow: none !important;
+              transform: none !important;
+              width: 100% !important;
+              min-height: 0 !important;
+-             page-break-after: auto;
+-             page-break-inside: avoid;
++             visibility: visible !important;
++          }
++          .printable-area * {
++             visibility: visible;
+           }
+-          @page { size: A4; margin: 15mm; }
++          @page { size: A4; margin: 12mm 15mm; }
+         }
+       `}} />
+     </div>

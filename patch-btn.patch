@@ -1,0 +1,22 @@
+--- src/components/dashboard/SemakTawaran.tsx
++++ src/components/dashboard/SemakTawaran.tsx
+@@ -125,10 +125,15 @@
+                          </p>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+-                           <button onClick={() => window.print()} className="flex flex-col items-center justify-center gap-3 no-print text-emerald-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-emerald-200 bg-white/50 hover:shadow-lg hover:shadow-emerald-100/50 hover:-translate-y-1">
+-                             <Printer className="w-10 h-10" />
+-                             <span className="font-bold text-sm tracking-wide text-center">1. CETAK<br/>SURAT TAWARAN</span>
+-                           </button>
++                           <div className="flex flex-col items-center w-full">
++                             <button onClick={() => window.print()} className="w-full flex flex-col items-center justify-center gap-3 no-print text-emerald-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-emerald-200 bg-white/50 hover:shadow-lg hover:shadow-emerald-100/50 hover:-translate-y-1">
++                               <Printer className="w-10 h-10" />
++                               <span className="font-bold text-sm tracking-wide text-center">1. CETAK<br/>SURAT TAWARAN</span>
++                             </button>
++                             <p className="text-[10.5px] text-slate-500 mt-2 text-center font-medium opacity-80 no-print">
++                               (Jika butang ini tidak berfungsi di aplikasi ini, sila tekan butang <kbd className="bg-slate-200 px-1 py-0.5 rounded text-black">Ctrl+P</kbd> atau buka pautan ini di tab baharu)
++                             </p>
++                           </div>
+                            
+                            {settings.borangTingkatan1Link ? (
+                              <a href={settings.borangTingkatan1Link} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-3 no-print text-blue-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-blue-200 bg-white/50 hover:shadow-lg hover:shadow-blue-100/50 hover:-translate-y-1">

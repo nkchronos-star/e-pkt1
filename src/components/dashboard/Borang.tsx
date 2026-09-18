@@ -222,8 +222,16 @@ export default function Borang() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const cleanFormIC = formData.ic?.replace(/[^0-9]/g, '') || '';
+    const currentYear = new Date().getFullYear();
+    const expectedPrefix = (currentYear - 12).toString().slice(-2);
+    
+    if (!cleanFormIC.startsWith(expectedPrefix)) {
+      alert(`Maaf, permohonan ini hanya terbuka untuk calon Tingkatan 1 tahun semasa. No. Kad Pengenalan mestilah bermula dengan "${expectedPrefix}" (Lahir pada ${currentYear - 12}).`);
+      return;
+    }
+
     // Check for duplicate IC
-    const cleanFormIC = formData.ic?.replace(/[^0-9]/g, '');
     if (candidates.some(c => c.ic?.replace(/[^0-9]/g, '') === cleanFormIC)) {
       alert('Ralat: No. Kad Pengenalan ini telah pun didaftarkan. Calon yang sama tidak dibenarkan memohon lebih daripada sekali.');
       return;

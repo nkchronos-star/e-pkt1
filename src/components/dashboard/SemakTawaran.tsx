@@ -100,10 +100,10 @@ export default function SemakTawaran() {
                <p className="text-slate-500">Sila pastikan No. Kad Pengenalan yang dimasukkan adalah betul.</p>
             </div>
           ) : result.statusTawaran === 'BERJAYA' ? (
-            <div className="bg-white rounded-[2rem] shadow-xl shadow-emerald-100/50 border border-emerald-100 p-8 md:p-12 text-center relative overflow-hidden">
+            <div className="bg-white rounded-[2rem] shadow-xl shadow-emerald-100/50 border border-emerald-100 p-8 md:p-12 text-center relative overflow-hidden print:p-0 print:shadow-none print:border-none print:overflow-visible print:bg-transparent">
                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-emerald-600 no-print"></div>
-               
-               <div className="no-print">
+               <>
+                 <div className="no-print">
                  <div className="inline-flex items-center justify-center p-4 bg-emerald-100 rounded-full mb-6">
                    <CheckCircle className="w-12 h-12 text-emerald-600" />
                  </div>
@@ -115,20 +115,26 @@ export default function SemakTawaran() {
                    Pihak sekolah mengucapkan setinggi-tinggi tahniah atas kejayaan ini. Sehubungan itu, pihak tuan/puan diminta untuk membuat tindakan lanjut. Segala kerjasama dan perhatian tuan/puan amat dihargai.
                  </p>
 
+                 </div>
                  {result.maklumBalasTawaran ? (
                     result.maklumBalasTawaran === 'TERIMA' ? (
                       <>
-                      <div className="bg-slate-50/80 border border-emerald-200/60 rounded-2xl p-8 animate-in zoom-in duration-300 shadow-inner">
+                      <div className="bg-slate-50/80 border border-emerald-200/60 rounded-2xl p-8 animate-in zoom-in duration-300 shadow-inner no-print">
                          <h3 className="font-extrabold text-xl text-slate-900 mb-3">Anda Telah Menerima Tawaran Ini</h3>
                          <p className="text-emerald-700 font-medium mb-8 leading-relaxed max-w-xl mx-auto">
                            Sila cetak <strong>Surat Tawaran</strong> dan lengkapkan <strong>Borang Maklumat Murid & Borang Asrama</strong> di bawah. <br/>Bawa dokumen-dokumen ini semasa hari pendaftaran pada <strong className="bg-emerald-100 px-2 py-0.5 rounded text-emerald-900">3 Januari 2027</strong>.
                          </p>
                          
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                           <button onClick={() => window.print()} className="flex flex-col items-center justify-center gap-3 no-print text-emerald-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-emerald-200 bg-white/50 hover:shadow-lg hover:shadow-emerald-100/50 hover:-translate-y-1">
-                             <Printer className="w-10 h-10" />
-                             <span className="font-bold text-sm tracking-wide text-center">1. CETAK<br/>SURAT TAWARAN</span>
-                           </button>
+                           <div className="flex flex-col items-center w-full">
+                             <button onClick={() => window.print()} className="w-full h-full flex flex-col items-center justify-center gap-3 no-print text-emerald-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-emerald-200 bg-white/50 hover:shadow-lg hover:shadow-emerald-100/50 hover:-translate-y-1">
+                               <Printer className="w-10 h-10" />
+                               <span className="font-bold text-sm tracking-wide text-center">1. CETAK<br/>SURAT TAWARAN</span>
+                             </button>
+                             <p className="text-[10.5px] leading-tight text-slate-500 mt-2 text-center font-medium opacity-80 no-print">
+                               * Jika butang tidak berfungsi di ruang ini, tekan kekunci <kbd className="bg-slate-200 px-1 py-0.5 rounded text-black font-sans">Ctrl+P</kbd> atau buka sistem ini di tab/tetingkap baharu.
+                             </p>
+                           </div>
                            
                            {settings.borangTingkatan1Link ? (
                              <a href={settings.borangTingkatan1Link} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-3 no-print text-blue-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-blue-200 bg-white/50 hover:shadow-lg hover:shadow-blue-100/50 hover:-translate-y-1">
@@ -143,19 +149,19 @@ export default function SemakTawaran() {
                            )}
                          </div>
                       </div>
-                      <div className="mt-12">
+                      <div className="mt-12 print:mt-0">
                          <div className="text-center mb-4 no-print text-sm font-bold text-slate-400 uppercase tracking-widest">Pratonton Surat</div>
                          <SuratTawaran candidate={result} />
                       </div>
                       </>
                     ) : (
-                      <div className="bg-red-50/80 border border-red-200/60 rounded-2xl p-8 shadow-inner">
+                      <div className="bg-red-50/80 border border-red-200/60 rounded-2xl p-8 shadow-inner no-print">
                          <h3 className="font-extrabold text-xl text-red-900 mb-2">Anda Telah Menolak Tawaran Ini</h3>
                          <p className="text-red-700 font-medium">Terima kasih atas maklum balas anda.</p>
                       </div>
                     )
                  ) : (
-                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-8 relative shadow-lg shadow-amber-100/20">
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-8 relative shadow-lg shadow-amber-100/20 no-print">
                        <div className="inline-flex px-4 py-1 bg-amber-100 text-amber-800 rounded-full font-bold text-sm mb-4 border border-amber-200">Tindakan Diperlukan</div>
                        <p className="text-amber-900 text-lg mb-8 font-medium leading-relaxed">
                          Sila buat pengesahan penerimaan tawaran ini sebelum <strong className="bg-amber-100/80 px-2 py-0.5 rounded border border-amber-200">{settings.tarikhAkhirTerimaTawaran || '28 November 2026'}</strong>. Sekiranya anda gagal berbuat demikian tawaran ini akan terbatal.
@@ -168,7 +174,7 @@ export default function SemakTawaran() {
                        </button>
                     </div>
                  )}
-               </div>
+               </>
             </div>
           ) : result.statusTawaran === 'GAGAL' ? (
             <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200/60 p-12 text-center relative overflow-hidden no-print">

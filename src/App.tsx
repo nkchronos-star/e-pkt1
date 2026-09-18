@@ -113,7 +113,7 @@ function AppContent() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 print:p-0 print:m-0 print:max-w-none">
         {activeView === 'utama' && <Utama onNavigate={setActiveView} />}
         {activeView === 'panduan' && <Panduan />}
         {activeView === 'borang' && <Borang />}

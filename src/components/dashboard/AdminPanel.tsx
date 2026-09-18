@@ -654,7 +654,7 @@ function PentadbirView() {
   
   if (searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase();
-    filtered = filtered.filter(c => c.name?.toLowerCase().includes(q) || c.ic?.includes(q) || c.studentName?.toLowerCase().includes(q) || c.icNumber?.includes(q));
+    filtered = filtered.filter(c => c.name?.toLowerCase().includes(q) || c.ic?.includes(q) || c.name?.toLowerCase().includes(q) || c.ic?.includes(q));
   }
 
   const handleDownloadExcel = () => {
@@ -805,7 +805,7 @@ function SuperAdminView() {
 
   const filteredPermohonan = candidates.filter(c => {
      const searchLower = searchQuery.toLowerCase();
-     return c.studentName?.toLowerCase().includes(searchLower) || c.name?.toLowerCase().includes(searchLower) || c.ic?.includes(searchQuery) || c.icNumber?.includes(searchQuery);
+     return c.name?.toLowerCase().includes(searchLower) || c.name?.toLowerCase().includes(searchLower) || c.ic?.includes(searchQuery) || c.ic?.includes(searchQuery);
   });
 
 
@@ -985,6 +985,20 @@ function SuperAdminView() {
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 3</label>
                     <input type="text" name="jawatanPengarahTawaran3" value={settings.jawatanPengarahTawaran3 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: b.p Pengarah Pendidikan Pahang" />
+                  </div>
+                  <div className="lg:col-span-3">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Muat Naik Tandatangan Surat Tawaran (Format Gambar)</label>
+                    <input type="file" accept="image/*" onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                updateSettings({ tandatanganPengarahTawaran: reader.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-emerald-50 file:text-emerald-700 text-sm" />
+                    {settings.tandatanganPengarahTawaran && <div className="mt-2 text-xs text-emerald-600 font-bold">✓ Tandatangan telah dimuat naik. <button type="button" onClick={() => updateSettings({ tandatanganPengarahTawaran: '' })} className="text-red-500 underline ml-2">Buang</button></div>}
                   </div>
                 </div>
              </div>
@@ -1268,8 +1282,8 @@ function SuperAdminView() {
                                      {(currentPage - 1) * itemsPerPage + index + 1}
                                   </td>
                                   <td className="px-4 py-4">
-                                     <div className="font-bold text-slate-800 text-sm">{c.name || c.studentName}</div>
-                                     <div className="text-xs text-slate-500">{c.ic || c.icNumber}</div>
+                                     <div className="font-bold text-slate-800 text-sm">{c.name || c.name}</div>
+                                     <div className="text-xs text-slate-500">{c.ic || c.ic}</div>
                                   </td>
                                   <td className="px-4 py-4 text-sm text-slate-600">
                                      {c.daerah || '-'}, {c.negeri || '-'}

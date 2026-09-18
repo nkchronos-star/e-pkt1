@@ -1,12 +1,43 @@
 --- src/components/dashboard/SuratTawaran.tsx
 +++ src/components/dashboard/SuratTawaran.tsx
-@@ -62,8 +62,7 @@
+@@ -25,9 +25,9 @@
+     >
+       {/* Header Surat */}
+       <div className="flex items-start gap-4 mb-6 border-b-[1.5px] border-[#0e4394] pb-3 w-full">
+-        <div className="w-[95px] flex-shrink-0">
+-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Coat_of_arms_of_Malaysia.svg/500px-Coat_of_arms_of_Malaysia.svg.png" referrerPolicy="no-referrer" alt="Jata Negara" className="w-full h-auto object-contain" />
++        <div className="w-[85px] flex-shrink-0">
++          <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" referrerPolicy="no-referrer" alt="Jata Negara" className="w-full h-auto object-contain" />
+         </div>
+         <div className="flex-1 pt-2">
+           <h1 className="font-bold text-[15px] mb-0 tracking-wide text-[#0e4394]">KEMENTERIAN PENDIDIKAN MALAYSIA</h1>
+@@ -62,11 +62,11 @@
  
        <div className="mb-8 font-bold uppercase text-[14px] leading-tight">
          <p>KEPADA :</p>
--        <p className="mt-4">&lt;&lt;NAMA&gt;&gt;</p>
--        <p>{candidate.name}</p>
-+        <p className="mt-4">{candidate.name}</p>
+-        <p className="mt-4">{candidate.name}</p>
++        <p className="mt-4">{candidate.name || '<<NAMA>>'}</p>
          <p>{candidate.alamat1},</p>
          {candidate.alamat2 && <p>{candidate.alamat2},</p>}
          <p>{candidate.poskod} {candidate.daerah},</p>
+-        <p>{candidate.negeri} .</p>
++        <p>{candidate.negeri}.</p>
+         
+         <p className="mt-6">NO.KP : {candidate.ic}</p>
+       </div>
+@@ -124,11 +124,11 @@
+         <p className="mb-4">Saya yang menjalankan amanah,</p>
+         
+         <div className="mb-2">
+-          {/* Mock Signature matching the image somewhat */}
+-          <svg className="w-24 h-16 ml-2" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+-            <path d="M 40,80 C 20,40 60,10 70,30 C 80,50 60,90 50,80 C 40,70 60,40 80,40 C 100,40 120,60 110,80 C 100,100 80,80 90,60 C 100,40 130,30 140,50 C 150,70 130,90 120,80 C 110,70 130,40 150,40 C 170,40 180,60 170,80 M 30,60 L 180,60 M 60,20 L 70,90 M 110,20 L 120,90" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+-          </svg>
++          {settings.tandatanganPengarahTawaran ? (
++            <img src={settings.tandatanganPengarahTawaran} alt="Tandatangan" className="h-16 w-auto object-contain ml-2" />
++          ) : (
++            <div className="h-16 w-24"></div>
++          )}
+         </div>
+ 
+         <div>
