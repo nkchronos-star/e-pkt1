@@ -17,10 +17,13 @@ export interface AssessmentItem {
 export interface ApplicationSettings {
   borangBuka: boolean;
   tarikhBukaBorang: string;
+  tarikhTutupBorang?: string;
   temudugaBuka: boolean;
   tarikhBukaTemuduga: string;
+  tarikhTutupTemuduga?: string;
   tawaranBuka: boolean;
   tarikhBukaTawaran: string;
+  tarikhTutupTawaran?: string;
   tarikhTemuduga?: string;
   tarikhLaporDiri?: string;
   tarikhAkhirTerimaTawaran?: string;

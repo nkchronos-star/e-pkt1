@@ -31,10 +31,13 @@ interface AppContextType extends AppState {
 const defaultSettings: ApplicationSettings = {
   borangBuka: false,
   tarikhBukaBorang: '2026-01-01',
+  tarikhTutupBorang: '',
   temudugaBuka: false,
   tarikhBukaTemuduga: '2026-09-01',
+  tarikhTutupTemuduga: '',
   tawaranBuka: false,
   tarikhBukaTawaran: '2026-11-01',
+  tarikhTutupTawaran: '',
   tarikhTemuduga: '8 November 2025',
   tarikhLaporDiri: '3 Januari 2027',
   tarikhAkhirTerimaTawaran: '28 November 2026',
@@ -43,6 +46,22 @@ const defaultSettings: ApplicationSettings = {
   masaTemuduga: '8.00 pagi',
   tempatTemuduga: 'Laman Selera, SMA Kota Gelanggi 3',
   pakaianTemuduga: 'Uniform sekolah',
+  sesiKemasukan: '2026 / 2027',
+  borangPendaftaranUrl: '',
+  namaPengetua: '',
+  tandatanganPengetua: '',
+  borangTingkatan1Link: '',
+  utamaPanduanLink: '',
+  utamaContent: '',
+  panduanContent: '',
+  rujukanSuratTawaran: 'JPNP.SPI.800-1/1/4 Jld.2',
+  tarikhSuratTawaran: '17 November 2025',
+  masaLaporDiri: '8.30 PAGI',
+  tandatanganPengarahTawaran: '',
+  namaPengarahTawaran: 'YAHAYA BIN TAHIR',
+  jawatanPengarahTawaran1: 'Ketua Penolong Pengarah Kanan',
+  jawatanPengarahTawaran2: 'Sektor Pendidikan Islam',
+  jawatanPengarahTawaran3: 'b.p Pengarah Pendidikan Pahang',
   tahfizItems: [
     { id: 'hafazan', name: 'Hafazan', weight: 70 },
     { id: 'tilawah', name: 'Tilawah', weight: 25 },
@@ -62,30 +81,83 @@ const defaultUsers: User[] = [
   { id: 'akademik1', username: 'akademik1', password: '123', name: 'Cikgu Akademik', role: 'AKADEMIK' }
 ];
 
+const SETTINGS_STORAGE_KEY = 'smag3_settings_cache_v2';
+
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === undefined) return null;
+  if (obj === null) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForFirestore(item));
+  }
+  if (typeof obj === 'object') {
+    const res: Record<string, any> = {};
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (val !== undefined) {
+        res[key] = sanitizeForFirestore(val);
+      }
+    }
+    return res;
+  }
+  return obj;
+};
+
+const loadCachedSettings = (): ApplicationSettings => {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return { ...defaultSettings, ...parsed };
+      }
+    }
+  } catch (e) {
+    console.warn('Gagal membaca cache tetapan:', e);
+  }
+  return defaultSettings;
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<AppState>({
-    settings: defaultSettings,
+  const [state, setState] = useState<AppState>(() => ({
+    settings: loadCachedSettings(),
     candidates: [],
     users: defaultUsers,
     currentUser: null,
     userRole: null,
     infographics: [],
     isInitialized: false,
-  });
+  }));
 
   // Listen to Firestore
   useEffect(() => {
     // 1. Settings
     const unsubSettings = onSnapshot(doc(db, 'config', 'main'), (docSnap) => {
       if (docSnap.exists()) {
-        setState(prev => ({ ...prev, settings: { ...defaultSettings, ...docSnap.data() as ApplicationSettings }, isInitialized: true }));
+        const firestoreData = docSnap.data() as ApplicationSettings;
+        setState(prev => {
+          const merged = { ...defaultSettings, ...prev.settings, ...firestoreData };
+          try {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
+          } catch (e) {
+            console.warn('Gagal simpan cache ke localStorage:', e);
+          }
+          return { ...prev, settings: merged, isInitialized: true };
+        });
       } else {
-        // Initialize default settings in Firestore
-        setDoc(doc(db, 'config', 'main'), defaultSettings).catch(console.error);
-        setState(prev => ({ ...prev, isInitialized: true }));
+        // Document does not exist yet in Firestore - preserve current cached settings
+        setState(prev => {
+          const toSave = sanitizeForFirestore(prev.settings);
+          setDoc(doc(db, 'config', 'main'), toSave, { merge: true }).catch(err => {
+            console.error("Gagal create config di Firestore:", err);
+          });
+          return { ...prev, isInitialized: true };
+        });
       }
+    }, (error) => {
+      console.error("Firestore onSnapshot error for settings:", error);
+      setState(prev => ({ ...prev, isInitialized: true }));
     });
 
     // 2. Users
@@ -129,26 +201,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const updateSettings = async (newSettings: Partial<ApplicationSettings>) => {
-    // 1. Update React state immediately so UI feels responsive
+    // 1. Update React state & localStorage immediately
+    let nextSettings: ApplicationSettings = defaultSettings;
     setState(prev => {
-        const updatedSettings = { ...prev.settings, ...newSettings };
-        
-        // 2. Also try to push to Firebase in background to be safe
-        setDoc(doc(db, 'config', 'main'), updatedSettings, { merge: true }).catch(e => {
-            console.error("Firebase background sync failed:", e);
-        });
-        
-        return { ...prev, settings: updatedSettings };
+      nextSettings = { ...prev.settings, ...newSettings };
+      try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
+      } catch (e) {
+        console.warn("Gagal simpan settings ke localStorage:", e);
+      }
+      return { ...prev, settings: nextSettings };
     });
+
+    // 2. Persist safely to Firestore without undefined errors
+    try {
+      const cleanData = sanitizeForFirestore(nextSettings);
+      await setDoc(doc(db, 'config', 'main'), cleanData, { merge: true });
+    } catch (e) {
+      console.error("Firebase background sync failed in updateSettings:", e);
+    }
   };
 
   const syncSettingsToServer = async () => {
     try {
-      await setDoc(doc(db, 'config', 'main'), state.settings);
+      let settingsToSave = defaultSettings;
+      setState(prev => {
+        settingsToSave = prev.settings;
+        return prev;
+      });
+      const cleanData = sanitizeForFirestore(settingsToSave);
+      await setDoc(doc(db, 'config', 'main'), cleanData, { merge: true });
+      try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsToSave));
+      } catch {}
       alert('Telah Berjaya! Semua Tetapan Sistem Berjaya Disimpan ke dalam Pangkalan Data.');
-    } catch (e) {
+    } catch (e: any) {
       console.error("Ralat menyimpan tetapan:", e);
-      alert('Ralat! Tetapan tidak berjaya disimpan.');
+      alert('Ralat! Tetapan tidak berjaya disimpan: ' + (e?.message || 'Sila cuba lagi'));
     }
   };
 

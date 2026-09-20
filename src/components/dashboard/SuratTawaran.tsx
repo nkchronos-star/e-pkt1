@@ -134,19 +134,27 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
           </table>
         </div>
 
-        <div className="flex items-start gap-2.5 mb-2 text-justify">
-          <span className="w-5 shrink-0">2.</span>
-          <p className="flex-1">
-            Tawaran ini adalah <strong>MUKTAMAD</strong> dan <strong>TERBATAL</strong> sekiranya tidak melapor diri pada tarikh dan masa yang telah ditetapkan di atas melainkan pihak tuan dapat menghubungi pihak sekolah untuk memaklumkan kegagalan hadir pada tarikh tersebut. Pertukaran ke SABK yang lain <strong>TIDAK DIBENARKAN</strong>.
-          </p>
-        </div>
+        <table className="w-full mb-2.5 text-justify border-collapse">
+          <tbody>
+            <tr>
+              <td className="w-6 align-top pr-1 text-[12px] font-normal leading-snug">2.</td>
+              <td className="align-top leading-snug text-[12px]">
+                Tawaran ini adalah <strong>MUKTAMAD</strong> dan <strong>TERBATAL</strong> sekiranya tidak melapor diri pada tarikh dan masa yang telah ditetapkan di atas melainkan pihak tuan dapat menghubungi pihak sekolah untuk memaklumkan kegagalan hadir pada tarikh tersebut. Pertukaran ke SABK yang lain <strong>TIDAK DIBENARKAN</strong>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        <div className="flex items-start gap-2.5 mb-2.5 text-justify">
-          <span className="w-5 shrink-0">3.</span>
-          <p className="flex-1">
-            Jabatan Pendidikan Negeri Pahang berhak menarik balik tawaran bila-bila masa sekiranya terdapat percanggahan maklumat dalam borang permohonan dengan dokumen asal.
-          </p>
-        </div>
+        <table className="w-full mb-2.5 text-justify border-collapse">
+          <tbody>
+            <tr>
+              <td className="w-6 align-top pr-1 text-[12px] font-normal leading-snug">3.</td>
+              <td className="align-top leading-snug text-[12px]">
+                Jabatan Pendidikan Negeri Pahang berhak menarik balik tawaran bila-bila masa sekiranya terdapat percanggahan maklumat dalam borang permohonan dengan dokumen asal.
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
         <p className="mb-2">Sekian, terima kasih.</p>
       </div>
@@ -182,32 +190,36 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
         @media print {
           @page { 
             size: A4 portrait; 
-            margin: 8mm 12mm 8mm 12mm; 
+            margin: 8mm 12mm 6mm 12mm; 
           }
           
-          body { 
+          html, body { 
             -webkit-print-color-adjust: exact; 
             print-color-adjust: exact;
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
+            font-size: 11.5px !important;
+            line-height: 1.25 !important;
           }
           
           /* Hide everything outside the printable area */
-          .no-print {
+          .no-print, nav, header {
             display: none !important;
           }
 
           /* Ensure the printable area has no constraints and stays in 1 page */
           .printable-area { 
              position: static !important;
-             margin: 0 !important;
+             margin: 0 auto !important;
              padding: 0 !important;
+             border: none !important;
              box-shadow: none !important;
              width: 100% !important;
              max-width: 100% !important;
              page-break-inside: avoid !important;
              break-inside: avoid !important;
+             page-break-after: avoid !important;
           }
           
           /* Reset any layout wrappers that might cause spacing */

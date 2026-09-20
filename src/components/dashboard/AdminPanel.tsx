@@ -810,6 +810,46 @@ function SuperAdminView() {
 
 
 
+  const [saveStatusMsg, setSaveStatusMsg] = useState('');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  const compressImage = (file: File, maxWidth = 500, maxHeight = 250): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(readerEvent.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(readerEvent.target?.result as string);
+        img.src = readerEvent.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Kawalan Handlers
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -820,6 +860,19 @@ function SuperAdminView() {
 
   const handleTextSettings = (name: string, value: string) => {
     updateSettings({ [name]: value });
+  };
+
+  const handleSaveAllSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      await syncSettingsToServer();
+      setSaveStatusMsg('Semua tetapan berjaya disimpan ke pangkalan data.');
+      setTimeout(() => setSaveStatusMsg(''), 4000);
+    } catch (e: any) {
+      alert('Ralat menyimpan tetapan: ' + (e?.message || 'Sila cuba lagi'));
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   // Permohonan Handlers
@@ -868,51 +921,132 @@ function SuperAdminView() {
        </div>
 
        {activeTab === 'KAWALAN' && (
-         <div className="space-y-12 animate-in fade-in">
-           <div>
-             <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><Settings className="w-6 h-6 text-slate-500" /> Tetapan Paparan Tarikh & Sistem</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+         <div className="space-y-8 animate-in fade-in">
+           {/* Top Control Bar & Save Notification */}
+           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                 <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <Settings className="w-6 h-6 text-emerald-600" /> Kawalan Sistem & Tarikh Operasi
+                 </h3>
+                 <div className="flex flex-wrap gap-2 mt-2">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 ${settings.borangBuka ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}`}>
+                       <span className={`w-2 h-2 rounded-full ${settings.borangBuka ? 'bg-emerald-600 animate-pulse' : 'bg-rose-600'}`}></span>
+                       Permohonan: {settings.borangBuka ? 'DIBUKA' : 'DITUTUP'}
+                    </span>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 ${settings.temudugaBuka ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600 border border-slate-300'}`}>
+                       Temuduga: {settings.temudugaBuka ? 'DIBUKA' : 'DITUTUP'}
+                    </span>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 ${settings.tawaranBuka ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600 border border-slate-300'}`}>
+                       Tawaran: {settings.tawaranBuka ? 'DIBUKA' : 'DITUTUP'}
+                    </span>
+                 </div>
+                 {saveStatusMsg && (
+                   <p className="text-xs text-emerald-600 font-bold mt-2 animate-in fade-in">✓ {saveStatusMsg}</p>
+                 )}
+              </div>
+              <button 
+                 type="button" 
+                 onClick={handleSaveAllSettings}
+                 disabled={isSavingSettings}
+                 className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white font-bold px-6 py-3 rounded-xl shadow-md transition flex items-center gap-2 text-sm"
+              >
+                 {isSavingSettings ? (
+                   <>
+                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                     Menyimpan...
+                   </>
+                 ) : (
+                   'Simpan Semua Tetapan ke Database'
+                 )}
+              </button>
+           </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-700">Tahun Sesi Kemasukan</span>
-                  </div>
+           <div>
+             <h3 className="text-lg font-bold mb-4 text-slate-700 flex items-center gap-2">
+                Tetapan Utama Status & Tarikh
+             </h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Cth: 2026 / 2027</label>
-                    <input type="text" name="sesiKemasukan" value={settings.sesiKemasukan || '2026 / 2027'} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+                    <span className="font-bold text-slate-800 block mb-1">Tahun Sesi Kemasukan</span>
+                    <p className="text-xs text-slate-500 mb-3">Tahun sesi tingkatan 1</p>
+                    <input type="text" name="sesiKemasukan" value={settings.sesiKemasukan || '2026 / 2027'} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700" placeholder="cth: 2026 / 2027" />
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-700">Borang Permohonan</span>
-                    <input type="checkbox" name="borangBuka" checked={settings.borangBuka} onChange={handleSettingsChange} className="w-5 h-5 accent-emerald-600" />
-                  </div>
+                <div className={`bg-white p-6 rounded-2xl border ${settings.borangBuka ? 'border-emerald-400 shadow-emerald-50' : 'border-slate-200'} shadow-sm flex flex-col justify-between gap-4 transition-all`}>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Dibuka/Ditutup</label>
-                    <input type="date" name="tarikhBukaBorang" value={settings.tarikhBukaBorang} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-slate-800">Borang Permohonan</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="borangBuka" checked={settings.borangBuka} onChange={handleSettingsChange} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                    <span className={`text-[11px] px-2 py-0.5 rounded font-bold inline-block mb-3 ${settings.borangBuka ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {settings.borangBuka ? 'STATUS: DIBUKA KEPADA CALON' : 'STATUS: DITUTUP'}
+                    </span>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Dibuka</label>
+                        <input type="date" name="tarikhBukaBorang" value={settings.tarikhBukaBorang || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir / Ditutup (Pilihan)</label>
+                        <input type="date" name="tarikhTutupBorang" value={settings.tarikhTutupBorang || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-700">Semakan Temuduga</span>
-                    <input type="checkbox" name="temudugaBuka" checked={settings.temudugaBuka} onChange={handleSettingsChange} className="w-5 h-5 accent-emerald-600" />
-                  </div>
+                <div className={`bg-white p-6 rounded-2xl border ${settings.temudugaBuka ? 'border-emerald-400' : 'border-slate-200'} shadow-sm flex flex-col justify-between gap-4 transition-all`}>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Paparan</label>
-                    <input type="date" name="tarikhBukaTemuduga" value={settings.tarikhBukaTemuduga} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-slate-800">Semakan Temuduga</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="temudugaBuka" checked={settings.temudugaBuka} onChange={handleSettingsChange} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                    <span className={`text-[11px] px-2 py-0.5 rounded font-bold inline-block mb-3 ${settings.temudugaBuka ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                      {settings.temudugaBuka ? 'STATUS: DIBUKA' : 'STATUS: DITUTUP'}
+                    </span>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Paparan</label>
+                        <input type="date" name="tarikhBukaTemuduga" value={settings.tarikhBukaTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir Paparan (Pilihan)</label>
+                        <input type="date" name="tarikhTutupTemuduga" value={settings.tarikhTutupTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-700">Semakan Tawaran</span>
-                    <input type="checkbox" name="tawaranBuka" checked={settings.tawaranBuka} onChange={handleSettingsChange} className="w-5 h-5 accent-emerald-600" />
-                  </div>
+                <div className={`bg-white p-6 rounded-2xl border ${settings.tawaranBuka ? 'border-emerald-400' : 'border-slate-200'} shadow-sm flex flex-col justify-between gap-4 transition-all`}>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Paparan</label>
-                    <input type="date" name="tarikhBukaTawaran" value={settings.tarikhBukaTawaran} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-slate-800">Semakan Tawaran</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="tawaranBuka" checked={settings.tawaranBuka} onChange={handleSettingsChange} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                    <span className={`text-[11px] px-2 py-0.5 rounded font-bold inline-block mb-3 ${settings.tawaranBuka ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                      {settings.tawaranBuka ? 'STATUS: DIBUKA' : 'STATUS: DITUTUP'}
+                    </span>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Paparan</label>
+                        <input type="date" name="tarikhBukaTawaran" value={settings.tarikhBukaTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir Paparan (Pilihan)</label>
+                        <input type="date" name="tarikhTutupTawaran" value={settings.tarikhTutupTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
+                      </div>
+                    </div>
                   </div>
                 </div>
              </div>
@@ -988,17 +1122,26 @@ function SuperAdminView() {
                   </div>
                   <div className="lg:col-span-3">
                     <label className="block text-xs font-bold text-slate-500 mb-1">Muat Naik Tandatangan Surat Tawaran (Format Gambar)</label>
-                    <input type="file" accept="image/*" onChange={(e) => {
+                    <input type="file" accept="image/*" onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                                updateSettings({ tandatanganPengarahTawaran: reader.result as string });
-                            };
-                            reader.readAsDataURL(file);
+                            try {
+                              const compressed = await compressImage(file, 400, 200);
+                              if (compressed) {
+                                updateSettings({ tandatanganPengarahTawaran: compressed });
+                              }
+                            } catch (err) {
+                              console.error('Gagal memproses gambar tandatangan:', err);
+                            }
                         }
                     }} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-emerald-50 file:text-emerald-700 text-sm" />
-                    {settings.tandatanganPengarahTawaran && <div className="mt-2 text-xs text-emerald-600 font-bold">✓ Tandatangan telah dimuat naik. <button type="button" onClick={() => updateSettings({ tandatanganPengarahTawaran: '' })} className="text-red-500 underline ml-2">Buang</button></div>}
+                    {settings.tandatanganPengarahTawaran && (
+                      <div className="mt-2 flex items-center gap-3">
+                        <img src={settings.tandatanganPengarahTawaran} alt="Tandatangan Pengarah" className="h-10 object-contain border border-slate-200 p-1 bg-white rounded" />
+                        <span className="text-xs text-emerald-600 font-bold">✓ Tandatangan dimuat naik</span>
+                        <button type="button" onClick={() => updateSettings({ tandatanganPengarahTawaran: '' })} className="text-red-500 text-xs underline font-semibold">Padam</button>
+                      </div>
+                    )}
                   </div>
                 </div>
              </div>
@@ -1074,24 +1217,46 @@ function SuperAdminView() {
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-slate-600 mb-1">Tandatangan Pengetua (Muat Naik Imej)</label>
-                          <input type="file" accept="image/*" onChange={(e) => {
+                          <input type="file" accept="image/*" onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                      const base64String = reader.result as string;
-                                      // Call a direct setSettings function since handleSettingsChange only takes events
-                                      updateSettings({ tandatanganPengetua: base64String });
-                                  };
-                                  reader.readAsDataURL(file);
+                                  try {
+                                    const compressed = await compressImage(file, 400, 200);
+                                    if (compressed) {
+                                      updateSettings({ tandatanganPengetua: compressed });
+                                    }
+                                  } catch (err) {
+                                    console.error('Gagal memproses tandatangan pengetua:', err);
+                                  }
                               }
                           }} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-emerald-50 file:text-emerald-700" />
-                          {settings.tandatanganPengetua && <img src={settings.tandatanganPengetua} alt="Tandatangan" className="mt-2 h-10 object-contain border border-slate-200 p-1 bg-white rounded" />}
+                          {settings.tandatanganPengetua && (
+                            <div className="mt-2 flex items-center gap-3">
+                              <img src={settings.tandatanganPengetua} alt="Tandatangan" className="h-10 object-contain border border-slate-200 p-1 bg-white rounded" />
+                              <button type="button" onClick={() => updateSettings({ tandatanganPengetua: '' })} className="text-red-500 text-xs underline font-semibold">Padam</button>
+                            </div>
+                          )}
                         </div>
                      </div>
                   </div>
 
-<button onClick={syncSettingsToServer} className="bg-slate-800 text-white font-bold px-8 py-3 rounded-xl hover:bg-slate-900 shadow-md">Simpan Semua Tetapan Sistem</button>
+                  <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
+                    <button 
+                      type="button" 
+                      onClick={handleSaveAllSettings}
+                      disabled={isSavingSettings}
+                      className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold px-8 py-3 rounded-xl shadow-md transition flex items-center gap-2"
+                    >
+                      {isSavingSettings ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Menyimpan Tetapan...
+                        </>
+                      ) : (
+                        'Simpan Semua Tetapan Sistem'
+                      )}
+                    </button>
+                  </div>
            </div>
          </div>
        )}
