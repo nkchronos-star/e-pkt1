@@ -41,7 +41,7 @@ export default function AdminPanel() {
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800"
-                placeholder="cth: tahfiz1"
+                placeholder="admin"
                 required
               />
             </div>
@@ -56,13 +56,40 @@ export default function AdminPanel() {
                 required
               />
             </div>
-            {error && <p className="text-red-600 text-sm font-bold text-center bg-red-50 py-2 rounded-lg border border-red-100">{error}</p>}
+            {error && <p className="text-red-600 text-sm font-bold text-center bg-red-50 py-2.5 px-3 rounded-lg border border-red-200">{error}</p>}
             <button 
-              type="submit"
+              type="submit" 
               className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] text-lg mt-2"
             >
               Log Masuk
             </button>
+
+            <div className="pt-4 border-t border-slate-200/80">
+              <p className="text-xs font-semibold text-slate-500 text-center mb-2">Pilihan Akaun Pentadbir Rasmi:</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <button
+                  type="button"
+                  onClick={() => { setUsername('admin'); setPassword('123'); setError(''); }}
+                  className="text-xs bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 font-medium py-1.5 px-3 rounded-lg border border-slate-200 transition-colors"
+                >
+                  Super Admin (admin / 123)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUsername('tahfiz1'); setPassword('123'); setError(''); }}
+                  className="text-xs bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 font-medium py-1.5 px-3 rounded-lg border border-slate-200 transition-colors"
+                >
+                  Tahfiz (tahfiz1 / 123)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUsername('akademik1'); setPassword('123'); setError(''); }}
+                  className="text-xs bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 font-medium py-1.5 px-3 rounded-lg border border-slate-200 transition-colors"
+                >
+                  Akademik (akademik1 / 123)
+                </button>
+              </div>
+            </div>
           </form>
                   
         </div>

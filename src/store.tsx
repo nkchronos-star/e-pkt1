@@ -29,16 +29,16 @@ interface AppContextType extends AppState {
 }
 
 const defaultSettings: ApplicationSettings = {
-  borangBuka: false,
-  tarikhBukaBorang: '2026-01-01',
-  tarikhTutupBorang: '',
+  borangBuka: true,
+  tarikhBukaBorang: '2026-09-07',
+  tarikhTutupBorang: '2026-09-30',
   temudugaBuka: false,
-  tarikhBukaTemuduga: '2026-09-01',
-  tarikhTutupTemuduga: '',
+  tarikhBukaTemuduga: '2026-10-02',
+  tarikhTutupTemuduga: '2026-10-09',
   tawaranBuka: false,
-  tarikhBukaTawaran: '2026-11-01',
+  tarikhBukaTawaran: '2026-10-19',
   tarikhTutupTawaran: '',
-  tarikhTemuduga: '8 November 2025',
+  tarikhTemuduga: '10 Oktober 2026',
   tarikhLaporDiri: '3 Januari 2027',
   tarikhAkhirTerimaTawaran: '28 November 2026',
   tarikhSuratPanggilan: '8 September 2026',
@@ -46,7 +46,7 @@ const defaultSettings: ApplicationSettings = {
   masaTemuduga: '8.00 pagi',
   tempatTemuduga: 'Laman Selera, SMA Kota Gelanggi 3',
   pakaianTemuduga: 'Uniform sekolah',
-  sesiKemasukan: '2026 / 2027',
+  sesiKemasukan: '2027',
   borangPendaftaranUrl: '',
   namaPengetua: '',
   tandatanganPengetua: '',
@@ -170,14 +170,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usersList: User[] = [];
       snapshot.forEach(doc => {
-        usersList.push({ id: doc.id, ...doc.data() } as User);
+        const data = doc.data();
+        if (data.username) {
+          usersList.push({ id: doc.id, ...data } as User);
+        }
       });
-      if (usersList.length === 0) {
-        // Initialize default users if empty
-        defaultUsers.forEach(u => setDoc(doc(db, 'users', u.id), u).catch(console.error));
-      } else {
-        setState(prev => ({ ...prev, users: usersList }));
-      }
+      // Ensure default admin users always exist
+      defaultUsers.forEach(u => {
+        if (!usersList.some(existing => existing.username?.toLowerCase() === u.username.toLowerCase())) {
+          usersList.push(u);
+          setDoc(doc(db, 'users', u.id), u, { merge: true }).catch(console.error);
+        }
+      });
+      setState(prev => ({ ...prev, users: usersList }));
     });
 
     // 3. Candidates
@@ -279,8 +284,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = (username: string, password?: string) => {
-    const user = state.users.find(u => u.username === username);
-    if (user && (user.password === password || (!user.password && password === '123'))) {
+    const cleanUser = username?.trim().toLowerCase();
+    const cleanPass = password?.trim();
+    const user = state.users.find(u => u.username?.trim().toLowerCase() === cleanUser)
+      || defaultUsers.find(u => u.username.toLowerCase() === cleanUser);
+
+    if (user && (user.password === cleanPass || (!user.password && cleanPass === '123'))) {
       setState(prev => ({ ...prev, currentUser: user, userRole: user.role }));
       return true;
     }
