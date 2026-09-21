@@ -136,8 +136,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const unsubSettings = onSnapshot(doc(db, 'config', 'main'), (docSnap) => {
       if (docSnap.exists()) {
         const firestoreData = docSnap.data() as ApplicationSettings;
+        const cleanFirestoreData: any = {};
+        for (const [k, v] of Object.entries(firestoreData)) {
+          if (v !== null && v !== undefined) {
+            cleanFirestoreData[k] = v;
+          }
+        }
         setState(prev => {
-          const merged = { ...defaultSettings, ...prev.settings, ...firestoreData };
+          const merged = { ...defaultSettings, ...prev.settings, ...cleanFirestoreData };
           try {
             localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
           } catch (e) {
@@ -234,10 +240,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       try {
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsToSave));
       } catch {}
-      alert('Telah Berjaya! Semua Tetapan Sistem Berjaya Disimpan ke dalam Pangkalan Data.');
     } catch (e: any) {
       console.error("Ralat menyimpan tetapan:", e);
-      alert('Ralat! Tetapan tidak berjaya disimpan: ' + (e?.message || 'Sila cuba lagi'));
+      throw e;
     }
   };
 
