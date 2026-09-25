@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../../store';
-import { FileText, Save, Send, AlertCircle, Calendar, CheckCircle, X, LogIn } from 'lucide-react';
+import { FileText, Save, Send, AlertCircle, Calendar, CheckCircle, X, LogIn, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
+import { compressImageFile } from '../../lib/imageUtils';
 
 
 export default function Borang() {
@@ -128,18 +129,15 @@ export default function Borang() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, isNested?: string) => {
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, isNested?: string) => {
     const file = e.target.files?.[0];
     if (file) {
-      const maxSize = 2 * 1024 * 1024;
-      if (file.size > maxSize) {
-        alert('Saiz fail melebihi had 2MB. Sila kecilkan gambar.');
-        e.target.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
+      setIsCompressingImage(true);
+      try {
+        // Otomatis kecilkan saiz gambar pasport (anggaran 15KB - 30KB)
+        const base64String = await compressImageFile(file, 400, 500, 0.75);
         if (isNested) {
            setFormData(prev => ({
              ...prev,
@@ -154,8 +152,13 @@ export default function Borang() {
              [fieldName]: base64String
            }));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err: any) {
+        console.error('Ralat memproses gambar:', err);
+        alert(err?.message || 'Gagal memproses fail gambar. Sila pastikan format fail adalah imej.');
+        e.target.value = '';
+      } finally {
+        setIsCompressingImage(false);
+      }
     }
   };
 
@@ -253,11 +256,9 @@ export default function Borang() {
       
       setSubmitted(true);
       localStorage.removeItem('borang_draft');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting form:', error);
-      alert('Terdapat ralat semasa menghantar borang. Borang direkodkan dalam sistem.');
-      setSubmitted(true);
-      localStorage.removeItem('borang_draft');
+      alert('Ralat semasa menghantar borang: ' + (error?.message || 'Sila pastikan capaian internet anda aktif dan cuba klik butang Hantar sekali lagi. Maklumat borang anda tidak hilang.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -458,9 +459,23 @@ export default function Borang() {
                  <img src={formData.gambarUrl} alt="Passport" className="w-32 h-40 object-cover rounded-2xl border-2 border-slate-200" />
               )}
               <div className="flex-1 w-full text-center sm:text-left">
-                <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'gambarUrl')} className="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-slate-50 file:text-emerald-600 hover:file:bg-emerald-100 transition-colors cursor-pointer" />
-                <p className="mt-3 text-sm text-slate-400 font-medium">Format: JPG, PNG. Saiz maks: 2MB.</p>
-                {!formData.gambarUrl && (
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  disabled={isCompressingImage}
+                  onChange={(e) => handleFileChange(e, 'gambarUrl')} 
+                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-slate-50 file:text-emerald-600 hover:file:bg-emerald-100 transition-colors cursor-pointer disabled:opacity-50" 
+                />
+                {isCompressingImage ? (
+                  <p className="mt-3 text-sm text-emerald-600 font-bold flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Sedang mengoptimumkan saiz gambar...
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-500 font-medium">
+                    Format: JPG, PNG. Sistem automatik mengoptimum dan mengecilkan saiz gambar pasport secara pantas.
+                  </p>
+                )}
+                {!formData.gambarUrl && !isCompressingImage && (
                   <div className="mt-3 inline-flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg border border-red-100">
                     <span className="text-xs font-bold uppercase tracking-wide">Wajib: Sila muat naik gambar pasport</span>
                   </div>

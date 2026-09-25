@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Candidate, ApplicationSettings, User, Infographic } from './types';
 import { db } from './lib/firebase';
-import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 interface AppState {
   settings: ApplicationSettings;
@@ -15,14 +15,14 @@ interface AppState {
 
 interface AppContextType extends AppState {
   updateSettings: (settings: Partial<ApplicationSettings>) => void;
-  syncSettingsToServer: () => void; // Kept for API compatibility, but will auto-sync
+  syncSettingsToServer: () => void;
   saveCandidate: (candidate: Candidate) => Promise<void>;
   updateCandidate: (ic: string, data: Partial<Candidate>) => Promise<void>;
   deleteCandidate: (ic: string) => Promise<void>;
   login: (username: string, password?: string) => boolean;
   logout: () => void;
   addUser: (user: User) => void;
-  updateUser: (id: string, user: Partial<User>) => void;
+  updateUser: (id: string, user: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => void;
   addInfographic: (info: Infographic) => void;
   deleteInfographic: (id: string) => void;
@@ -82,6 +82,8 @@ const defaultUsers: User[] = [
 ];
 
 const SETTINGS_STORAGE_KEY = 'smag3_settings_cache_v2';
+const USERS_STORAGE_KEY = 'smag3_users_cache_v2';
+const CANDIDATES_STORAGE_KEY = 'smag3_candidates_cache_v2';
 
 const sanitizeForFirestore = (obj: any): any => {
   if (obj === undefined) return null;
@@ -117,17 +119,47 @@ const loadCachedSettings = (): ApplicationSettings => {
   return defaultSettings;
 };
 
+const loadCachedUsers = (): User[] => {
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Gagal membaca cache pengguna:', e);
+  }
+  return defaultUsers;
+};
+
+const loadCachedCandidates = (): Candidate[] => {
+  try {
+    const raw = localStorage.getItem(CANDIDATES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Gagal membaca cache calon:', e);
+  }
+  return [];
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<AppState>(() => ({
     settings: loadCachedSettings(),
-    candidates: [],
-    users: defaultUsers,
+    candidates: loadCachedCandidates(),
+    users: loadCachedUsers(),
     currentUser: null,
     userRole: null,
     infographics: [],
-    isInitialized: false,
+    isInitialized: true, // Immediate render prevents endless spinning screen
   }));
 
   // Listen to Firestore
@@ -169,10 +201,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // 2. Users
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usersList: User[] = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
         if (data.username) {
-          usersList.push({ id: doc.id, ...data } as User);
+          usersList.push({ id: docSnap.id, ...data } as User);
         }
       });
       // Ensure default admin users always exist
@@ -182,25 +214,47 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           setDoc(doc(db, 'users', u.id), u, { merge: true }).catch(console.error);
         }
       });
-      setState(prev => ({ ...prev, users: usersList }));
+      setState(prev => {
+        const updatedCurrentUser = prev.currentUser 
+          ? usersList.find(u => u.id === prev.currentUser?.id || u.username.toLowerCase() === prev.currentUser?.username.toLowerCase()) || prev.currentUser
+          : null;
+        return {
+          ...prev,
+          users: usersList,
+          currentUser: updatedCurrentUser,
+          userRole: updatedCurrentUser?.role || prev.userRole
+        };
+      });
+      try {
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersList));
+      } catch (e) {}
+    }, (error) => {
+      console.error("Firestore users error:", error);
     });
 
     // 3. Candidates
     const unsubCandidates = onSnapshot(collection(db, 'candidates'), (snapshot) => {
       const candidatesList: Candidate[] = [];
-      snapshot.forEach(doc => {
-        candidatesList.push({ id: doc.id, ...doc.data() } as Candidate);
+      snapshot.forEach(docSnap => {
+        candidatesList.push({ id: docSnap.id, ...docSnap.data() } as Candidate);
       });
       setState(prev => ({ ...prev, candidates: candidatesList }));
+      try {
+        localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(candidatesList));
+      } catch (e) {}
+    }, (error) => {
+      console.error("Firestore candidates error:", error);
     });
 
     // 4. Infographics
     const unsubInfographics = onSnapshot(collection(db, 'infographics'), (snapshot) => {
       const infoList: Infographic[] = [];
-      snapshot.forEach(doc => {
-        infoList.push({ id: doc.id, ...doc.data() } as Infographic);
+      snapshot.forEach(docSnap => {
+        infoList.push({ id: docSnap.id, ...docSnap.data() } as Infographic);
       });
       setState(prev => ({ ...prev, infographics: infoList }));
+    }, (error) => {
+      console.error("Firestore infographics error:", error);
     });
 
     return () => {
@@ -212,7 +266,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const updateSettings = async (newSettings: Partial<ApplicationSettings>) => {
-    // 1. Update React state & localStorage immediately
     let nextSettings: ApplicationSettings = defaultSettings;
     setState(prev => {
       nextSettings = { ...prev.settings, ...newSettings };
@@ -224,7 +277,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       return { ...prev, settings: nextSettings };
     });
 
-    // 2. Persist safely to Firestore without undefined errors
     try {
       const cleanData = sanitizeForFirestore(nextSettings);
       await setDoc(doc(db, 'config', 'main'), cleanData, { merge: true });
@@ -254,12 +306,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const saveCandidate = async (candidate: Candidate) => {
     try {
       const cleanData = JSON.parse(JSON.stringify(candidate));
-      // Remove any slashes from IC if used as document ID
       const safeId = String(cleanData.ic || cleanData.id).replace(/[^a-zA-Z0-9_-]/g, '');
+      if (!safeId) {
+        throw new Error('ID atau No. Kad Pengenalan calon tidak sah');
+      }
       await setDoc(doc(db, 'candidates', safeId), cleanData);
+
+      // Instant local update so candidate is immediately available
+      setState(prev => {
+        const nextList = [cleanData, ...prev.candidates.filter(c => c.ic !== cleanData.ic && c.id !== cleanData.id)];
+        try {
+          localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(nextList));
+        } catch {}
+        return { ...prev, candidates: nextList };
+      });
     } catch (e) {
       console.error("Error saving candidate:", e);
-      alert('Ralat menyimpan data permohonan: ' + (e as any).message);
       throw e;
     }
   };
@@ -269,6 +331,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const cleanData = JSON.parse(JSON.stringify(data));
       const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
       await updateDoc(doc(db, 'candidates', safeId), cleanData);
+
+      setState(prev => {
+        const nextList = prev.candidates.map(c => c.ic === ic ? { ...c, ...cleanData } : c);
+        try {
+          localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(nextList));
+        } catch {}
+        return { ...prev, candidates: nextList };
+      });
     } catch (e) {
       console.error("Error updating candidate:", e);
     }
@@ -278,6 +348,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
       await deleteDoc(doc(db, 'candidates', safeId));
+
+      setState(prev => {
+        const nextList = prev.candidates.filter(c => c.ic !== ic);
+        try {
+          localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(nextList));
+        } catch {}
+        return { ...prev, candidates: nextList };
+      });
     } catch (e) {
       console.error("Error deleting candidate:", e);
     }
@@ -286,7 +364,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const login = (username: string, password?: string) => {
     const cleanUser = username?.trim().toLowerCase();
     const cleanPass = password?.trim();
+    const cachedUsers = loadCachedUsers();
+    
+    // Check in-memory state users first, then cached users, then fallback defaultUsers
     const user = state.users.find(u => u.username?.trim().toLowerCase() === cleanUser)
+      || cachedUsers.find(u => u.username?.trim().toLowerCase() === cleanUser)
       || defaultUsers.find(u => u.username.toLowerCase() === cleanUser);
 
     if (user && (user.password === cleanPass || (!user.password && cleanPass === '123'))) {
@@ -302,23 +384,59 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const addUser = async (user: User) => {
     try {
-      await setDoc(doc(db, 'users', user.id || Date.now().toString()), user);
+      const docId = user.id || Date.now().toString();
+      await setDoc(doc(db, 'users', docId), user, { merge: true });
+      setState(prev => {
+        const nextUsers = [...prev.users.filter(u => u.id !== docId), { ...user, id: docId }];
+        try {
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
+        } catch {}
+        return { ...prev, users: nextUsers };
+      });
     } catch (e) {
       console.error("Error adding user:", e);
     }
   };
 
   const updateUser = async (id: string, user: Partial<User>) => {
+    // 1. Instantly update React state & localStorage
+    setState(prev => {
+      const nextUsers = prev.users.map(u => u.id === id ? { ...u, ...user } : u);
+      try {
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
+      } catch (e) {
+        console.warn('Gagal simpan users ke localStorage:', e);
+      }
+      const updatedCurrentUser = prev.currentUser?.id === id 
+        ? { ...prev.currentUser, ...user } 
+        : prev.currentUser;
+      return { 
+        ...prev, 
+        users: nextUsers, 
+        currentUser: updatedCurrentUser,
+        userRole: updatedCurrentUser?.role || prev.userRole
+      };
+    });
+
+    // 2. Persist to Firestore with setDoc merge
     try {
-      await updateDoc(doc(db, 'users', id), user);
+      await setDoc(doc(db, 'users', id), user, { merge: true });
     } catch (e) {
-      console.error("Error updating user:", e);
+      console.error("Error updating user in Firestore:", e);
+      throw e;
     }
   };
 
   const deleteUser = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'users', id));
+      setState(prev => {
+        const nextUsers = prev.users.filter(u => u.id !== id);
+        try {
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
+        } catch {}
+        return { ...prev, users: nextUsers };
+      });
     } catch (e) {
       console.error("Error deleting user:", e);
     }

@@ -6,13 +6,116 @@ import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
 
 import PenilaianView from './PenilaianView';
-import { Candidate, Role } from '../../types';
+import { Candidate, Role, User } from '../../types';
+import { compressImageFile } from '../../lib/imageUtils';
+
+function ChangePasswordModal({ user, onClose }: { user: User; onClose: () => void }) {
+  const { updateUser } = useAppContext();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword.trim()) {
+      setErrorMsg('Sila masukkan kata laluan baru.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Kata laluan pengesahan tidak sepadan.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      await updateUser(user.id, { password: newPassword.trim() });
+      alert(`Kata laluan untuk ${user.username} berjaya dikemaskini!`);
+      onClose();
+    } catch (err: any) {
+      setErrorMsg('Ralat menukar kata laluan: ' + (err?.message || 'Sila cuba lagi'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95">
+        <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Tukar Kata Laluan</h3>
+              <p className="text-xs text-slate-500 font-medium">Akaun: <span className="font-bold text-slate-700">{user.name} ({user.username})</span></p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg">
+            <XCircle className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Kata Laluan Baru</label>
+            <input 
+              type="text" 
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="Masukkan kata laluan baru..."
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium text-slate-800 bg-slate-50 focus:bg-white"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Sahkan Kata Laluan Baru</label>
+            <input 
+              type="text" 
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              placeholder="Ulang kata laluan baru..."
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium text-slate-800 bg-slate-50 focus:bg-white"
+              required
+            />
+          </div>
+
+          {errorMsg && (
+            <p className="text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-lg border border-red-200">
+              {errorMsg}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 mt-6">
+            <button 
+              type="button" 
+              onClick={onClose}
+              disabled={loading}
+              className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors"
+            >
+              Batal
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-md shadow-emerald-600/20 disabled:opacity-50 transition-all"
+            >
+              {loading ? 'Menyimpan...' : 'Simpan Kata Laluan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPanel() {
   const { currentUser, login, logout } = useAppContext();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [passwordModalUser, setPasswordModalUser] = useState<User | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +175,9 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in">
+      {passwordModalUser && (
+        <ChangePasswordModal user={passwordModalUser} onClose={() => setPasswordModalUser(null)} />
+      )}
       <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden mb-10 flex flex-col md:flex-row justify-between items-center p-8 transition-all hover:shadow-2xl hover:shadow-slate-200/50">
          <div className="flex items-center gap-5 mb-6 md:mb-0">
             <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center text-emerald-700 font-extrabold text-2xl shadow-inner">
@@ -84,19 +190,28 @@ export default function AdminPanel() {
                </span>
             </div>
          </div>
-         <button 
-           onClick={logout}
-           className="text-slate-600 hover:text-red-700 font-bold flex items-center gap-2 transition-all duration-300 bg-slate-50 hover:bg-red-50 border-2 border-slate-200 hover:border-red-200 px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-red-100/50 w-full md:w-auto justify-center"
-         >
-           <LogOut className="w-5 h-5" /> Log Keluar
-         </button>
+         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <button 
+              type="button"
+              onClick={() => setPasswordModalUser(currentUser)}
+              className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-2 transition-all duration-300 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 px-5 py-3 rounded-xl shadow-sm w-full sm:w-auto justify-center"
+            >
+              <Lock className="w-5 h-5" /> Tukar Kata Laluan
+            </button>
+            <button 
+              onClick={logout}
+              className="text-slate-600 hover:text-red-700 font-bold flex items-center gap-2 transition-all duration-300 bg-slate-50 hover:bg-red-50 border-2 border-slate-200 hover:border-red-200 px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-red-100/50 w-full sm:w-auto justify-center"
+            >
+              <LogOut className="w-5 h-5" /> Log Keluar
+            </button>
+         </div>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 p-8 sm:p-12 transition-all hover:shadow-2xl hover:shadow-slate-200/50">
         {currentUser.role === 'TAHFIZ' && <TahfizView />}
         {currentUser.role === 'AKADEMIK' && <AkademikView />}
         {currentUser.role === 'PENTADBIR' && <PentadbirView />}
-        {currentUser.role === 'SUPER_ADMIN' && <SuperAdminView />}
+        {currentUser.role === 'SUPER_ADMIN' && <SuperAdminView onOpenChangePassword={setPasswordModalUser} />}
       </div>
     </div>
   );
@@ -642,15 +757,25 @@ function PentadbirView() {
   const tahfizTotal = settings.tahfizItems?.reduce((a, b) => a + b.weight, 0) || 100;
   const akademikTotal = settings.akademikItems?.reduce((a, b) => a + b.weight, 0) || 100;
 
-  // Hanya paparkan calon yang layak temuduga
-  let baseCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK');
+  // Filter calon
+  let baseCandidates = candidates;
+  if (filter === 'SEMUA_PERMOHONAN') {
+    baseCandidates = candidates;
+  } else if (filter === 'MENUNGGU') {
+    baseCandidates = candidates.filter(c => c.statusTemuduga === 'MENUNGGU' || !c.statusTemuduga);
+  } else if (filter === 'BERJAYA') {
+    baseCandidates = candidates.filter(c => c.statusTawaran === 'BERJAYA');
+  } else if (filter === 'GAGAL') {
+    baseCandidates = candidates.filter(c => c.statusTawaran === 'GAGAL');
+  } else if (filter === 'TERIMA') {
+    baseCandidates = candidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
+  } else if (filter === 'TOLAK') {
+    baseCandidates = candidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
+  } else {
+    // Default 'LAYAK_TEMUDUGA'
+    baseCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK');
+  }
   let filtered = baseCandidates;
-
-  if (filter === 'BERJAYA') filtered = baseCandidates.filter(c => c.statusTawaran === 'BERJAYA');
-  if (filter === 'GAGAL') filtered = baseCandidates.filter(c => c.statusTawaran === 'GAGAL');
-  if (filter === 'TERIMA') filtered = baseCandidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
-  if (filter === 'TOLAK') filtered = baseCandidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
-  if (filter === 'LAYAK_TEMUDUGA') filtered = baseCandidates; // all layak
   
   if (searchQuery.trim() !== '') {
     const q = searchQuery.toLowerCase();
@@ -708,12 +833,15 @@ function PentadbirView() {
          <select 
            value={filter}
            onChange={(e) => { setFilter(e.target.value); setCurrentPage(1); }}
-           className="px-6 py-3 rounded-xl text-sm font-bold border-2 border-slate-200 bg-white text-slate-800 shadow-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-200 min-w-[200px]"
+           className="px-6 py-3 rounded-xl text-sm font-bold border-2 border-slate-200 bg-white text-slate-800 shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 min-w-[260px]"
          >
-           <option value="LAYAK_TEMUDUGA">Semua Calon Temuduga</option>
-           <option value="BERJAYA">Ditawarkan</option>
-           <option value="GAGAL">Tidak Berjaya</option>
-           <option value="TOLAK">Tolak Tawaran</option>
+           <option value="SEMUA_PERMOHONAN">Semua Permohonan Berdaftar ({candidates.length})</option>
+           <option value="MENUNGGU">Menunggu Saringan ({candidates.filter(c => c.statusTemuduga === 'MENUNGGU' || !c.statusTemuduga).length})</option>
+           <option value="LAYAK_TEMUDUGA">Layak Temuduga ({candidates.filter(c => c.statusTemuduga === 'LAYAK').length})</option>
+           <option value="BERJAYA">Ditawarkan ({candidates.filter(c => c.statusTawaran === 'BERJAYA').length})</option>
+           <option value="GAGAL">Tidak Berjaya ({candidates.filter(c => c.statusTawaran === 'GAGAL').length})</option>
+           <option value="TERIMA">Tawaran Diterima ({candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length})</option>
+           <option value="TOLAK">Tolak Tawaran ({candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length})</option>
          </select>
 
          <button 
@@ -793,7 +921,7 @@ function PentadbirView() {
 }
 
 // ================= SUPER ADMIN VIEW =================
-function SuperAdminView() {
+function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: User) => void }) {
   const { settings, updateSettings, syncSettingsToServer, candidates, updateCandidate, deleteCandidate, users, addUser, updateUser, deleteUser, infographics, addInfographic, deleteInfographic, currentUser } = useAppContext();
   const [activeTab, setActiveTab] = useState<'KAWALAN' | 'PENGGUNA' | 'ANALISIS' | 'PERMOHONAN' | 'MARKAH'>('KAWALAN');
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
@@ -898,10 +1026,8 @@ function SuperAdminView() {
      setNewUser({ username: '', password: '', name: '', role: 'TAHFIZ' });
   };
   const handleUpdateOwnPassword = () => {
-     const newPass = prompt('Masukkan kata laluan baru anda:');
-     if (newPass && currentUser) {
-        updateUser(currentUser.id, { password: newPass });
-        alert('Kata laluan berjaya ditukar!');
+     if (currentUser && onOpenChangePassword) {
+        onOpenChangePassword(currentUser);
      }
   };
 
@@ -914,7 +1040,7 @@ function SuperAdminView() {
        <div className="flex gap-4 border-b border-slate-200 pb-4 overflow-x-auto custom-scrollbar">
          <button onClick={() => setActiveTab('KAWALAN')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'KAWALAN' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Kawalan Sistem</button>
          <button onClick={() => setActiveTab('PENGGUNA')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENGGUNA' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Daftar Pengguna</button>
-         <button onClick={() => { setActiveTab('PERMOHONAN'); setCurrentPage(1); }} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Permohonan</button>
+         <button onClick={() => { setActiveTab('PERMOHONAN'); setCurrentPage(1); }} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Permohonan ({candidates.length})</button>
          <button onClick={() => setActiveTab('PENILAIAN' as any)} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENILAIAN' as any ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Penilaian</button>
          <button onClick={() => setActiveTab('MARKAH')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'MARKAH' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Keputusan</button>
          <button onClick={() => setActiveTab('ANALISIS')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'ANALISIS' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Analisis</button>
@@ -1168,11 +1294,12 @@ function SuperAdminView() {
                      const title = fd.get('title') as string;
                      const file = (fd.get('image') as File);
                      if (title && file && file.size > 0) {
-                         const reader = new FileReader();
-                         reader.onloadend = () => {
-                             addInfographic({ id: Math.random().toString(36).substring(7), title, url: reader.result as string });
-                         };
-                         reader.readAsDataURL(file);
+                         compressImageFile(file, 1000, 1400, 0.8).then(url => {
+                             addInfographic({ id: Math.random().toString(36).substring(7), title, url });
+                         }).catch(err => {
+                             console.error('Ralat infografik:', err);
+                             alert('Gagal memproses fail imej infografik.');
+                         });
                      }
                      e.currentTarget.reset();
                  }} className="flex gap-4 items-end">
@@ -1292,6 +1419,13 @@ function SuperAdminView() {
                                   <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded text-xs font-bold">{u.role}</span>
                                </td>
                                <td className="px-6 py-4 text-right">
+                                  <button 
+                                     type="button" 
+                                     onClick={() => onOpenChangePassword && onOpenChangePassword(u)} 
+                                     className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold mr-2 transition-colors"
+                                  >
+                                     Tukar Kata Laluan
+                                  </button>
                                   {u.id !== currentUser?.id && (
                                      <button onClick={() => deleteUser(u.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                                   )}
