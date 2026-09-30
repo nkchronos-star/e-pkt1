@@ -1,53 +1,92 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../store';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, CheckCircle2 } from 'lucide-react';
 import { AssessmentItem } from '../../types';
 
 export default function PenilaianView() {
   const { settings, updateSettings } = useAppContext();
   
-  const [tahfizItems, setTahfizItems] = useState<AssessmentItem[]>(settings.tahfizItems || []);
-  const [akademikItems, setAkademikItems] = useState<AssessmentItem[]>(settings.akademikItems || []);
+  const [tahfizItems, setTahfizItems] = useState<AssessmentItem[]>(() => settings.tahfizItems || []);
+  const [akademikItems, setAkademikItems] = useState<AssessmentItem[]>(() => {
+    const list = settings.akademikItems || [];
+    const filtered = list.filter(i => i.id !== 'bm' && i.id !== 'bi' && !i.name?.toLowerCase().includes('bahasa'));
+    return filtered.length > 0 ? filtered : [
+      { id: 'matematik', name: 'Matematik', weight: 50 },
+      { id: 'sains', name: 'Sains', weight: 50 }
+    ];
+  });
 
   const [newTahfiz, setNewTahfiz] = useState({ name: '', weight: 10 });
   const [newAkademik, setNewAkademik] = useState({ name: '', weight: 10 });
+  const [statusMessage, setStatusMessage] = useState('');
 
-  const saveSettings = (newT: AssessmentItem[], newA: AssessmentItem[]) => {
-    updateSettings({ tahfizItems: newT, akademikItems: newA });
+  // Keep local state in sync when settings are updated from Firestore or other tabs
+  useEffect(() => {
+    if (settings.tahfizItems) {
+      setTahfizItems(settings.tahfizItems);
+    }
+  }, [settings.tahfizItems]);
+
+  useEffect(() => {
+    if (settings.akademikItems) {
+      const filtered = settings.akademikItems.filter(i => 
+        i.id !== 'bm' && i.id !== 'bi' && !i.name?.toLowerCase().includes('bahasa')
+      );
+      const finalList = filtered.length > 0 ? filtered : [
+        { id: 'matematik', name: 'Matematik', weight: 50 },
+        { id: 'sains', name: 'Sains', weight: 50 }
+      ];
+      setAkademikItems(finalList);
+    }
+  }, [settings.akademikItems]);
+
+  const showSuccess = (msg: string) => {
+    setStatusMessage(msg);
+    setTimeout(() => setStatusMessage(''), 3000);
   };
 
   const addTahfiz = () => {
-    if (!newTahfiz.name) return;
-    const item: AssessmentItem = { id: 't_' + Date.now(), name: newTahfiz.name, weight: newTahfiz.weight };
+    if (!newTahfiz.name.trim()) return;
+    const item: AssessmentItem = { id: 't_' + Date.now(), name: newTahfiz.name.trim(), weight: Number(newTahfiz.weight) || 10 };
     const updated = [...tahfizItems, item];
     setTahfizItems(updated);
-    saveSettings(updated, akademikItems);
+    updateSettings({ tahfizItems: updated });
     setNewTahfiz({ name: '', weight: 10 });
+    showSuccess('Komponen Tahfiz berjaya ditambah!');
   };
 
   const addAkademik = () => {
-    if (!newAkademik.name) return;
-    const item: AssessmentItem = { id: 'a_' + Date.now(), name: newAkademik.name, weight: newAkademik.weight };
+    if (!newAkademik.name.trim()) return;
+    const item: AssessmentItem = { id: 'a_' + Date.now(), name: newAkademik.name.trim(), weight: Number(newAkademik.weight) || 10 };
     const updated = [...akademikItems, item];
     setAkademikItems(updated);
-    saveSettings(tahfizItems, updated);
+    updateSettings({ akademikItems: updated });
     setNewAkademik({ name: '', weight: 10 });
+    showSuccess('Komponen Akademik berjaya ditambah!');
   };
 
   const deleteTahfiz = (id: string) => {
     const updated = tahfizItems.filter(i => i.id !== id);
     setTahfizItems(updated);
-    saveSettings(updated, akademikItems);
+    updateSettings({ tahfizItems: updated });
+    showSuccess('Komponen Tahfiz telah dipadam.');
   };
 
   const deleteAkademik = (id: string) => {
     const updated = akademikItems.filter(i => i.id !== id);
     setAkademikItems(updated);
-    saveSettings(tahfizItems, updated);
+    updateSettings({ akademikItems: updated });
+    showSuccess('Komponen Akademik telah dipadam.');
   };
 
   return (
     <div className="space-y-8 animate-in fade-in">
+      {statusMessage && (
+        <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>{statusMessage}</span>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         
         {/* Tahfiz */}

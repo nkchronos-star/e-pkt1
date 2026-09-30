@@ -1,8 +1,10 @@
 import { Candidate } from '../../types';
 import { useAppContext } from '../../store';
+import { DEFAULT_TANDATANGAN_PENGETUA } from '../../lib/imageUtils';
 
 export default function SuratPanggilan({ candidate }: { candidate: Candidate }) {
   const { settings, candidates } = useAppContext();
+  const sigPengetua = settings.tandatanganPengetua || DEFAULT_TANDATANGAN_PENGETUA;
   const tarikhSemasa = new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
   const tahunSesi = settings.sesiKemasukan?.substring(0, 4) || '2027';
 
@@ -146,8 +148,8 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
         <p className="mb-6 print:mb-2">Saya yang menjalankan amanah,</p>
         
         <div>
-          {settings.tandatanganPengetua ? (
-            <img src={settings.tandatanganPengetua} alt="Tandatangan Pengetua" className="h-20 max-w-[180px] object-contain mb-1.5 select-none print:h-20" />
+          {sigPengetua ? (
+            <img src={sigPengetua} alt="Tandatangan Pengetua" className="h-20 max-w-[180px] object-contain mb-1.5 select-none print:h-20 block" />
           ) : (
             <p className="mb-6 print:mb-2 mt-8 print:mt-6">.......................................................</p>
           )}

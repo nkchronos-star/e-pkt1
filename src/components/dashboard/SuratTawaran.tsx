@@ -1,8 +1,11 @@
 import { Candidate } from '../../types';
 import { useAppContext } from '../../store';
+import { DEFAULT_TANDATANGAN_PENGARAH } from '../../lib/imageUtils';
 
 export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
   const { settings, candidates } = useAppContext();
+  
+  const sigPengarah = settings.tandatanganPengarahTawaran || DEFAULT_TANDATANGAN_PENGARAH;
   
   // Use the admin-defined date or current date
   const tarikhSemasa = settings.tarikhSuratTawaran || new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -165,8 +168,8 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
         <p className="mb-1">Saya yang menjalankan amanah,</p>
         
         <div className="my-1">
-          {settings.tandatanganPengarahTawaran ? (
-            <img src={settings.tandatanganPengarahTawaran} alt="Tandatangan Pengarah" className="h-14 max-w-[200px] object-contain ml-2 print:h-14" />
+          {sigPengarah ? (
+            <img src={sigPengarah} alt="Tandatangan Ketua Penolong Pengarah Kanan" className="h-14 max-w-[200px] object-contain ml-2 print:h-14 block" />
           ) : (
             <div className="h-12 w-28"></div>
           )}

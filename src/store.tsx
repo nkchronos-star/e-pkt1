@@ -100,10 +100,8 @@ const defaultSettings: ApplicationSettings = {
     { id: 'sahsiah', name: 'Sahsiah', weight: 5 }
   ],
   akademikItems: [
-    { id: 'bm', name: 'Bahasa Melayu', weight: 25 },
-    { id: 'bi', name: 'Bahasa Inggeris', weight: 25 },
-    { id: 'matematik', name: 'Matematik', weight: 25 },
-    { id: 'sains', name: 'Sains', weight: 25 }
+    { id: 'matematik', name: 'Matematik', weight: 50 },
+    { id: 'sains', name: 'Sains', weight: 50 }
   ]
 };
 
@@ -159,6 +157,23 @@ const loadCachedSettings = (): ApplicationSettings => {
         }
         if (cachedPengarahSig && !merged.tandatanganPengarahTawaran) {
           merged.tandatanganPengarahTawaran = cachedPengarahSig;
+        }
+        if (!merged.tandatanganPengetua) {
+          merged.tandatanganPengetua = DEFAULT_TANDATANGAN_PENGETUA;
+        }
+        if (!merged.tandatanganPengarahTawaran) {
+          merged.tandatanganPengarahTawaran = DEFAULT_TANDATANGAN_PENGARAH;
+        }
+        if (Array.isArray(merged.akademikItems)) {
+          merged.akademikItems = merged.akademikItems.filter((item: any) => 
+            item.id !== 'bm' && item.id !== 'bi' && !item.name?.toLowerCase().includes('bahasa')
+          );
+          if (merged.akademikItems.length === 0) {
+            merged.akademikItems = [
+              { id: 'matematik', name: 'Matematik', weight: 50 },
+              { id: 'sains', name: 'Sains', weight: 50 }
+            ];
+          }
         }
         return applyAutoDates(merged);
       }
@@ -237,9 +252,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
         if (cleanFirestoreData.tandatanganPengetua) {
           try { localStorage.setItem(SIG_PENGETUA_KEY, cleanFirestoreData.tandatanganPengetua); } catch {}
+        } else {
+          cleanFirestoreData.tandatanganPengetua = DEFAULT_TANDATANGAN_PENGETUA;
         }
         if (cleanFirestoreData.tandatanganPengarahTawaran) {
           try { localStorage.setItem(SIG_PENGARAH_KEY, cleanFirestoreData.tandatanganPengarahTawaran); } catch {}
+        } else {
+          cleanFirestoreData.tandatanganPengarahTawaran = DEFAULT_TANDATANGAN_PENGARAH;
+        }
+        if (Array.isArray(cleanFirestoreData.akademikItems)) {
+          cleanFirestoreData.akademikItems = cleanFirestoreData.akademikItems.filter((item: any) => 
+            item.id !== 'bm' && item.id !== 'bi' && !item.name?.toLowerCase().includes('bahasa')
+          );
+          if (cleanFirestoreData.akademikItems.length === 0) {
+            cleanFirestoreData.akademikItems = [
+              { id: 'matematik', name: 'Matematik', weight: 50 },
+              { id: 'sains', name: 'Sains', weight: 50 }
+            ];
+          }
         }
         setState(prev => {
           const merged = applyAutoDates({ ...defaultSettings, ...prev.settings, ...cleanFirestoreData });
