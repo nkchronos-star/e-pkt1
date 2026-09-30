@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAppContext } from '../../store';
-import { FileText, Save, Send, AlertCircle, Calendar, CheckCircle, X, LogIn, Loader2 } from 'lucide-react';
+import { useAppContext, getTodayMalaysia } from '../../store';
+import { FileText, Save, Send, AlertCircle, Calendar, CheckCircle, X, LogIn, Loader2, Lock, Clock } from 'lucide-react';
 import { Candidate } from '../../types';
 import { compressImageFile } from '../../lib/imageUtils';
 
@@ -293,16 +293,55 @@ export default function Borang() {
      return `${day} - ${month} - ${year}`;
   };
 
-  if (!isBuka) {
+  const today = getTodayMalaysia();
+  const isPastClosing = Boolean(settings.tarikhTutupBorang && today > settings.tarikhTutupBorang);
+  const isBeforeOpening = Boolean(settings.tarikhBukaBorang && today < settings.tarikhBukaBorang);
+
+  if (!isBuka || isPastClosing || isBeforeOpening) {
+    if (isPastClosing || (!isBuka && !isBeforeOpening)) {
+      return (
+        <div className="animate-in fade-in py-20 px-4 flex flex-col items-center justify-center text-center">
+          <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 max-w-lg w-full relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-rose-500 to-amber-500"></div>
+            <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-100 shadow-inner">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-extrabold text-slate-900 mb-2 tracking-tight">Permohonan Telah Ditutup</h2>
+            <p className="text-slate-600 mb-6 text-sm leading-relaxed">
+              Tempoh permohonan kemasukan Tingkatan 1 bagi sesi ini telah tamat. Terima kasih atas minat anda memohon ke SMA Kota Gelanggi 3.
+            </p>
+            {settings.tarikhTutupBorang && (
+              <div className="bg-rose-50/70 border border-rose-100 rounded-xl p-3.5 text-xs text-rose-800 font-semibold mb-6">
+                Tarikh rasmi permohonan ditutup: <span className="font-bold underline">{formatTarikh(settings.tarikhTutupBorang)}</span>
+              </div>
+            )}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+              <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-emerald-600" /> Tindakan Seterusnya Bagi Calon Berdaftar:
+              </p>
+              <p className="leading-relaxed">
+                Sila buat semakan panggilan temuduga bermula <strong className="text-emerald-700">{settings.tarikhBukaTemuduga ? formatTarikh(settings.tarikhBukaTemuduga) : '2 Oktober 2026'}</strong> melalui menu <strong>Semak Temuduga</strong> di atas.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="animate-in fade-in py-20 px-4 flex flex-col items-center justify-center text-center">
-        <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 max-w-lg w-full">
-          <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Permohonan Belum Dibuka</h2>
-          <p className="text-gray-600 mb-6">Sistem permohonan belum dibuka buat masa ini. Harap maklum.</p>
-          <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
-             Tarikh permohonan akan dibuka: <span className="font-semibold">{formatTarikh(settings.tarikhBukaBorang)}</span>
+        <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 max-w-lg w-full relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-emerald-500"></div>
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-inner">
+            <Calendar className="w-8 h-8" />
           </div>
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-2 tracking-tight">Permohonan Belum Dibuka</h2>
+          <p className="text-slate-600 mb-6 text-sm leading-relaxed">Sistem permohonan belum dibuka buat masa ini. Harap maklum.</p>
+          {settings.tarikhBukaBorang && (
+            <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3.5 text-xs text-blue-900 font-semibold">
+              Tarikh permohonan akan dibuka: <span className="font-bold underline">{formatTarikh(settings.tarikhBukaBorang)}</span>
+            </div>
+          )}
         </div>
       </div>
     );
