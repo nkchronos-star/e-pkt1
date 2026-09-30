@@ -67,3 +67,53 @@ export async function compressImageFile(
     reader.readAsDataURL(file);
   });
 }
+
+import { HAJAH_JUITA_SIGNATURE, HAJI_HASDAN_SIGNATURE } from './signatureData';
+
+export const DEFAULT_TANDATANGAN_PENGETUA = HAJAH_JUITA_SIGNATURE;
+export const DEFAULT_TANDATANGAN_PENGARAH = HAJI_HASDAN_SIGNATURE;
+
+export async function compressSignatureFile(file: File, maxWidth = 380, maxHeight = 160): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error('Fail yang dimuat naik bukan gambar yang sah.'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Gagal membaca fail gambar tandatangan.'));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Gagal memproses gambar tandatangan.'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(width, 1);
+        canvas.height = Math.max(height, 1);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Try compact PNG first
+        const pngUrl = canvas.toDataURL('image/png');
+        if (pngUrl.length < 80000) {
+          resolve(pngUrl);
+        } else {
+          // Fallback to high quality JPEG to guarantee compact size (< 40KB)
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}

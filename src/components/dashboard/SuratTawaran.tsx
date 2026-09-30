@@ -166,14 +166,14 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
         
         <div className="my-1">
           {settings.tandatanganPengarahTawaran ? (
-            <img src={settings.tandatanganPengarahTawaran} alt="Tandatangan" className="h-11 w-auto object-contain ml-2" />
+            <img src={settings.tandatanganPengarahTawaran} alt="Tandatangan Pengarah" className="h-14 max-w-[200px] object-contain ml-2 print:h-14" />
           ) : (
-            <div className="h-10 w-24"></div>
+            <div className="h-12 w-28"></div>
           )}
         </div>
 
         <div className="leading-tight">
-          <p className="font-bold uppercase">{settings.namaPengarahTawaran || 'YAHAYA BIN TAHIR'}</p>
+          <p className="font-bold uppercase">{settings.namaPengarahTawaran || 'HAJI HASDAN BIN HASAN'}</p>
           <p>{settings.jawatanPengarahTawaran1 || 'Ketua Penolong Pengarah Kanan'}</p>
           <p>{settings.jawatanPengarahTawaran2 || 'Sektor Pendidikan Islam'}</p>
           <p>{settings.jawatanPengarahTawaran3 || 'b.p Pengarah Pendidikan Pahang'}</p>

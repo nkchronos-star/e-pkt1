@@ -1,13 +1,148 @@
-import { useState, useEffect } from 'react';
-import { useAppContext } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
+import AddCandidateModal from './AddCandidateModal';
 
 import PenilaianView from './PenilaianView';
-import { Candidate, Role, User } from '../../types';
-import { compressImageFile } from '../../lib/imageUtils';
+import { Candidate, Role, User, ApplicationSettings } from '../../types';
+import { compressImageFile, compressSignatureFile, DEFAULT_TANDATANGAN_PENGETUA, DEFAULT_TANDATANGAN_PENGARAH } from '../../lib/imageUtils';
+
+function SignaturePadModal({ title = 'Tandatangan Digital', onSave, onClose }: { title?: string; onSave: (dataUrl: string) => void; onClose: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }, []);
+
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const coords = getCoordinates(e);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+    setIsDrawing(true);
+    setHasDrawn(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const coords = getCoordinates(e);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+    ctx.lineTo(coords.x, coords.y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !canvas) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasDrawn(false);
+  };
+
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    onSave(dataUrl);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95">
+        <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+            <p className="text-xs text-slate-500">Sila tandatangan di dalam kotak putih menggunakan jari, tetikus, atau pen sentuh.</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+            <XCircle className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50 relative mb-4">
+          <canvas
+            ref={canvasRef}
+            width={480}
+            height={200}
+            className="w-full h-48 touch-none bg-white cursor-crosshair"
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+          />
+          {!hasDrawn && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-sm">
+              Tandatangan di sini...
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center">
+          <button
+            type="button"
+            onClick={clearCanvas}
+            className="text-xs font-semibold text-slate-600 hover:text-rose-600 px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50"
+          >
+            Padam & Mula Semula
+          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs font-semibold text-slate-600 px-4 py-2 hover:bg-slate-100 rounded-lg"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!hasDrawn}
+              className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white px-5 py-2 rounded-lg shadow-sm"
+            >
+              Gunakan Tandatangan Ini
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ChangePasswordModal({ user, onClose }: { user: User; onClose: () => void }) {
   const { updateUser } = useAppContext();
@@ -115,14 +250,22 @@ export default function AdminPanel() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [passwordModalUser, setPasswordModalUser] = useState<User | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(username, password)) {
-      setError('');
-    } else {
-      setError('ID Pengguna atau Kata Laluan tidak sah');
+    setIsLoggingIn(true);
+    setError('');
+    try {
+      const success = await login(username, password);
+      if (!success) {
+        setError('ID Pengguna atau Kata Laluan tidak sah');
+      }
+    } catch (err: any) {
+      setError('Ralat semasa log masuk: ' + (err?.message || 'Sila cuba lagi'));
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -143,7 +286,8 @@ export default function AdminPanel() {
                 type="text" 
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800"
+                disabled={isLoggingIn}
+                className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-60"
                 placeholder="admin"
                 required
               />
@@ -154,7 +298,8 @@ export default function AdminPanel() {
                 type="password" 
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800"
+                disabled={isLoggingIn}
+                className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-60"
                 placeholder="Kata Laluan"
                 required
               />
@@ -162,9 +307,17 @@ export default function AdminPanel() {
             {error && <p className="text-red-600 text-sm font-bold text-center bg-red-50 py-2.5 px-3 rounded-lg border border-red-200">{error}</p>}
             <button 
               type="submit" 
-              className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] text-lg mt-2"
+              disabled={isLoggingIn}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white py-4 rounded-xl font-bold transition-all duration-300 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] text-lg mt-2 flex items-center justify-center gap-2"
             >
-              Log Masuk
+              {isLoggingIn ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Mengesahkan...
+                </>
+              ) : (
+                'Log Masuk'
+              )}
             </button>
           </form>
                   
@@ -747,6 +900,7 @@ function PentadbirView() {
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const { candidates, settings, updateCandidate } = useAppContext();
   const [filter, setFilter] = useState('LAYAK_TEMUDUGA');
@@ -844,14 +998,26 @@ function PentadbirView() {
            <option value="TOLAK">Tolak Tawaran ({candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length})</option>
          </select>
 
-         <button 
-           onClick={handleDownloadExcel}
-           className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-sm"
-         >
-           <Download className="w-5 h-5" />
-           Muat Turun CSV (Senarai Dipapar)
-         </button>
+         <div className="flex flex-wrap items-center gap-3">
+           <button 
+             type="button"
+             onClick={() => setShowAddModal(true)}
+             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-sm text-sm"
+           >
+             <UserPlus className="w-4 h-4" />
+             + Tambah Calon Tercicir
+           </button>
+           <button 
+             onClick={handleDownloadExcel}
+             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-sm text-sm"
+           >
+             <Download className="w-4 h-4" />
+             Muat Turun CSV
+           </button>
+         </div>
        </div>
+
+       {showAddModal && <AddCandidateModal onClose={() => setShowAddModal(false)} />}
 
        <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="overflow-x-auto">
@@ -859,11 +1025,12 @@ function PentadbirView() {
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest w-12">Bil</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama Calon</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama & Gambar Calon</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tahfiz/Penilai</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Akademik/Penilai</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Maklum Balas</th>
+                  <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Tindakan</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
@@ -871,8 +1038,19 @@ function PentadbirView() {
                   <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-5 text-center text-sm font-medium text-slate-500">{idx + 1}</td>
                     <td className="px-6 py-5">
-                       <span className="font-bold text-slate-900 block mb-1">{c.name}</span>
-                       <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded inline-block">{c.ic}</span>
+                       <div className="flex items-center gap-3">
+                         <div className="w-10 h-13 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
+                           {c.gambarUrl ? (
+                             <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover" />
+                           ) : (
+                             <Camera className="w-4 h-4 text-slate-400 stroke-1" />
+                           )}
+                         </div>
+                         <div>
+                           <span className="font-bold text-slate-900 block mb-0.5">{c.name}</span>
+                           <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded inline-block">{c.ic}</span>
+                         </div>
+                       </div>
                     </td>
                     <td className="px-6 py-5">
                        {c.markahTahfiz ? <span className="font-extrabold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-md">{c.markahTahfiz.jumlah}/{tahfizTotal}</span> : <span className="text-sm font-medium text-slate-400">Belum Dinilai</span>}
@@ -905,17 +1083,36 @@ function PentadbirView() {
                          </span>
                        ) : <span className="text-slate-400">-</span>}
                     </td>
+                    <td className="px-6 py-5 text-center">
+                       <button
+                         type="button"
+                         onClick={() => setEditCandidate(c)}
+                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition shadow-sm"
+                         title="Kemaskini Maklumat & Gambar Calon"
+                       >
+                         <Edit className="w-3.5 h-3.5" />
+                         Kemaskini
+                       </button>
+                    </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">Tiada rekod ditemui untuk tapisan ini.</td>
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">Tiada rekod ditemui untuk tapisan ini.</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
        </div>
+
+       {editCandidate && (
+         <EditCandidateModal 
+            candidate={editCandidate} 
+            onClose={() => setEditCandidate(null)} 
+            onUpdated={() => setEditCandidate(null)}
+         />
+       )}
     </div>
   );
 }
@@ -927,6 +1124,8 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [signaturePadTarget, setSignaturePadTarget] = useState<'PENGETUA' | 'PENGARAH' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -981,13 +1180,96 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
   // Kawalan Handlers
   const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      updateSettings({ [name]: checked });
+      return;
+    }
+
+    const updated: Partial<ApplicationSettings> = { [name]: value };
+    // Auto-tick when dates change
+    if (name === 'tarikhBukaBorang' || name === 'tarikhTutupBorang') {
+      const start = name === 'tarikhBukaBorang' ? value : settings.tarikhBukaBorang;
+      const end = name === 'tarikhTutupBorang' ? value : settings.tarikhTutupBorang;
+      updated.borangBuka = isDateActive(start, end);
+    } else if (name === 'tarikhBukaTemuduga' || name === 'tarikhTutupTemuduga') {
+      const start = name === 'tarikhBukaTemuduga' ? value : settings.tarikhBukaTemuduga;
+      const end = name === 'tarikhTutupTemuduga' ? value : settings.tarikhTutupTemuduga;
+      updated.temudugaBuka = isDateActive(start, end);
+    } else if (name === 'tarikhBukaTawaran' || name === 'tarikhTutupTawaran') {
+      const start = name === 'tarikhBukaTawaran' ? value : settings.tarikhBukaTawaran;
+      const end = name === 'tarikhTutupTawaran' ? value : settings.tarikhTutupTawaran;
+      updated.tawaranBuka = isDateActive(start, end);
+    }
+
+    updateSettings(updated);
+  };
+
+  const handleAutoTickAll = () => {
+    const autoBorang = isDateActive(settings.tarikhBukaBorang, settings.tarikhTutupBorang);
+    const autoTemuduga = isDateActive(settings.tarikhBukaTemuduga, settings.tarikhTutupTemuduga);
+    const autoTawaran = isDateActive(settings.tarikhBukaTawaran, settings.tarikhTutupTawaran);
     updateSettings({
-      [name]: type === 'checkbox' ? checked : value
+      borangBuka: autoBorang,
+      temudugaBuka: autoTemuduga,
+      tawaranBuka: autoTawaran
     });
+    setSaveStatusMsg(`Status berjaya di-auto-tick mengikut tarikh hari ini (${getTodayMalaysia()})!`);
+    setTimeout(() => setSaveStatusMsg(''), 4000);
   };
 
   const handleTextSettings = (name: string, value: string) => {
     updateSettings({ [name]: value });
+  };
+
+  const handleSaveTemudugaSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const partial: Partial<ApplicationSettings> = {
+        tarikhSuratPanggilan: settings.tarikhSuratPanggilan || '',
+        tarikhTemuduga: settings.tarikhTemuduga || '',
+        hariTemuduga: settings.hariTemuduga || '',
+        masaTemuduga: settings.masaTemuduga || '',
+        tempatTemuduga: settings.tempatTemuduga || '',
+        pakaianTemuduga: settings.pakaianTemuduga || '',
+        namaPengetua: settings.namaPengetua || 'HAJAH JUITA BINTI HAMZAH',
+        tandatanganPengetua: settings.tandatanganPengetua || DEFAULT_TANDATANGAN_PENGETUA
+      };
+      await updateSettings(partial);
+      await syncSettingsToServer(partial);
+      setSaveStatusMsg('Tetapan Surat Temuduga & Pengetua berjaya disimpan!');
+      setTimeout(() => setSaveStatusMsg(''), 4000);
+    } catch (e: any) {
+      alert('Ralat menyimpan tetapan temuduga: ' + (e?.message || 'Sila cuba lagi'));
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleSaveTawaranSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const partial: Partial<ApplicationSettings> = {
+        borangTingkatan1Link: settings.borangTingkatan1Link || '',
+        rujukanSuratTawaran: settings.rujukanSuratTawaran || '',
+        tarikhSuratTawaran: settings.tarikhSuratTawaran || '',
+        tarikhLaporDiri: settings.tarikhLaporDiri || '',
+        masaLaporDiri: settings.masaLaporDiri || '',
+        tarikhAkhirTerimaTawaran: settings.tarikhAkhirTerimaTawaran || '',
+        namaPengarahTawaran: settings.namaPengarahTawaran || 'HAJI HASDAN BIN HASAN',
+        jawatanPengarahTawaran1: settings.jawatanPengarahTawaran1 || 'Ketua Penolong Pengarah Kanan',
+        jawatanPengarahTawaran2: settings.jawatanPengarahTawaran2 || 'Sektor Pendidikan Islam',
+        jawatanPengarahTawaran3: settings.jawatanPengarahTawaran3 || 'b.p Pengarah Pendidikan Pahang',
+        tandatanganPengarahTawaran: settings.tandatanganPengarahTawaran || DEFAULT_TANDATANGAN_PENGARAH
+      };
+      await updateSettings(partial);
+      await syncSettingsToServer(partial);
+      setSaveStatusMsg('Tetapan Surat Tawaran & Penandatangan berjaya disimpan!');
+      setTimeout(() => setSaveStatusMsg(''), 4000);
+    } catch (e: any) {
+      alert('Ralat menyimpan tetapan tawaran: ' + (e?.message || 'Sila cuba lagi'));
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   const handleSaveAllSettings = async () => {
@@ -1037,6 +1319,20 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
 
   return (
     <div className="space-y-8">
+       {signaturePadTarget && (
+         <SignaturePadModal 
+           title={signaturePadTarget === 'PENGETUA' ? 'Tandatangan Pengetua (Hajah Juita)' : 'Tandatangan Penandatangan Tawaran (Haji Hasdan)'}
+           onSave={(dataUrl) => {
+             if (signaturePadTarget === 'PENGETUA') {
+               updateSettings({ tandatanganPengetua: dataUrl });
+             } else {
+               updateSettings({ tandatanganPengarahTawaran: dataUrl });
+             }
+             setSignaturePadTarget(null);
+           }} 
+           onClose={() => setSignaturePadTarget(null)} 
+         />
+       )}
        <div className="flex gap-4 border-b border-slate-200 pb-4 overflow-x-auto custom-scrollbar">
          <button onClick={() => setActiveTab('KAWALAN')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'KAWALAN' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Kawalan Sistem</button>
          <button onClick={() => setActiveTab('PENGGUNA')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENGGUNA' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Daftar Pengguna</button>
@@ -1088,99 +1384,136 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
            </div>
 
            <div>
-             <h3 className="text-lg font-bold mb-4 text-slate-700 flex items-center gap-2">
-                Tetapan Utama Status & Tarikh
-             </h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-emerald-600" /> Tetapan Utama Status & Tarikh
+                  </h3>
+                  <p className="text-xs text-slate-500">Tarikh hari ini (Malaysia): <span className="font-bold text-slate-700">{getTodayMalaysia()}</span>. Sistem akan auto-tick mengikut tarikh yang anda tetapkan.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAutoTickAll}
+                  className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm whitespace-nowrap self-start sm:self-auto"
+                >
+                  <CheckSquare className="w-4 h-4 text-indigo-600" />
+                  Auto-Tick Ikut Tarikh Hari Ini
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
-                  <div>
-                    <span className="font-bold text-slate-800 block mb-1">Tahun Sesi Kemasukan</span>
-                    <p className="text-xs text-slate-500 mb-3">Tahun sesi tingkatan 1</p>
-                    <input type="text" name="sesiKemasukan" value={settings.sesiKemasukan || '2026 / 2027'} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700" placeholder="cth: 2026 / 2027" />
-                  </div>
-                </div>
+                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
+                   <div>
+                     <span className="font-bold text-slate-800 block mb-1">Tahun Sesi Kemasukan</span>
+                     <p className="text-xs text-slate-500 mb-3">Tahun sesi tingkatan 1</p>
+                     <input type="text" name="sesiKemasukan" value={settings.sesiKemasukan || '2026 / 2027'} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700" placeholder="cth: 2026 / 2027" />
+                   </div>
+                 </div>
 
-                <div className={`bg-white p-6 rounded-2xl border ${settings.borangBuka ? 'border-emerald-400 shadow-emerald-50' : 'border-slate-200'} shadow-sm flex flex-col justify-between gap-4 transition-all`}>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold text-slate-800">Borang Permohonan</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" name="borangBuka" checked={settings.borangBuka} onChange={handleSettingsChange} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                      </label>
-                    </div>
-                    <span className={`text-[11px] px-2 py-0.5 rounded font-bold inline-block mb-3 ${settings.borangBuka ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {settings.borangBuka ? 'STATUS: DIBUKA KEPADA CALON' : 'STATUS: DITUTUP'}
-                    </span>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Dibuka</label>
-                        <input type="date" name="tarikhBukaBorang" value={settings.tarikhBukaBorang || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir / Ditutup (Pilihan)</label>
-                        <input type="date" name="tarikhTutupBorang" value={settings.tarikhTutupBorang || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className={`bg-white p-6 rounded-2xl border ${settings.temudugaBuka ? 'border-emerald-400' : 'border-slate-200'} shadow-sm flex flex-col justify-between gap-4 transition-all`}>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold text-slate-800">Semakan Temuduga</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" name="temudugaBuka" checked={settings.temudugaBuka} onChange={handleSettingsChange} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                      </label>
-                    </div>
-                    <span className={`text-[11px] px-2 py-0.5 rounded font-bold inline-block mb-3 ${settings.temudugaBuka ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {settings.temudugaBuka ? 'STATUS: DIBUKA' : 'STATUS: DITUTUP'}
-                    </span>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Paparan</label>
-                        <input type="date" name="tarikhBukaTemuduga" value={settings.tarikhBukaTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir Paparan (Pilihan)</label>
-                        <input type="date" name="tarikhTutupTemuduga" value={settings.tarikhTutupTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                 {/* Borang Permohonan */}
+                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
+                   <div>
+                     <div className="flex justify-between items-center mb-2">
+                       <span className="font-bold text-slate-800">Borang Permohonan</span>
+                       <label className="relative inline-flex items-center cursor-pointer">
+                         <input type="checkbox" name="borangBuka" checked={settings.borangBuka} onChange={handleSettingsChange} className="sr-only peer" />
+                         <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                       </label>
+                     </div>
+                     <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${settings.borangBuka ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}`}>
+                         {settings.borangBuka ? 'STATUS: DIBUKA' : 'STATUS: DITUTUP'}
+                       </span>
+                       {settings.tarikhBukaBorang && (
+                         <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium border border-slate-200">
+                           {isDateActive(settings.tarikhBukaBorang, settings.tarikhTutupBorang) ? '✓ Auto-aktif' : '⏳ Auto-tutup'}
+                         </span>
+                       )}
+                     </div>
+                     <div className="space-y-2">
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Dibuka</label>
+                         <input type="date" name="tarikhBukaBorang" value={settings.tarikhBukaBorang || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-medium" />
+                       </div>
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir / Ditutup (Pilihan)</label>
+                         <input type="date" name="tarikhTutupBorang" value={settings.tarikhTutupBorang || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-medium" />
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+                 
+                 {/* Semakan Temuduga */}
+                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
+                   <div>
+                     <div className="flex justify-between items-center mb-2">
+                       <span className="font-bold text-slate-800">Semakan Temuduga</span>
+                       <label className="relative inline-flex items-center cursor-pointer">
+                         <input type="checkbox" name="temudugaBuka" checked={settings.temudugaBuka} onChange={handleSettingsChange} className="sr-only peer" />
+                         <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                       </label>
+                     </div>
+                     <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${settings.temudugaBuka ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}`}>
+                         {settings.temudugaBuka ? 'STATUS: DIBUKA' : 'STATUS: DITUTUP'}
+                       </span>
+                       {settings.tarikhBukaTemuduga && (
+                         <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium border border-slate-200">
+                           {isDateActive(settings.tarikhBukaTemuduga, settings.tarikhTutupTemuduga) ? '✓ Auto-aktif' : '⏳ Auto-tutup'}
+                         </span>
+                       )}
+                     </div>
+                     <div className="space-y-2">
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Paparan</label>
+                         <input type="date" name="tarikhBukaTemuduga" value={settings.tarikhBukaTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-medium" />
+                       </div>
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir Paparan (Pilihan)</label>
+                         <input type="date" name="tarikhTutupTemuduga" value={settings.tarikhTutupTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-medium" />
+                       </div>
+                     </div>
+                   </div>
+                 </div>
 
-                <div className={`bg-white p-6 rounded-2xl border ${settings.tawaranBuka ? 'border-emerald-400' : 'border-slate-200'} shadow-sm flex flex-col justify-between gap-4 transition-all`}>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold text-slate-800">Semakan Tawaran</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" name="tawaranBuka" checked={settings.tawaranBuka} onChange={handleSettingsChange} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                      </label>
-                    </div>
-                    <span className={`text-[11px] px-2 py-0.5 rounded font-bold inline-block mb-3 ${settings.tawaranBuka ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {settings.tawaranBuka ? 'STATUS: DIBUKA' : 'STATUS: DITUTUP'}
-                    </span>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Paparan</label>
-                        <input type="date" name="tarikhBukaTawaran" value={settings.tarikhBukaTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir Paparan (Pilihan)</label>
-                        <input type="date" name="tarikhTutupTawaran" value={settings.tarikhTutupTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-             </div>
+                 {/* Semakan Tawaran */}
+                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
+                   <div>
+                     <div className="flex justify-between items-center mb-2">
+                       <span className="font-bold text-slate-800">Semakan Tawaran</span>
+                       <label className="relative inline-flex items-center cursor-pointer">
+                         <input type="checkbox" name="tawaranBuka" checked={settings.tawaranBuka} onChange={handleSettingsChange} className="sr-only peer" />
+                         <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                       </label>
+                     </div>
+                     <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${settings.tawaranBuka ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}`}>
+                         {settings.tawaranBuka ? 'STATUS: DIBUKA' : 'STATUS: DITUTUP'}
+                       </span>
+                       {settings.tarikhBukaTawaran && (
+                         <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium border border-slate-200">
+                           {isDateActive(settings.tarikhBukaTawaran, settings.tarikhTutupTawaran) ? '✓ Auto-aktif' : '⏳ Auto-tutup'}
+                         </span>
+                       )}
+                     </div>
+                     <div className="space-y-2">
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Mula Paparan</label>
+                         <input type="date" name="tarikhBukaTawaran" value={settings.tarikhBukaTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-medium" />
+                       </div>
+                       <div>
+                         <label className="block text-[11px] font-bold text-slate-500 mb-0.5">Tarikh Akhir Paparan (Pilihan)</label>
+                         <input type="date" name="tarikhTutupTawaran" value={settings.tarikhTutupTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-medium" />
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+              </div>
            </div>
 
            <div>
              <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><FileText className="w-6 h-6 text-slate-500" /> Tetapan Surat Panggilan Temuduga</h3>
-             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Keluar Surat (Atas Kanan)</label>
@@ -1202,13 +1535,146 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                     <label className="block text-xs font-bold text-slate-500 mb-1">Tempat Temuduga</label>
                     <input type="text" name="tempatTemuduga" value={settings.tempatTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: Laman Selera, SMA Kota Gelanggi 3" />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Etika Pakaian Temuduga</label>
+                    <input type="text" name="pakaianTemuduga" value={settings.pakaianTemuduga || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: Uniform sekolah lengkap" />
+                  </div>
+                </div>
+
+                {/* Maklumat Pengetua & Tandatangan (Untuk Surat Panggilan Temuduga) */}
+                <div className="pt-6 border-t border-slate-200">
+                  <h4 className="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+                    <FileSignature className="w-4 h-4 text-emerald-600" />
+                    Maklumat Pengetua & Tandatangan (Untuk Surat Panggilan Temuduga)
+                  </h4>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80">
+                    <div className="lg:col-span-5 space-y-3">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Nama Pengetua
+                      </label>
+                      <input 
+                        type="text" 
+                        name="namaPengetua" 
+                        value={settings.namaPengetua || ''} 
+                        onChange={handleSettingsChange} 
+                        placeholder="HAJAH JUITA BINTI HAMZAH" 
+                        className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-white font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-sm uppercase" 
+                      />
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Nama pengetua akan tertera pada bahagian bawah Surat Panggilan Temuduga bersama jawatan Pengetua SMA Kota Gelanggi 3.
+                      </p>
+                    </div>
+
+                    <div className="lg:col-span-7 space-y-3">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Imej 1: Tandatangan Pengetua
+                      </label>
+
+                      {settings.tandatanganPengetua ? (
+                        <div className="p-4 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                          <div className="flex items-center gap-4">
+                            <div className="h-16 w-36 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-1.5 overflow-hidden">
+                              <img 
+                                src={settings.tandatanganPengetua} 
+                                alt="Imej 1: Tandatangan Pengetua" 
+                                className="h-full w-full object-contain" 
+                              />
+                            </div>
+                            <div>
+                              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <Check className="w-3 h-3" /> Imej 1 Aktif
+                              </span>
+                              <span className="text-[11px] text-slate-600 block mt-1 font-semibold truncate max-w-[200px]">
+                                {settings.namaPengetua || 'HAJAH JUITA BINTI HAMZAH'}
+                              </span>
+                            </div>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => updateSettings({ tandatanganPengetua: '' })} 
+                            className="text-xs text-rose-600 hover:text-rose-700 font-bold px-3 py-1.5 rounded-lg hover:bg-rose-50 border border-rose-200 transition"
+                          >
+                            Padam Imej
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                          <span>Tiada imej tandatangan pengetua. (Surat akan memaparkan garis titik).</span>
+                          <button
+                            type="button"
+                            onClick={() => updateSettings({ tandatanganPengetua: DEFAULT_TANDATANGAN_PENGETUA })}
+                            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition whitespace-nowrap"
+                          >
+                            Guna Tandatangan Rasmi
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <label className="cursor-pointer bg-white border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                          <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                          Muat Naik Imej 1 (Fail Gambar)
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  const compressed = await compressSignatureFile(file, 380, 160);
+                                  if (compressed) {
+                                    updateSettings({ tandatanganPengetua: compressed });
+                                  }
+                                } catch (err) {
+                                  console.error('Ralat tandatangan pengetua:', err);
+                                  alert('Gagal memproses fail imej tandatangan.');
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => setSignaturePadTarget('PENGETUA')}
+                          className="bg-white border border-slate-300 hover:border-blue-500 hover:text-blue-700 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                        >
+                          <PenTool className="w-3.5 h-3.5 text-blue-600" />
+                          Tandatangan Atas Skrin
+                        </button>
+
+                        {settings.tandatanganPengetua !== DEFAULT_TANDATANGAN_PENGETUA && (
+                          <button
+                            type="button"
+                            onClick={() => updateSettings({ tandatanganPengetua: DEFAULT_TANDATANGAN_PENGETUA })}
+                            className="text-xs text-slate-500 hover:text-emerald-700 font-semibold underline px-2 py-1 flex items-center gap-1"
+                            title="Guna tandatangan rasmi HAJAH JUITA BINTI HAMZAH"
+                          >
+                            <RotateCcw className="w-3 h-3" /> Set Semula Rasmi
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick save button for interview settings */}
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveTemudugaSettings}
+                    disabled={isSavingSettings}
+                    className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-xs"
+                  >
+                    {isSavingSettings ? 'Menyimpan...' : 'Simpan Tetapan Surat Temuduga'}
+                  </button>
                 </div>
              </div>
            </div>
-
            <div>
              <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><FileText className="w-6 h-6 text-slate-500" /> Tetapan Surat Tawaran</h3>
-             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Pautan Borang Pendaftaran</label>
@@ -1231,44 +1697,157 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                     <input type="text" name="masaLaporDiri" value={settings.masaLaporDiri || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 8.30 PAGI" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Nama Penandatangan (Surat Tawaran)</label>
-                    <input type="text" name="namaPengarahTawaran" value={settings.namaPengarahTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: YAHAYA BIN TAHIR" />
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Akhir Terima Tawaran</label>
+                    <input type="text" name="tarikhAkhirTerimaTawaran" value={settings.tarikhAkhirTerimaTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 28 November 2026" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Nama Ketua Penolong Pengarah Kanan (Penandatangan Surat Tawaran)</label>
+                    <input type="text" name="namaPengarahTawaran" value={settings.namaPengarahTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold uppercase text-slate-800" placeholder="HAJI HASDAN BIN HASAN" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 1</label>
-                    <input type="text" name="jawatanPengarahTawaran1" value={settings.jawatanPengarahTawaran1 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: Ketua Penolong Pengarah Kanan" />
+                    <input type="text" name="jawatanPengarahTawaran1" value={settings.jawatanPengarahTawaran1 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Ketua Penolong Pengarah Kanan" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 2</label>
-                    <input type="text" name="jawatanPengarahTawaran2" value={settings.jawatanPengarahTawaran2 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: Sektor Pendidikan Islam" />
+                    <input type="text" name="jawatanPengarahTawaran2" value={settings.jawatanPengarahTawaran2 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Sektor Pendidikan Islam" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 3</label>
-                    <input type="text" name="jawatanPengarahTawaran3" value={settings.jawatanPengarahTawaran3 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: b.p Pengarah Pendidikan Pahang" />
+                    <input type="text" name="jawatanPengarahTawaran3" value={settings.jawatanPengarahTawaran3 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="b.p Pengarah Pendidikan Pahang" />
                   </div>
-                  <div className="lg:col-span-3">
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Muat Naik Tandatangan Surat Tawaran (Format Gambar)</label>
-                    <input type="file" accept="image/*" onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                            try {
-                              const compressed = await compressImage(file, 400, 200);
-                              if (compressed) {
-                                updateSettings({ tandatanganPengarahTawaran: compressed });
-                              }
-                            } catch (err) {
-                              console.error('Gagal memproses gambar tandatangan:', err);
-                            }
-                        }
-                    }} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-emerald-50 file:text-emerald-700 text-sm" />
-                    {settings.tandatanganPengarahTawaran && (
-                      <div className="mt-2 flex items-center gap-3">
-                        <img src={settings.tandatanganPengarahTawaran} alt="Tandatangan Pengarah" className="h-10 object-contain border border-slate-200 p-1 bg-white rounded" />
-                        <span className="text-xs text-emerald-600 font-bold">✓ Tandatangan dimuat naik</span>
-                        <button type="button" onClick={() => updateSettings({ tandatanganPengarahTawaran: '' })} className="text-red-500 text-xs underline font-semibold">Padam</button>
+                </div>
+
+                {/* Maklumat Penandatangan & Tandatangan (Surat Tawaran) */}
+                <div className="pt-6 border-t border-slate-200">
+                  <h4 className="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+                    <FileSignature className="w-4 h-4 text-emerald-600" />
+                    Tandatangan Ketua Penolong Pengarah Kanan (Surat Tawaran)
+                  </h4>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80">
+                    <div className="lg:col-span-5 space-y-3">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Ketua Penolong Pengarah Kanan (Penandatangan Tawaran)
+                      </label>
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                        <span className="text-xs font-bold text-slate-900 block uppercase">
+                          {settings.namaPengarahTawaran || 'HAJI HASDAN BIN HASAN'}
+                        </span>
+                        <span className="text-[11px] text-slate-500 block leading-tight">
+                          {settings.jawatanPengarahTawaran1 || 'Ketua Penolong Pengarah Kanan'}<br />
+                          {settings.jawatanPengarahTawaran2 || 'Sektor Pendidikan Islam'}<br />
+                          {settings.jawatanPengarahTawaran3 || 'b.p Pengarah Pendidikan Pahang'}
+                        </span>
                       </div>
-                    )}
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Maklumat ini akan tertera pada bahagian pengesahan rasmi Surat Tawaran ke Tingkatan 1.
+                      </p>
+                    </div>
+
+                    <div className="lg:col-span-7 space-y-3">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Imej 1: Tandatangan Ketua Penolong Pengarah Kanan (HAJI HASDAN BIN HASAN)
+                      </label>
+
+                      {settings.tandatanganPengarahTawaran ? (
+                        <div className="p-4 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                          <div className="flex items-center gap-4">
+                            <div className="h-16 w-36 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-1.5 overflow-hidden">
+                              <img 
+                                src={settings.tandatanganPengarahTawaran} 
+                                alt="Imej 1: Tandatangan Tawaran" 
+                                className="h-full w-full object-contain" 
+                              />
+                            </div>
+                            <div>
+                              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <Check className="w-3 h-3" /> Imej 1 Aktif
+                              </span>
+                              <span className="text-[11px] text-slate-600 block mt-1 font-semibold truncate max-w-[200px]">
+                                {settings.namaPengarahTawaran || 'HAJI HASDAN BIN HASAN'}
+                              </span>
+                            </div>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => updateSettings({ tandatanganPengarahTawaran: '' })} 
+                            className="text-xs text-rose-600 hover:text-rose-700 font-bold px-3 py-1.5 rounded-lg hover:bg-rose-50 border border-rose-200 transition"
+                          >
+                            Padam Imej
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                          <span>Tiada imej tandatangan penandatangan tawaran.</span>
+                          <button
+                            type="button"
+                            onClick={() => updateSettings({ tandatanganPengarahTawaran: DEFAULT_TANDATANGAN_PENGARAH })}
+                            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition whitespace-nowrap"
+                          >
+                            Guna Tandatangan Rasmi Haji Hasdan
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <label className="cursor-pointer bg-white border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                          <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                          Muat Naik Imej 1 (Fail Gambar)
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  const compressed = await compressSignatureFile(file, 380, 160);
+                                  if (compressed) {
+                                    updateSettings({ tandatanganPengarahTawaran: compressed });
+                                  }
+                                } catch (err) {
+                                  console.error('Ralat tandatangan tawaran:', err);
+                                  alert('Gagal memproses fail imej tandatangan.');
+                                }
+                              }
+                            }}
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => setSignaturePadTarget('PENGARAH')}
+                          className="bg-white border border-slate-300 hover:border-blue-500 hover:text-blue-700 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                        >
+                          <PenTool className="w-3.5 h-3.5 text-blue-600" />
+                          Tandatangan Atas Skrin
+                        </button>
+
+                        {settings.tandatanganPengarahTawaran !== DEFAULT_TANDATANGAN_PENGARAH && (
+                          <button
+                            type="button"
+                            onClick={() => updateSettings({ tandatanganPengarahTawaran: DEFAULT_TANDATANGAN_PENGARAH })}
+                            className="text-xs text-slate-500 hover:text-emerald-700 font-semibold underline px-2 py-1 flex items-center gap-1"
+                            title="Guna tandatangan rasmi HAJI HASDAN BIN HASAN"
+                          >
+                            <RotateCcw className="w-3 h-3" /> Set Semula Rasmi
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                {/* Quick save button for offer letter settings */}
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveTawaranSettings}
+                    disabled={isSavingSettings}
+                    className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-xs"
+                  >
+                    {isSavingSettings ? 'Menyimpan...' : 'Simpan Tetapan Surat Tawaran'}
+                  </button>
                 </div>
              </div>
            </div>
@@ -1327,65 +1906,24 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                  </div>
              </div>
            </div>
-
-           <div className="flex justify-end border-t border-slate-200 pt-6">
-              
-                  </div>
-             
-             
-             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mt-6">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-3"><FileSignature className="w-6 h-6 text-slate-500" /> Maklumat Pengetua (Untuk Surat)</h3>
-                <div className="mt-4">
-                     <h4 className="font-semibold text-slate-800 mb-4">Maklumat Pengetua (Untuk Surat)</h4>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Pengetua</label>
-                          <input type="text" name="namaPengetua" value={settings.namaPengetua || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-600 mb-1">Tandatangan Pengetua (Muat Naik Imej)</label>
-                          <input type="file" accept="image/*" onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                  try {
-                                    const compressed = await compressImage(file, 400, 200);
-                                    if (compressed) {
-                                      updateSettings({ tandatanganPengetua: compressed });
-                                    }
-                                  } catch (err) {
-                                    console.error('Gagal memproses tandatangan pengetua:', err);
-                                  }
-                              }
-                          }} className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-emerald-50 file:text-emerald-700" />
-                          {settings.tandatanganPengetua && (
-                            <div className="mt-2 flex items-center gap-3">
-                              <img src={settings.tandatanganPengetua} alt="Tandatangan" className="h-10 object-contain border border-slate-200 p-1 bg-white rounded" />
-                              <button type="button" onClick={() => updateSettings({ tandatanganPengetua: '' })} className="text-red-500 text-xs underline font-semibold">Padam</button>
-                            </div>
-                          )}
-                        </div>
-                     </div>
-                  </div>
-
-                  <div className="mt-8 pt-4 border-t border-slate-200 flex justify-end">
-                    <button 
-                      type="button" 
-                      onClick={handleSaveAllSettings}
-                      disabled={isSavingSettings}
-                      className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold px-8 py-3 rounded-xl shadow-md transition flex items-center gap-2"
-                    >
-                      {isSavingSettings ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Menyimpan Tetapan...
-                        </>
-                      ) : (
-                        'Simpan Semua Tetapan Sistem'
-                      )}
-                    </button>
-                  </div>
-           </div>
-         </div>
+            <div className="mt-8 pt-6 border-t border-slate-200 flex justify-end">
+              <button 
+                type="button" 
+                onClick={handleSaveAllSettings}
+                disabled={isSavingSettings}
+                className="bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold px-8 py-3 rounded-xl shadow-md transition flex items-center gap-2 text-sm"
+              >
+                {isSavingSettings ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Menyimpan Tetapan...
+                  </>
+                ) : (
+                  'Simpan Semua Tetapan Sistem'
+                )}
+              </button>
+            </div>
+          </div>
        )}
 
        {activeTab === 'PENGGUNA' && (
@@ -1527,6 +2065,15 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                        <input type="text" placeholder="Cari nama atau No. KP..." value={searchQuery} onChange={(e) => {setSearchQuery(e.target.value); setCurrentPage(1);}} className="w-full pl-10 pr-4 py-2 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 font-medium" />
                     </div>
                     <button 
+                      type="button"
+                      onClick={() => setShowAddModal(true)}
+                      className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm text-sm whitespace-nowrap"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      + Tambah Calon Tercicir
+                    </button>
+                    
+                    <button 
                       onClick={() => setPrintPukalBorang(true)}
                       className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm text-sm whitespace-nowrap"
                     >
@@ -1581,8 +2128,19 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                                      {(currentPage - 1) * itemsPerPage + index + 1}
                                   </td>
                                   <td className="px-4 py-4">
-                                     <div className="font-bold text-slate-800 text-sm">{c.name || c.name}</div>
-                                     <div className="text-xs text-slate-500">{c.ic || c.ic}</div>
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-10 h-13 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
+                                          {c.gambarUrl ? (
+                                            <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover" />
+                                          ) : (
+                                            <Camera className="w-4 h-4 text-slate-400 stroke-1" />
+                                          )}
+                                        </div>
+                                        <div>
+                                           <div className="font-bold text-slate-800 text-sm">{c.name}</div>
+                                           <div className="text-xs font-mono text-slate-500">{c.ic}</div>
+                                        </div>
+                                     </div>
                                   </td>
                                   <td className="px-4 py-4 text-sm text-slate-600">
                                      {c.daerah || '-'}, {c.negeri || '-'}
@@ -1691,6 +2249,12 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
             candidate={editCandidate} 
             onClose={() => setEditCandidate(null)} 
             onUpdated={() => setEditCandidate(null)}
+         />
+       )}
+
+       {showAddModal && (
+         <AddCandidateModal 
+            onClose={() => setShowAddModal(false)} 
          />
        )}
     </div>

@@ -147,13 +147,13 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
         
         <div>
           {settings.tandatanganPengetua ? (
-            <img src={settings.tandatanganPengetua} alt="Tandatangan Pengetua" className="h-16 object-contain mb-2" />
+            <img src={settings.tandatanganPengetua} alt="Tandatangan Pengetua" className="h-20 max-w-[180px] object-contain mb-1.5 select-none print:h-20" />
           ) : (
             <p className="mb-6 print:mb-2 mt-8 print:mt-6">.......................................................</p>
           )}
-          <p className="font-bold uppercase">({settings.namaPengetua || 'JUITA BINTI HAMZAH'})</p>
+          <p className="font-bold uppercase">({settings.namaPengetua || 'HAJAH JUITA BINTI HAMZAH'})</p>
           <p>Pengetua</p>
-          {settings.namaPengetua ? null : <p>SMA Kota Gelanggi 3</p>}
+          <p>SMA Kota Gelanggi 3</p>
         </div>
       </div>
       
