@@ -225,12 +225,19 @@ export default function Borang() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const cleanFormIC = formData.ic?.replace(/[^0-9]/g, '') || '';
-    const currentYear = new Date().getFullYear();
-    const expectedPrefix = (currentYear - 12).toString().slice(-2);
-    
-    if (!cleanFormIC.startsWith(expectedPrefix)) {
-      alert(`Maaf, permohonan ini hanya terbuka untuk calon Tingkatan 1 tahun semasa. No. Kad Pengenalan mestilah bermula dengan "${expectedPrefix}" (Lahir pada ${currentYear - 12}).`);
+    if (!formData.name?.trim()) {
+      alert('Sila masukkan Nama Penuh Calon.');
+      return;
+    }
+
+    if (!formData.ic?.trim()) {
+      alert('Sila masukkan No. Kad Pengenalan Calon.');
+      return;
+    }
+
+    const cleanFormIC = formData.ic.replace(/[^0-9]/g, '');
+    if (cleanFormIC.length < 6) {
+      alert('Sila pastikan No. Kad Pengenalan Calon diisi dengan betul.');
       return;
     }
 
@@ -240,13 +247,18 @@ export default function Borang() {
       return;
     }
 
-    if (!agreed) { alert('Sila sahkan perakuan.'); return; }
+    if (!agreed) {
+      alert('Sila tandakan kotak pengesahan perakuan sebelum menghantar borang.');
+      return;
+    }
     
     setIsSubmitting(true);
     try {
       const permohonanId = Math.random().toString(36).substr(2, 9);
       const newCandidate: Candidate = {
         ...(formData as Candidate),
+        name: formData.name.trim(),
+        ic: formData.ic.trim(),
         id: permohonanId,
         statusTemuduga: 'MENUNGGU',
         statusTawaran: 'DALAM_PERTIMBANGAN'
@@ -438,7 +450,7 @@ export default function Borang() {
         <p className="text-slate-500 text-lg">Sila isi semua maklumat di bawah dengan tepat. Sistem akan menyimpan draf secara automatik.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-10">
+      <form onSubmit={handleSubmit} noValidate className="space-y-10">
         {/* Gambar */}
         <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
            <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100">
@@ -496,28 +508,28 @@ export default function Borang() {
            <div className="p-8 sm:p-12">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Nama Pemohon</label>
-                <input type="text" name="name" value={formData.name || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Nama Pemohon <span className="text-red-500">*</span></label>
+                <input type="text" name="name" value={formData.name || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" placeholder="Nama penuh calon" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Kad Pengenalan</label>
-                <input type="text" name="ic" value={formData.ic || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required placeholder="Cth: 140101061234"/>
+                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Kad Pengenalan <span className="text-red-500">*</span></label>
+                <input type="text" name="ic" value={formData.ic || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" placeholder="Cth: 140101061234"/>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Sijil Kelahiran</label>
-                <input type="text" name="noSijilLahir" value={formData.noSijilLahir || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="noSijilLahir" value={formData.noSijilLahir || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Tarikh Lahir</label>
-                <input type="date" name="tarikhLahir" value={formData.tarikhLahir || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="date" name="tarikhLahir" value={formData.tarikhLahir || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Tempat Lahir</label>
-                <input type="text" name="tempatLahir" value={formData.tempatLahir || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="tempatLahir" value={formData.tempatLahir || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Jantina</label>
-                <select name="jantina" value={formData.jantina || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none" required>
+                <select name="jantina" value={formData.jantina || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none">
                   <option value="">-- PILIH --</option>
                   <option value="LELAKI">LELAKI</option>
                   <option value="PEREMPUAN">PEREMPUAN</option>
@@ -525,8 +537,8 @@ export default function Borang() {
               </div>
               <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 1 <span className="text-red-500">*</span></label>
-                  <input type="text" name="alamat1" value={formData.alamat1 || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 1</label>
+                  <input type="text" name="alamat1" value={formData.alamat1 || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 2</label>
@@ -535,15 +547,15 @@ export default function Borang() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Poskod</label>
-                <input type="text" name="poskod" value={formData.poskod || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="poskod" value={formData.poskod || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Daerah</label>
-                <input type="text" name="daerah" value={formData.daerah || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="daerah" value={formData.daerah || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Negeri</label>
-                <select name="negeri" value={formData.negeri || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none" required>
+                <select name="negeri" value={formData.negeri || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none">
                   <option value="">-- PILIH NEGERI --</option>
                   <option value="JOHOR">JOHOR</option>
                   <option value="KEDAH">KEDAH</option>
@@ -565,7 +577,7 @@ export default function Borang() {
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Nama dan Alamat Sekolah Rendah</label>
-                <textarea name="namaSekolahRendah" value={formData.namaSekolahRendah || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" rows={3} required />
+                <textarea name="namaSekolahRendah" value={formData.namaSekolahRendah || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" rows={3} />
               </div>
            </div>
            </div>
@@ -594,20 +606,20 @@ export default function Borang() {
            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 mb-12">
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Nama Bapa</label>
-                <input type="text" name="namaBapa" value={formData.namaBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="namaBapa" value={formData.namaBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Kad Pengenalan</label>
-                <input type="text" name="icBapa" value={formData.icBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="icBapa" value={formData.icBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Warganegara</label>
-                <input type="text" name="warganegaraBapa" value={formData.warganegaraBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="warganegaraBapa" value={formData.warganegaraBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 1 <span className="text-red-500">*</span></label>
-                  <input type="text" name="alamatBapa1" value={formData.alamatBapa1 || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 1</label>
+                  <input type="text" name="alamatBapa1" value={formData.alamatBapa1 || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 2</label>
@@ -616,15 +628,15 @@ export default function Borang() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Poskod</label>
-                <input type="text" name="poskodBapa" value={formData.poskodBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="poskodBapa" value={formData.poskodBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Daerah</label>
-                <input type="text" name="daerahBapa" value={formData.daerahBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="daerahBapa" value={formData.daerahBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Negeri</label>
-                <select name="negeriBapa" value={formData.negeriBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none" required>
+                <select name="negeriBapa" value={formData.negeriBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none">
                   <option value="">-- PILIH NEGERI --</option>
                   <option value="JOHOR">JOHOR</option>
                   <option value="KEDAH">KEDAH</option>
@@ -646,11 +658,11 @@ export default function Borang() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Pekerjaan</label>
-                <input type="text" name="pekerjaanBapa" value={formData.pekerjaanBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="pekerjaanBapa" value={formData.pekerjaanBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Telefon</label>
-                <input type="text" name="telefonBapa" value={formData.telefonBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="telefonBapa" value={formData.telefonBapa || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
            </div>
            </div>
@@ -668,20 +680,20 @@ export default function Borang() {
            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
               <div className="md:col-span-2">
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Nama Ibu</label>
-                <input type="text" name="namaIbu" value={formData.namaIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="namaIbu" value={formData.namaIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Kad Pengenalan</label>
-                <input type="text" name="icIbu" value={formData.icIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="icIbu" value={formData.icIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Warganegara</label>
-                <input type="text" name="warganegaraIbu" value={formData.warganegaraIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="warganegaraIbu" value={formData.warganegaraIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 1 <span className="text-red-500">*</span></label>
-                  <input type="text" name="alamatIbu1" value={formData.alamatIbu1 || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                  <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 1</label>
+                  <input type="text" name="alamatIbu1" value={formData.alamatIbu1 || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Alamat Rumah 2</label>
@@ -690,15 +702,15 @@ export default function Borang() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Poskod</label>
-                <input type="text" name="poskodIbu" value={formData.poskodIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="poskodIbu" value={formData.poskodIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Daerah</label>
-                <input type="text" name="daerahIbu" value={formData.daerahIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="daerahIbu" value={formData.daerahIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Negeri</label>
-                <select name="negeriIbu" value={formData.negeriIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none" required>
+                <select name="negeriIbu" value={formData.negeriIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white appearance-none">
                   <option value="">-- PILIH NEGERI --</option>
                   <option value="JOHOR">JOHOR</option>
                   <option value="KEDAH">KEDAH</option>
@@ -720,11 +732,11 @@ export default function Borang() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Pekerjaan</label>
-                <input type="text" name="pekerjaanIbu" value={formData.pekerjaanIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="pekerjaanIbu" value={formData.pekerjaanIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Telefon</label>
-                <input type="text" name="telefonIbu" value={formData.telefonIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" required />
+                <input type="text" name="telefonIbu" value={formData.telefonIbu || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" />
               </div>
            </div>
         </div>
@@ -747,7 +759,7 @@ export default function Borang() {
                  {['bm', 'bi', 'matematik', 'sains'].map((sub) => (
                     <div key={sub} className="flex items-center justify-between border-b border-slate-100 pb-3">
                        <label className="text-sm font-bold text-slate-700 uppercase">{sub === 'bm' ? 'Bahasa Melayu' : sub === 'bi' ? 'Bahasa Inggeris' : sub}</label>
-                       <select name={`pbd.${sub}`} value={(formData.pbd as any)?.[sub] || ''} onChange={handleChange} className="border-2 border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 focus:bg-white w-32 appearance-none" required>
+                       <select name={`pbd.${sub}`} value={(formData.pbd as any)?.[sub] || ''} onChange={handleChange} className="border-2 border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 focus:bg-white w-32 appearance-none">
                           <option value="">PILIH TP</option>
                           {[1,2,3,4,5,6].map(tp => <option key={tp} value={`TP${tp}`}>TP {tp}</option>)}
                        </select>
@@ -761,7 +773,7 @@ export default function Borang() {
                  {['bm', 'bi', 'matematik', 'sains'].map((sub) => (
                     <div key={sub} className="flex items-center justify-between border-b border-slate-100 pb-3">
                        <label className="text-sm font-bold text-slate-700 uppercase">{sub === 'bm' ? 'Bahasa Melayu' : sub === 'bi' ? 'Bahasa Inggeris' : sub}</label>
-                       <select name={`pbdD6.${sub}`} value={(formData.pbdD6 as any)?.[sub] || ''} onChange={handleChange} className="border-2 border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 focus:bg-white w-32 appearance-none" required>
+                       <select name={`pbdD6.${sub}`} value={(formData.pbdD6 as any)?.[sub] || ''} onChange={handleChange} className="border-2 border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 focus:bg-white w-32 appearance-none">
                           <option value="">PILIH TP</option>
                           {[1,2,3,4,5,6].map(tp => <option key={tp} value={`TP${tp}`}>TP {tp}</option>)}
                        </select>
@@ -787,7 +799,7 @@ export default function Borang() {
                  ].map((sub) => (
                     <div key={sub.id} className="flex items-center justify-between border-b border-slate-100 pb-3">
                        <label className="text-sm font-bold text-slate-700 uppercase">{sub.label}</label>
-                       <select name={`upkk.${sub.id}`} value={(formData.upkk as any)?.[sub.id] || ''} onChange={handleChange} className="border-2 border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 focus:bg-white w-32 appearance-none" required>
+                       <select name={`upkk.${sub.id}`} value={(formData.upkk as any)?.[sub.id] || ''} onChange={handleChange} className="border-2 border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 bg-slate-50 focus:bg-white w-32 appearance-none">
                           <option value="">GRED</option>
                           {['A', 'B', 'C', 'D'].map(g => <option key={g} value={g}>{g}</option>)}
                        </select>
@@ -836,13 +848,40 @@ export default function Borang() {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end pt-4 pb-12">
-           {getMissingFields().length === 0 ? (
+        <div className="space-y-4 pt-4 pb-12">
+           {getMissingFields().length > 0 && (
+             <div className="text-amber-800 bg-amber-50/90 px-6 py-4 rounded-2xl border border-amber-200 shadow-sm flex flex-col gap-2">
+               <div className="flex items-center gap-3 font-bold text-sm text-amber-900">
+                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                 <span>Peringatan: Terdapat {getMissingFields().length} maklumat yang belum diisi</span>
+               </div>
+               <p className="text-xs text-amber-700 leading-relaxed">
+                 Calon tetap dibenarkan menghantar borang permohonan ini sekarang. Maklumat yang belum lengkap boleh dikemaskini oleh pihak pentadbir sekolah kemudian.
+               </p>
+               <details className="text-xs text-amber-800 mt-1 cursor-pointer">
+                 <summary className="font-semibold underline">Lihat senarai ruangan yang belum diisi ({getMissingFields().length})</summary>
+                 <ul className="list-disc list-inside font-medium mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 pl-2">
+                   {getMissingFields().map(m => <li key={m}>{m}</li>)}
+                 </ul>
+               </details>
+             </div>
+           )}
+
+           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                disabled={isSavingDraft}
+                className="w-full sm:w-auto px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition"
+              >
+                {isSavingDraft ? 'Menyimpan Draf...' : 'Simpan Draf'}
+              </button>
+
               <button 
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98] shadow-emerald-600/30 shadow-xl'} text-white px-10 py-4 rounded-xl font-bold flex items-center gap-3 transition-all duration-300 text-lg`}
+                className={`${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98] shadow-emerald-600/30 shadow-xl'} text-white px-10 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 text-lg w-full sm:w-auto`}
               >
                  {isSubmitting ? (
                    <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -851,17 +890,7 @@ export default function Borang() {
                  )}
                  {isSubmitting ? 'Menghantar...' : 'Hantar Permohonan'}
               </button>
-           ) : (
-              <div className="text-amber-700 flex flex-col gap-3 bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 rounded-xl border border-amber-200 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-6 h-6" />
-                  <span className="text-sm font-bold">Borang tidak lengkap. Sila semak semula ruangan yang masih kosong:</span>
-                </div>
-                <ul className="text-xs list-disc list-inside font-medium opacity-80 columns-2">
-                   {getMissingFields().map(m => <li key={m}>{m}</li>)}
-                </ul>
-              </div>
-           )}
+           </div>
         </div>
       </form>
     </div>
