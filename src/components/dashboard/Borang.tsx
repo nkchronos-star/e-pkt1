@@ -3,6 +3,8 @@ import { useAppContext, getTodayMalaysia } from '../../store';
 import { FileText, Save, Send, AlertCircle, Calendar, CheckCircle, X, LogIn, Loader2, Lock, Clock } from 'lucide-react';
 import { Candidate } from '../../types';
 import { compressImageFile } from '../../lib/imageUtils';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 
 export default function Borang() {
@@ -241,18 +243,33 @@ export default function Borang() {
       return;
     }
 
-    // Check for duplicate IC
-    if (candidates.some(c => c.ic?.replace(/[^0-9]/g, '') === cleanFormIC)) {
-      alert('Ralat: No. Kad Pengenalan ini telah pun didaftarkan. Calon yang sama tidak dibenarkan memohon lebih daripada sekali.');
-      return;
+    // Check for duplicate IC in Firestore securely
+    setIsSubmitting(true);
+    try {
+      const dRef = doc(db, 'candidates', cleanFormIC);
+      const dSnap = await getDoc(dRef);
+      if (dSnap.exists()) {
+        alert('Ralat: No. Kad Pengenalan ini telah pun didaftarkan. Calon yang sama tidak dibenarkan memohon lebih daripada sekali.');
+        setIsSubmitting(false);
+        return;
+      }
+      const q = query(collection(db, 'candidates'), where('ic', '==', cleanFormIC), limit(1));
+      const qSnap = await getDocs(q);
+      if (!qSnap.empty) {
+        alert('Ralat: No. Kad Pengenalan ini telah pun didaftarkan. Calon yang sama tidak dibenarkan memohon lebih daripada sekali.');
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (e) {
+      console.warn("Semakan pendua IC:", e);
     }
 
     if (!agreed) {
       alert('Sila tandakan kotak pengesahan perakuan sebelum menghantar borang.');
+      setIsSubmitting(false);
       return;
     }
     
-    setIsSubmitting(true);
     try {
       const permohonanId = Math.random().toString(36).substr(2, 9);
       const newCandidate: Candidate = {

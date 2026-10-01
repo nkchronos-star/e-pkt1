@@ -11,7 +11,7 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
   // Find candidate index based on LAYAK sorted by name
   const layakCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK').sort((a, b) => a.name.localeCompare(b.name));
   const candidateIndex = layakCandidates.findIndex(c => c.ic === candidate.ic);
-  const rujukanNumber = candidateIndex !== -1 ? (candidateIndex + 1).toString().padStart(2, '0') : '00';
+  const rujukanNumber = candidateIndex !== -1 ? (candidateIndex + 1).toString().padStart(2, '0') : '01';
   
   return (
     <div id="printable-surat" className="bg-white p-8 print:p-0 print:py-2 max-w-5xl mx-auto shadow-2xl printable-area text-black font-sans text-[13px]">
