@@ -462,6 +462,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       const cleanData = JSON.parse(JSON.stringify(data));
       const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
+
+      // Jika No. Kad Pengenalan ditukar, pindahkan rekod ke ID dokumen baharu dan padam ID lama
+      if (cleanData.ic && typeof cleanData.ic === 'string') {
+        const newSafeId = String(cleanData.ic).replace(/[^a-zA-Z0-9_-]/g, '');
+        if (newSafeId && newSafeId !== safeId) {
+          const oldDocSnap = await getDoc(doc(db, 'candidates', safeId));
+          const oldData = oldDocSnap.exists() ? oldDocSnap.data() : {};
+          const mergedData = { ...oldData, ...cleanData, id: newSafeId, ic: cleanData.ic };
+          await setDoc(doc(db, 'candidates', newSafeId), mergedData);
+          await deleteDoc(doc(db, 'candidates', safeId));
+
+          setState(prev => {
+            const nextList = prev.candidates.map(c => 
+              (c.ic === ic || c.id === safeId) ? { ...c, ...cleanData, id: newSafeId, ic: cleanData.ic } : c
+            );
+            return { ...prev, candidates: nextList };
+          });
+          return;
+        }
+      }
+
       await setDoc(doc(db, 'candidates', safeId), cleanData, { merge: true });
 
       setState(prev => {

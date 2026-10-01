@@ -38,6 +38,11 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === 'ic' || name === 'icBapa' || name === 'icIbu') {
+      const digitsOnly = value.replace(/\D/g, '').substring(0, 12);
+      setFormData(prev => ({ ...prev, [name]: digitsOnly }));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: name === 'jantina' ? value : (typeof value === 'string' && name !== 'gambarUrl' ? value.toUpperCase() : value)
@@ -63,9 +68,9 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
     e.preventDefault();
     setErrorMsg('');
 
-    const cleanIC = formData.ic?.replace(/[^0-9]/g, '');
-    if (!cleanIC || cleanIC.length < 6) {
-      setErrorMsg('Sila masukkan No. Kad Pengenalan calon yang sah.');
+    const cleanIC = (formData.ic || '').replace(/\D/g, '');
+    if (cleanIC.length !== 12 || !/^\d{12}$/.test(cleanIC)) {
+      setErrorMsg('No. Kad Pengenalan calon mestilah mengandungi tepat 12 digit nombor sahaja tanpa sengkang atau perkataan (cth: 140101061234).');
       return;
     }
 
@@ -142,8 +147,8 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">No. Kad Pengenalan (12 Digit) *</label>
-                <input type="text" name="ic" value={formData.ic} onChange={handleChange} required maxLength={14} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 font-medium" placeholder="Cth: 140506060727" />
+                <label className="block text-xs font-bold text-slate-600 mb-1">No. Kad Pengenalan (12 Digit Nombor Sahaja) *</label>
+                <input type="text" name="ic" value={formData.ic} onChange={handleChange} required maxLength={12} inputMode="numeric" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 font-mono font-bold" placeholder="Cth: 140506060727" />
               </div>
 
               <div>

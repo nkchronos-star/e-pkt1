@@ -138,6 +138,10 @@ export interface Candidate {
     tarikhDinilai?: string;
     catatan?: string;
   };
+  sedangDinilaiTahfiz?: {
+    dinilaiOleh: string;
+    dimulaPada: string;
+  } | null;
   markahAkademik?: {
     [key: string]: any; // Dynamic items
     bm?: number;

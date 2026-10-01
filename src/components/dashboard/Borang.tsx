@@ -79,12 +79,11 @@ export default function Borang() {
              }
          }
          if (name === 'ic' && typeof value === 'string') {
-             if (value.includes('-')) {
-                 alert('Sila masukkan No. Kad Pengenalan tanpa tanda sengkang (-).');
-                 updates.ic = value.replace(/-/g, '');
-             }
+             // Hanya nombor dibenarkan, maksimum 12 digit
+             const digitsOnly = value.replace(/\D/g, '').substring(0, 12);
+             updates.ic = digitsOnly;
 
-             const cleanIC = value.replace(/\D/g, '');
+             const cleanIC = digitsOnly;
              if (cleanIC.length >= 6) {
                  const yy = parseInt(cleanIC.substring(0, 2), 10);
                  const mm = cleanIC.substring(2, 4);
@@ -237,9 +236,9 @@ export default function Borang() {
       return;
     }
 
-    const cleanFormIC = formData.ic.replace(/[^0-9]/g, '');
-    if (cleanFormIC.length < 6) {
-      alert('Sila pastikan No. Kad Pengenalan Calon diisi dengan betul.');
+    const cleanFormIC = (formData.ic || '').replace(/\D/g, '');
+    if (cleanFormIC.length !== 12 || !/^\d{12}$/.test(cleanFormIC)) {
+      alert('Ralat: No. Kad Pengenalan Calon mestilah mengandungi tepat 12 digit nombor sahaja tanpa tanda sengkang (-) atau perkataan (contoh: 140101061234).');
       return;
     }
 
@@ -275,7 +274,7 @@ export default function Borang() {
       const newCandidate: Candidate = {
         ...(formData as Candidate),
         name: formData.name.trim(),
-        ic: formData.ic.trim(),
+        ic: cleanFormIC,
         id: permohonanId,
         statusTemuduga: 'MENUNGGU',
         statusTawaran: 'DALAM_PERTIMBANGAN'
@@ -568,8 +567,18 @@ export default function Borang() {
                 <input type="text" name="name" value={formData.name || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 uppercase focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" placeholder="Nama penuh calon" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Kad Pengenalan <span className="text-red-500">*</span></label>
-                <input type="text" name="ic" value={formData.ic || ''} onChange={handleChange} className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white" placeholder="Cth: 140101061234"/>
+                <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Kad Pengenalan (12 Digit Nombor Sahaja) <span className="text-red-500">*</span></label>
+                <input 
+                  type="text" 
+                  name="ic" 
+                  inputMode="numeric"
+                  maxLength={12}
+                  value={formData.ic || ''} 
+                  onChange={handleChange} 
+                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-mono font-bold text-slate-800 bg-slate-50 focus:bg-white" 
+                  placeholder="Cth: 140101061234"
+                  required
+                />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Sijil Kelahiran</label>

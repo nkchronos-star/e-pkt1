@@ -42,6 +42,11 @@ export default function EditCandidateModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if (name === 'ic') {
+      const digitsOnly = value.replace(/\D/g, '').substring(0, 12);
+      setFormData(prev => ({ ...prev, ic: digitsOnly }));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: name === 'jantina' ? value : (typeof value === 'string' && name !== 'gambarUrl' ? value.toUpperCase() : value)
@@ -80,13 +85,19 @@ export default function EditCandidateModal({
       return;
     }
 
+    const cleanIc = formData.ic.replace(/\D/g, '');
+    if (cleanIc.length !== 12 || !/^\d{12}$/.test(cleanIc)) {
+      alert('Ralat: No. Kad Pengenalan calon mestilah mengandungi tepat 12 digit nombor sahaja (tanpa sengkang atau perkataan, cth: 140101061234).');
+      return;
+    }
+
     setLoading(true);
     setStatusMsg('');
     try {
       const targetIc = candidate.ic || formData.ic;
       await updateCandidate(targetIc, {
         name: formData.name.trim(),
-        ic: formData.ic.trim(),
+        ic: cleanIc,
         noSijilLahir: formData.noSijilLahir.trim(),
         jantina: formData.jantina as any,
         tarikhLahir: formData.tarikhLahir,
@@ -232,10 +243,13 @@ export default function EditCandidateModal({
               </div>
               
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">No. Kad Pengenalan</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">No. Kad Pengenalan (12 Digit Nombor Sahaja)</label>
                 <input 
                   type="text" 
                   name="ic" 
+                  inputMode="numeric"
+                  maxLength={12}
+                  placeholder="Cth: 140101061234"
                   value={formData.ic} 
                   onChange={handleChange} 
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white" 

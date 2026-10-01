@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
 import AddCandidateModal from './AddCandidateModal';
+import SearchableCandidateSelect from './SearchableCandidateSelect';
 
 import PenilaianView from './PenilaianView';
 import { Candidate, Role, User, ApplicationSettings } from '../../types';
@@ -385,13 +386,77 @@ function TahfizView() {
     return new Date(dateStr).toDateString() === new Date().toDateString();
   };
 
+  // Helper untuk menentukan sama ada calon telah mempunyai markah penilaian tahfiz
+  const isCandidateEvaluated = (c?: Candidate | null) => Boolean(
+    c?.markahTahfiz && (typeof c.markahTahfiz.jumlah === 'number' || c.markahTahfiz.dinilaiOleh)
+  );
+
+  // Calon yang layak temuduga dan BELUM dinilai sahaja (yang dah dinilai dikeluarkan terus dari senarai dropdown)
   const pendingCandidates = candidates.filter(c => 
     c.statusTemuduga === 'LAYAK' && 
-    !c.markahTahfiz
+    !isCandidateEvaluated(c)
   );
 
   const evaluatedCandidates = candidates.filter(c => c.markahTahfiz?.dinilaiOleh === currentUser?.name);
   const currentC = candidates.find(c => c.ic === selectedCandidate);
+
+  // Status semakan keselamatan calon semasa
+  const isAlreadyEvaluated = isCandidateEvaluated(currentC);
+  const isEditingSameDay = Boolean(
+    isAlreadyEvaluated && 
+    currentC?.markahTahfiz?.dinilaiOleh === currentUser?.name && 
+    isSameDay(currentC?.markahTahfiz?.tarikhDinilai)
+  );
+  // Disekat jika telah dinilai (kecuali penilai yang sama mengedit pada hari yang sama)
+  const isBlockedAlreadyEvaluated = isAlreadyEvaluated && !isEditingSameDay;
+
+  // Semak jika calon sedang dinilai oleh guru/penilai lain dalam masa 20 minit terkini
+  const isBeingEvaluatedByOther = Boolean(
+    currentC?.sedangDinilaiTahfiz && 
+    currentC.sedangDinilaiTahfiz.dinilaiOleh && 
+    currentC.sedangDinilaiTahfiz.dinilaiOleh !== currentUser?.name &&
+    currentC.sedangDinilaiTahfiz.dimulaPada &&
+    (Date.now() - new Date(currentC.sedangDinilaiTahfiz.dimulaPada).getTime() < 20 * 60 * 1000)
+  );
+
+  const isFormDisabled = isBlockedAlreadyEvaluated || isBeingEvaluatedByOther;
+
+  // Bebaskan status "sedang dinilai" jika penilai menukar calon atau menutup tab
+  const handleSelectCandidate = (ic: string) => {
+    if (selectedCandidate && selectedCandidate !== ic) {
+      const prev = candidates.find(c => c.ic === selectedCandidate);
+      if (prev && !isCandidateEvaluated(prev) && prev.sedangDinilaiTahfiz?.dinilaiOleh === currentUser?.name) {
+        updateCandidate(prev.ic, { sedangDinilaiTahfiz: null });
+      }
+    }
+
+    setSelectedCandidate(ic);
+
+    // Kunci calon untuk penilai semasa agar orang lain tidak nilai serentak
+    if (ic) {
+      const nextC = candidates.find(c => c.ic === ic);
+      if (nextC && !isCandidateEvaluated(nextC)) {
+        updateCandidate(ic, {
+          sedangDinilaiTahfiz: {
+            dinilaiOleh: currentUser?.name || 'Penilai',
+            dimulaPada: new Date().toISOString()
+          }
+        });
+      }
+    }
+  };
+
+  // Bersihkan kunci apabila komponen dinyahpasang
+  useEffect(() => {
+    return () => {
+      if (selectedCandidate) {
+        const c = candidates.find(item => item.ic === selectedCandidate);
+        if (c && !isCandidateEvaluated(c) && c.sedangDinilaiTahfiz?.dinilaiOleh === currentUser?.name) {
+          updateCandidate(c.ic, { sedangDinilaiTahfiz: null });
+        }
+      }
+    };
+  }, [selectedCandidate]);
 
   useEffect(() => {
     if (currentC && currentC.markahTahfiz) {
@@ -403,8 +468,8 @@ function TahfizView() {
     }
   }, [currentC]);
 
-
   const handleMarkahChange = (e: React.ChangeEvent<HTMLInputElement>, itemId: string, maxWeight: number, itemName: string) => {
+    if (isFormDisabled) return;
     let val = parseInt(e.target.value);
     if (isNaN(val)) {
       const newMarkah = {...markah};
@@ -422,9 +487,18 @@ function TahfizView() {
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-
     e.preventDefault();
     if (!currentC) return;
+
+    if (isBlockedAlreadyEvaluated) {
+      alert('Amaran: Calon ini telah pun selesai dinilai dan markah tidak boleh diisi buat kali kedua.');
+      return;
+    }
+
+    if (isBeingEvaluatedByOther) {
+      alert(`Amaran: Calon ini sedang dinilai oleh ${currentC.sedangDinilaiTahfiz?.dinilaiOleh}. Anda tidak boleh mengisi markah untuk calon yang sama secara serentak.`);
+      return;
+    }
     
     const jumlah = items.reduce((acc, item) => acc + (markah[item.id] || 0), 0);
     
@@ -435,9 +509,10 @@ function TahfizView() {
         dinilaiOleh: currentUser?.name,
         tarikhDinilai: currentC.markahTahfiz?.tarikhDinilai || new Date().toISOString(),
         catatan
-      }
+      },
+      sedangDinilaiTahfiz: null // Lepaskan kunci setelah selesai disimpan
     });
-    alert('Penilaian Tahfiz berjaya disimpan!');
+    alert(`Penilaian Tahfiz bagi calon ${currentC.name} berjaya disimpan!`);
     setSelectedCandidate('');
     setMarkah({});
     setCatatan('');
@@ -470,25 +545,62 @@ function TahfizView() {
 
        {activeTab === 'NILAI' && (
          <div className="max-w-4xl animate-in fade-in">
-           <div className="mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200/60">
-             <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">Pilih Calon Penilaian</label>
-             <select 
-               className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:ring-4 transition-all duration-300 font-medium text-slate-800 bg-white shadow-sm appearance-none focus:ring-emerald-500/20 focus:border-emerald-500"
-               value={selectedCandidate}
-               onChange={(e) => setSelectedCandidate(e.target.value)}
-             >
-               <option value="">-- Pilih Calon --</option>
-               {pendingCandidates.map(c => (
-                 <option key={c.id} value={c.ic}>{c.name} ({c.ic}) </option>
-               ))}
-             </select>
+           {/* Searchable Dropdown Pemilihan Calon */}
+           <div className="mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200/60 shadow-xs">
+             <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+               <span>Pilih Calon Penilaian</span>
+               <span className="text-xs font-semibold text-slate-400 normal-case">
+                 Taip nama atau No. KP untuk carian pantas
+               </span>
+             </label>
+
+             <SearchableCandidateSelect 
+               candidates={pendingCandidates}
+               selectedCandidate={selectedCandidate}
+               onSelect={handleSelectCandidate}
+               currentUserName={currentUser?.name}
+               placeholder="-- Cari / Pilih Calon Layak (Taip Nama atau No. KP) --"
+             />
+
              {pendingCandidates.length === 0 && (
-               <p className="text-sm font-bold text-amber-700 mt-3 bg-amber-50 px-4 py-2 rounded-lg inline-block border border-amber-200">Tiada calon baru untuk dinilai.</p>
+               <div className="mt-3 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-3 rounded-xl flex items-center gap-2 text-sm font-bold">
+                 <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                 <span>Semua calon yang layak telah selesai dinilai!</span>
+               </div>
              )}
            </div>
 
            {currentC && (
              <div className="bg-emerald-50/50 rounded-[2rem] p-8 border-2 border-emerald-100 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-emerald-100/30">
+               
+               {/* Amaran Jika Calon Sudah Dinilai (Tak Boleh Isi Kali Kedua) */}
+               {isBlockedAlreadyEvaluated && (
+                 <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 mb-6 flex items-start gap-3 shadow-xs">
+                   <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                   <div>
+                     <h4 className="font-extrabold text-amber-900 text-base">Calon Ini Telah Selesai Dinilai</h4>
+                     <p className="text-sm font-medium text-amber-800 mt-1 leading-relaxed">
+                       Penilaian telah direkodkan oleh <strong>{currentC.markahTahfiz?.dinilaiOleh || 'Penilai'}</strong> pada {new Date(currentC.markahTahfiz?.tarikhDinilai || '').toLocaleDateString('ms-MY')} dengan jumlah markah <strong>{currentC.markahTahfiz?.jumlah}</strong>.
+                       <br/>
+                       Calon tidak dibenarkan dinilai kali kedua bagi mengelakkan pertindihan data.
+                     </p>
+                   </div>
+                 </div>
+               )}
+
+               {/* Amaran Jika Calon Sedang Dinilai oleh Guru Lain Secara Serentak */}
+               {isBeingEvaluatedByOther && (
+                 <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 mb-6 flex items-start gap-3 shadow-xs">
+                   <Lock className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+                   <div>
+                     <h4 className="font-extrabold text-red-900 text-base">Sedang Dinilai oleh Penilai Lain</h4>
+                     <p className="text-sm font-medium text-red-800 mt-1 leading-relaxed">
+                       Calon ini sedang dinilai oleh <strong>{currentC.sedangDinilaiTahfiz?.dinilaiOleh}</strong>. Anda tidak dibenarkan mengisi markah untuk calon yang sama secara serentak bagi mengelakkan konflik markah.
+                     </p>
+                   </div>
+                 </div>
+               )}
+
                <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/50 flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
                  {currentC.gambarUrl ? (
                    <img src={currentC.gambarUrl} alt={currentC.name} className="w-24 h-32 object-cover rounded-xl border-2 border-slate-200 shadow-sm" />
@@ -504,6 +616,12 @@ function TahfizView() {
                    <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                      <span className="font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 inline-flex items-center gap-2">IC: {currentC.ic}</span>
                      <span className="font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 inline-flex items-center gap-2">Jantina: {currentC.jantina || '-'}</span>
+                     {isAlreadyEvaluated && (
+                       <span className="font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 inline-flex items-center gap-1.5">
+                         <Check className="w-4 h-4 text-emerald-700" />
+                         Markah Semasa: {currentC.markahTahfiz?.jumlah}
+                       </span>
+                     )}
                    </div>
                  </div>
                </div>
@@ -513,7 +631,20 @@ function TahfizView() {
                     {items.map((item) => (
                         <div key={item.id}>
                           <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">{item.name} ({item.weight} markah)</label>
-                          <input type="number" max={item.weight} min="0" required value={markah[item.id] !== undefined ? markah[item.id] : ''} onChange={e => handleMarkahChange(e, item.id, item.weight, item.name)} className="w-full p-4 rounded-xl border-2 bg-white font-bold text-lg text-slate-800 transition-all border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20" />
+                          <input 
+                            type="number" 
+                            max={item.weight} 
+                            min="0" 
+                            required 
+                            disabled={isFormDisabled}
+                            value={markah[item.id] !== undefined ? markah[item.id] : ''} 
+                            onChange={e => handleMarkahChange(e, item.id, item.weight, item.name)} 
+                            className={`w-full p-4 rounded-xl border-2 font-bold text-lg text-slate-800 transition-all ${
+                              isFormDisabled 
+                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                : 'bg-white border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20'
+                            }`} 
+                          />
                         </div>
                     ))}
                     <div>
@@ -526,15 +657,36 @@ function TahfizView() {
                     <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Ulasan / Catatan Penilai</label>
                     <textarea 
                       rows={3} 
+                      disabled={isFormDisabled}
                       value={catatan} 
                       onChange={e => setCatatan(e.target.value)} 
                       placeholder="Masukkan ulasan untuk calon ini (pilihan)"
-                      className="w-full p-4 rounded-xl border-2 bg-white font-medium text-slate-700 transition-all border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20" 
+                      className={`w-full p-4 rounded-xl border-2 font-medium text-slate-700 transition-all ${
+                        isFormDisabled 
+                          ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-white border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20'
+                      }`}
                     />
                   </div>
 
                   <div className="pt-6 flex justify-end">
-                    <button type="submit" className="text-white px-8 py-4 rounded-xl font-bold shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-lg w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30">Simpan Maklumat Penilaian</button>
+                    <button 
+                      type="submit" 
+                      disabled={isFormDisabled}
+                      className={`text-white px-8 py-4 rounded-xl font-bold shadow-lg transition-all duration-300 text-lg w-full sm:w-auto ${
+                        isFormDisabled
+                          ? 'bg-slate-400 cursor-not-allowed shadow-none'
+                          : 'hover:scale-[1.02] active:scale-[0.98] bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                      }`}
+                    >
+                      {isBlockedAlreadyEvaluated 
+                        ? 'Telah Selesai Dinilai - Tidak Boleh Diisi Semula' 
+                        : isBeingEvaluatedByOther 
+                        ? 'Sedang Dinilai oleh Penilai Lain' 
+                        : isEditingSameDay 
+                        ? 'Kemaskini Maklumat Penilaian' 
+                        : 'Simpan Maklumat Penilaian'}
+                    </button>
                   </div>
                </form>
              </div>
@@ -630,7 +782,7 @@ function TahfizView() {
 
 
 // ================= AKADEMIK VIEW =================
-function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems }: any) {
+function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, index }: any) {
   const [markah, setMarkah] = useState<Record<string, number>>(() => {
      const init: Record<string, number> = {};
      akademikItems.forEach((i: any) => {
@@ -674,6 +826,9 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems }:
 
   return (
     <tr className="hover:bg-blue-50/30 transition-colors">
+      <td className="px-4 py-3 border-b border-slate-100 text-center font-bold text-slate-500 text-sm w-12">
+        {index + 1}
+      </td>
       <td className="px-4 py-3 border-b border-slate-100">
         <div className="font-bold text-slate-900">{candidate.name}</div>
         <div className="text-xs font-medium text-slate-500 mt-1">{candidate.ic}</div>
@@ -707,14 +862,26 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems }:
 
 function AkademikView() {
   const { candidates, updateCandidate, currentUser, settings } = useAppContext();
+  const [searchQuery, setSearchQuery] = useState('');
   const akademikItems = settings.akademikItems || [];
   
-  // Show candidates who have finished Tahfiz interview (have markahTahfiz) and are LAYAK
+  // Show candidates who are LAYAK temuduga
   const eligibleCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK');
+
+  const filteredCandidates = eligibleCandidates.filter(c => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const nameMatch = c.name?.toLowerCase().includes(q);
+    const icRaw = c.ic?.toLowerCase() || '';
+    const icClean = c.ic?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || '';
+    const qClean = q.replace(/[^a-zA-Z0-9]/g, '');
+    const icMatch = icRaw.includes(q) || (qClean.length > 0 && icClean.includes(qClean));
+    return nameMatch || icMatch;
+  });
 
   return (
     <div className="animate-in fade-in">
-       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-8">
+       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-6">
          <div className="flex items-center gap-4">
            <div className="p-3 bg-blue-100 rounded-xl">
              <CheckSquare className="w-7 h-7 text-blue-700" />
@@ -727,11 +894,41 @@ function AkademikView() {
          <span className="font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">{new Date().toLocaleDateString('ms-MY')}</span>
        </div>
 
+       {/* Bar Carian Nama / IC & Bilangan Calon */}
+       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+         <div className="relative flex-1 sm:max-w-md">
+           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+           <input 
+             type="text" 
+             value={searchQuery}
+             onChange={e => setSearchQuery(e.target.value)}
+             placeholder="Cari nama calon atau No. KP..."
+             className="w-full pl-10 pr-9 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-xs"
+           />
+           {searchQuery && (
+             <button 
+               type="button" 
+               onClick={() => setSearchQuery('')} 
+               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+               title="Kosongkan carian"
+             >
+               <XCircle className="w-4 h-4" />
+             </button>
+           )}
+         </div>
+         <div className="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-3.5 py-2 rounded-xl self-start sm:self-auto flex items-center gap-2">
+           <span>Jumlah Calon:</span>
+           <span className="text-blue-700 font-extrabold text-sm">{filteredCandidates.length}</span>
+           {searchQuery && <span className="text-slate-400 font-normal">/ {eligibleCandidates.length}</span>}
+         </div>
+       </div>
+
        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-10">
           <div className="overflow-x-auto">
              <table className="w-full text-left border-collapse min-w-full">
                 <thead className="bg-slate-50 border-b-2 border-slate-200">
                    <tr>
+                      <th className="w-12 px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Bil</th>
                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">Nama Calon & IC</th>
                       {akademikItems.map((item: any) => (
                          <th key={item.id} className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">{item.name} ({item.weight})</th>
@@ -743,14 +940,27 @@ function AkademikView() {
                 <tbody>
                    {eligibleCandidates.length === 0 ? (
                       <tr>
-                         <td colSpan={akademikItems.length + 3} className="px-6 py-12 text-center text-slate-500 font-medium bg-slate-50/30">
+                         <td colSpan={akademikItems.length + 4} className="px-6 py-12 text-center text-slate-500 font-medium bg-slate-50/30">
                             Tiada calon yang layak temuduga buat masa ini.<br/>
                             <span className="text-sm mt-2 inline-block text-slate-400">Sistem hanya memaparkan calon yang LAYAK untuk dinilai.</span>
                          </td>
                       </tr>
+                   ) : filteredCandidates.length === 0 ? (
+                      <tr>
+                         <td colSpan={akademikItems.length + 4} className="px-6 py-12 text-center text-slate-500 font-medium bg-slate-50/30">
+                            <div className="text-slate-700 font-bold mb-1">Tiada calon sepadan dengan carian "{searchQuery}"</div>
+                            <button 
+                              type="button" 
+                              onClick={() => setSearchQuery('')}
+                              className="mt-2 text-xs font-bold text-blue-600 hover:text-blue-800 underline"
+                            >
+                              Set Semula Carian
+                            </button>
+                         </td>
+                      </tr>
                    ) : (
-                      eligibleCandidates.map(c => (
-                         <AkademikRow key={c.id} candidate={c} updateCandidate={updateCandidate} currentUser={currentUser} akademikItems={akademikItems} />
+                      filteredCandidates.map((c, idx) => (
+                         <AkademikRow key={c.id || c.ic} candidate={c} updateCandidate={updateCandidate} currentUser={currentUser} akademikItems={akademikItems} index={idx} />
                       ))
                    )}
                 </tbody>
