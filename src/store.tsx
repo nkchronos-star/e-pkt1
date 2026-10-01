@@ -114,6 +114,20 @@ const defaultUsers: User[] = [
 const SETTINGS_STORAGE_KEY = 'smag3_settings_cache_v2';
 const USERS_STORAGE_KEY = 'smag3_users_cache_v2';
 const CANDIDATES_STORAGE_KEY = 'smag3_candidates_cache_v2';
+
+const purgeSensitiveDataFromBrowser = () => {
+  try {
+    const sensitiveKeys = [
+      'sma_candidates',
+      'sma_users',
+      'smag3_candidates_cache',
+      'smag3_users_cache',
+      USERS_STORAGE_KEY,
+      CANDIDATES_STORAGE_KEY
+    ];
+    sensitiveKeys.forEach(k => localStorage.removeItem(k));
+  } catch {}
+};
 const SIG_PENGETUA_KEY = 'smag3_sig_pengetua_v1';
 const SIG_PENGARAH_KEY = 'smag3_sig_pengarah_v1';
 
@@ -184,55 +198,46 @@ const loadCachedSettings = (): ApplicationSettings => {
   return applyAutoDates(defaultSettings);
 };
 
-const loadCachedUsers = (): User[] => {
-  try {
-    const raw = localStorage.getItem(USERS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((u: User) => {
-          if (u.username?.toLowerCase() === 'admin' && (u.password === '123' || !u.password)) {
-            return { ...u, password: '@cft2001' };
-          }
-          return u;
-        });
-      }
-    }
-  } catch (e) {
-    console.warn('Gagal membaca cache pengguna:', e);
-  }
-  return defaultUsers;
-};
+const SESSION_USER_KEY = 'sma_admin_session';
 
-const loadCachedCandidates = (): Candidate[] => {
+const loadCachedSessionUser = (): User | null => {
   try {
-    const raw = localStorage.getItem(CANDIDATES_STORAGE_KEY);
+    const raw = localStorage.getItem(SESSION_USER_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed;
+      if (parsed && parsed.username) {
+        return parsed as User;
       }
     }
   } catch (e) {
-    console.warn('Gagal membaca cache calon:', e);
+    console.warn('Gagal membaca sesi pentadbir:', e);
   }
-  return [];
+  return null;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<AppState>(() => ({
-    settings: loadCachedSettings(),
-    candidates: loadCachedCandidates(),
-    users: loadCachedUsers(),
-    currentUser: null,
-    userRole: null,
-    infographics: [],
-    isInitialized: true, // Immediate render prevents endless spinning screen
-  }));
+  const initialUser = loadCachedSessionUser();
 
-  // Listen to Firestore
+  const [state, setState] = useState<AppState>(() => {
+    // Zero-leakage check: jika bukan pentadbir, padam sebarang sisa cache calon dan pengguna dari pelayar
+    if (!initialUser) {
+      purgeSensitiveDataFromBrowser();
+    }
+
+    return {
+      settings: loadCachedSettings(),
+      candidates: [],
+      users: initialUser ? defaultUsers : [],
+      currentUser: initialUser,
+      userRole: initialUser ? initialUser.role : null,
+      infographics: [],
+      isInitialized: true,
+    };
+  });
+
+  // 1. Dengar data awam sahaja (Settings & Infografik) untuk semua pelawat
   useEffect(() => {
     // 1. Settings
     const unsubSettings = onSnapshot(doc(db, 'config', 'main'), (docSnap) => {
@@ -296,54 +301,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setState(prev => ({ ...prev, isInitialized: true }));
     });
 
-    // 2. Users
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const usersList: User[] = [];
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.username) {
-          usersList.push({ id: docSnap.id, ...data } as User);
-        }
-      });
-      // Ensure default admin users always exist in local list without overwriting custom Firestore passwords
-      defaultUsers.forEach(u => {
-        if (!usersList.some(existing => existing.username?.toLowerCase() === u.username.toLowerCase())) {
-          usersList.push(u);
-        }
-      });
-      setState(prev => {
-        const updatedCurrentUser = prev.currentUser 
-          ? usersList.find(u => u.id === prev.currentUser?.id || u.username.toLowerCase() === prev.currentUser?.username.toLowerCase()) || prev.currentUser
-          : null;
-        return {
-          ...prev,
-          users: usersList,
-          currentUser: updatedCurrentUser,
-          userRole: updatedCurrentUser?.role || prev.userRole
-        };
-      });
-      try {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersList));
-      } catch (e) {}
-    }, (error) => {
-      console.error("Firestore users error:", error);
-    });
-
-    // 3. Candidates
-    const unsubCandidates = onSnapshot(collection(db, 'candidates'), (snapshot) => {
-      const candidatesList: Candidate[] = [];
-      snapshot.forEach(docSnap => {
-        candidatesList.push({ id: docSnap.id, ...docSnap.data() } as Candidate);
-      });
-      setState(prev => ({ ...prev, candidates: candidatesList }));
-      try {
-        localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(candidatesList));
-      } catch (e) {}
-    }, (error) => {
-      console.error("Firestore candidates error:", error);
-    });
-
-    // 4. Infographics
+    // 2. Infographics (Awam)
     const unsubInfographics = onSnapshot(collection(db, 'infographics'), (snapshot) => {
       const infoList: Infographic[] = [];
       snapshot.forEach(docSnap => {
@@ -356,11 +314,57 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       unsubSettings();
-      unsubUsers();
-      unsubCandidates();
       unsubInfographics();
     };
   }, []);
+
+  // 2. KAWALAN KESELAMATAN KETAT: Dengar senarai calon & pengguna HANYA jika pentadbir telah log masuk!
+  useEffect(() => {
+    if (!state.currentUser) {
+      // Pastikan sifar data calon atau pengguna wujud dalam peranti pelawat awam
+      setState(prev => ({ ...prev, candidates: [], users: [] }));
+      purgeSensitiveDataFromBrowser();
+      return;
+    }
+
+    // 2.1 Pengguna (Hanya untuk Admin Panel)
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const usersList: User[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.username) {
+          usersList.push({ id: docSnap.id, ...data } as User);
+        }
+      });
+      defaultUsers.forEach(u => {
+        if (!usersList.some(existing => existing.username?.toLowerCase() === u.username.toLowerCase())) {
+          usersList.push(u);
+        }
+      });
+      setState(prev => ({
+        ...prev,
+        users: usersList,
+      }));
+    }, (error) => {
+      console.error("Firestore users error:", error);
+    });
+
+    // 2.2 Calon-calon (Hanya dimuat turun oleh Pentadbir berdaftar)
+    const unsubCandidates = onSnapshot(collection(db, 'candidates'), (snapshot) => {
+      const candidatesList: Candidate[] = [];
+      snapshot.forEach(docSnap => {
+        candidatesList.push({ id: docSnap.id, ...docSnap.data() } as Candidate);
+      });
+      setState(prev => ({ ...prev, candidates: candidatesList }));
+    }, (error) => {
+      console.error("Firestore candidates error:", error);
+    });
+
+    return () => {
+      unsubUsers();
+      unsubCandidates();
+    };
+  }, [state.currentUser?.id, state.currentUser?.username]);
 
   const updateSettings = async (newSettings: Partial<ApplicationSettings>) => {
     let nextSettings: ApplicationSettings = defaultSettings;
@@ -446,9 +450,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // Instant local update so candidate is immediately available
       setState(prev => {
         const nextList = [cleanData, ...prev.candidates.filter(c => c.ic !== cleanData.ic && c.id !== cleanData.id)];
-        try {
-          localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(nextList));
-        } catch {}
         return { ...prev, candidates: nextList };
       });
     } catch (e) {
@@ -465,9 +466,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       setState(prev => {
         const nextList = prev.candidates.map(c => (c.ic === ic || c.id === safeId) ? { ...c, ...cleanData } : c);
-        try {
-          localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(nextList));
-        } catch {}
         return { ...prev, candidates: nextList };
       });
     } catch (e) {
@@ -483,9 +481,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       setState(prev => {
         const nextList = prev.candidates.filter(c => c.ic !== ic);
-        try {
-          localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(nextList));
-        } catch {}
         return { ...prev, candidates: nextList };
       });
     } catch (e) {
@@ -498,47 +493,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const cleanPass = password?.trim();
     if (!cleanUser) return false;
 
-    const cachedUsers = loadCachedUsers();
-    
-    // Check in-memory state users first, then cached users, then fallback defaultUsers
-    const localUser = state.users.find(u => u.username?.trim().toLowerCase() === cleanUser)
-      || cachedUsers.find(u => u.username?.trim().toLowerCase() === cleanUser)
-      || defaultUsers.find(u => u.username.toLowerCase() === cleanUser);
-
-    if (localUser && localUser.password === cleanPass) {
-      setState(prev => ({ ...prev, currentUser: localUser, userRole: localUser.role }));
+    // 1. Semak pengguna lalai tempatan (contohnya akaun pentadbir default)
+    const localDefault = defaultUsers.find(u => u.username.toLowerCase() === cleanUser);
+    if (localDefault && localDefault.password === cleanPass) {
+      try {
+        localStorage.setItem(SESSION_USER_KEY, JSON.stringify(localDefault));
+      } catch {}
+      setState(prev => ({ ...prev, currentUser: localDefault, userRole: localDefault.role }));
       return true;
     }
 
-    // Real-time verification against Firestore to guarantee latest password works
+    // 2. Semakan terus ke Firestore untuk akaun guru/penilai tanpa memuat turun semua pengguna
     try {
-      if (localUser?.id) {
-        const docSnap = await getDoc(doc(db, 'users', localUser.id));
-        if (docSnap.exists()) {
-          const freshUser = { id: docSnap.id, ...docSnap.data() } as User;
-          if (freshUser.password === cleanPass) {
-            setState(prev => {
-              const updatedUsers = [...prev.users.filter(u => u.id !== freshUser.id), freshUser];
-              try { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers)); } catch {}
-              return { ...prev, users: updatedUsers, currentUser: freshUser, userRole: freshUser.role };
-            });
-            return true;
-          }
-        }
-      }
-
-      // Query by username in Firestore collection if ID was not matched
       const q = query(collection(db, 'users'), where('username', '==', cleanUser));
       const querySnap = await getDocs(q);
       if (!querySnap.empty) {
         const matchedDoc = querySnap.docs[0];
         const freshUser = { id: matchedDoc.id, ...matchedDoc.data() } as User;
         if (freshUser.password === cleanPass) {
-          setState(prev => {
-            const updatedUsers = [...prev.users.filter(u => u.id !== freshUser.id), freshUser];
-            try { localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers)); } catch {}
-            return { ...prev, users: updatedUsers, currentUser: freshUser, userRole: freshUser.role };
-          });
+          try {
+            localStorage.setItem(SESSION_USER_KEY, JSON.stringify(freshUser));
+          } catch {}
+          setState(prev => ({ ...prev, currentUser: freshUser, userRole: freshUser.role }));
           return true;
         }
       }
@@ -550,7 +526,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    setState(prev => ({ ...prev, currentUser: null, userRole: null }));
+    setState(prev => ({ ...prev, currentUser: null, userRole: null, candidates: [], users: [] }));
+    try {
+      localStorage.removeItem(SESSION_USER_KEY);
+      purgeSensitiveDataFromBrowser();
+    } catch {}
   };
 
   const addUser = async (user: User) => {
@@ -559,9 +539,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await setDoc(doc(db, 'users', docId), user, { merge: true });
       setState(prev => {
         const nextUsers = [...prev.users.filter(u => u.id !== docId), { ...user, id: docId }];
-        try {
-          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
-        } catch {}
         return { ...prev, users: nextUsers };
       });
     } catch (e) {
@@ -570,14 +547,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateUser = async (id: string, user: Partial<User>) => {
-    // 1. Instantly update React state & localStorage
+    // 1. Instantly update React state
     setState(prev => {
       const nextUsers = prev.users.map(u => u.id === id ? { ...u, ...user } : u);
-      try {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
-      } catch (e) {
-        console.warn('Gagal simpan users ke localStorage:', e);
-      }
       const updatedCurrentUser = prev.currentUser?.id === id 
         ? { ...prev.currentUser, ...user } 
         : prev.currentUser;
@@ -603,9 +575,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       await deleteDoc(doc(db, 'users', id));
       setState(prev => {
         const nextUsers = prev.users.filter(u => u.id !== id);
-        try {
-          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
-        } catch {}
         return { ...prev, users: nextUsers };
       });
     } catch (e) {

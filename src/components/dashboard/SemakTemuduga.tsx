@@ -1,25 +1,75 @@
 import { useState } from 'react';
 import { useAppContext } from '../../store';
-import { Search, Printer, Calendar, XCircle, CheckCircle2 } from 'lucide-react';
+import { Search, Printer, Calendar, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import SuratPanggilan from './SuratPanggilan';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export default function SemakTemuduga() {
   const { settings, candidates } = useAppContext();
   const [ic, setIc] = useState('');
   const [result, setResult] = useState<Candidate | null | 'NOT_FOUND'>(null);
+  const [loading, setLoading] = useState(false);
   
   const isBuka = settings.temudugaBuka;
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ic) return;
-    
-    const candidate = candidates.find(c => c.ic === ic);
-    if (candidate) {
-      setResult(candidate);
-    } else {
+    setLoading(true);
+    setResult(null);
+
+    const cleanIc = ic.replace(/[^a-zA-Z0-9]/g, '');
+
+    // Semak memori jika pengguna adalah Admin yang sedang log masuk
+    if (candidates && candidates.length > 0) {
+      const localFound = candidates.find(c => c.ic?.replace(/[^a-zA-Z0-9]/g, '') === cleanIc);
+      if (localFound) {
+        setResult(localFound);
+        setLoading(false);
+        return;
+      }
+    }
+
+    try {
+      // 1. Carian terus dokumen ID (kebanyakan disimpan dengan IC sebagai ID dokumen)
+      const docRef = doc(db, 'candidates', cleanIc);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setResult({ id: docSnap.id, ...docSnap.data() } as Candidate);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Carian query field 'ic' mengikut nombor bersih
+      const q = query(collection(db, 'candidates'), where('ic', '==', cleanIc), limit(1));
+      const qSnap = await getDocs(q);
+      if (!qSnap.empty) {
+        const d = qSnap.docs[0];
+        setResult({ id: d.id, ...d.data() } as Candidate);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Carian query jika IC mengandungi sengkang atau format asal
+      if (ic.trim() !== cleanIc) {
+        const q2 = query(collection(db, 'candidates'), where('ic', '==', ic.trim()), limit(1));
+        const q2Snap = await getDocs(q2);
+        if (!q2Snap.empty) {
+          const d2 = q2Snap.docs[0];
+          setResult({ id: d2.id, ...d2.data() } as Candidate);
+          setLoading(false);
+          return;
+        }
+      }
+
       setResult('NOT_FOUND');
+    } catch (err) {
+      console.error("Ralat semakan temuduga:", err);
+      setResult('NOT_FOUND');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,9 +124,10 @@ export default function SemakTemuduga() {
           </div>
           <button 
             type="submit"
-            className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98]"
+            disabled={loading}
+            className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <Search className="w-5 h-5" /> Semak
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />} Semak
           </button>
         </form>
       </div>

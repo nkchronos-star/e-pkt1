@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAppContext } from '../../store';
-import { Search, Info, CheckCircle, XCircle, Clock, Printer, Calendar, Download, FileText } from 'lucide-react';
+import { Search, Info, CheckCircle, XCircle, Clock, Printer, Calendar, Download, FileText, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import SuratTawaran from './SuratTawaran';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export default function SemakTawaran() {
   const { settings, candidates, updateCandidate } = useAppContext();
@@ -10,6 +12,7 @@ export default function SemakTawaran() {
   const [result, setResult] = useState<Candidate | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const formatTarikh = (tarikhStr: string) => {
      if(!tarikhStr) return '-';
@@ -36,12 +39,63 @@ export default function SemakTawaran() {
     );
   }
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanIc = icInput.replace(/[^0-9]/g, '');
-    const found = candidates.find(c => c.ic === cleanIc);
-    setResult(found || null);
+    const cleanIc = icInput.replace(/[^a-zA-Z0-9]/g, '');
+    if (!cleanIc) return;
+    setLoading(true);
     setHasSearched(true);
+    setResult(null);
+
+    // Semak memori jika pengguna adalah Admin yang sedang log masuk
+    if (candidates && candidates.length > 0) {
+      const found = candidates.find(c => c.ic?.replace(/[^a-zA-Z0-9]/g, '') === cleanIc);
+      if (found) {
+        setResult(found);
+        setLoading(false);
+        return;
+      }
+    }
+
+    try {
+      // 1. Carian terus dokumen ID (kebanyakan disimpan dengan IC sebagai ID dokumen)
+      const docRef = doc(db, 'candidates', cleanIc);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setResult({ id: docSnap.id, ...docSnap.data() } as Candidate);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Carian query field 'ic' mengikut nombor bersih
+      const q = query(collection(db, 'candidates'), where('ic', '==', cleanIc), limit(1));
+      const qSnap = await getDocs(q);
+      if (!qSnap.empty) {
+        const d = qSnap.docs[0];
+        setResult({ id: d.id, ...d.data() } as Candidate);
+        setLoading(false);
+        return;
+      }
+
+      // 3. Carian query jika IC mengandungi sengkang atau format asal
+      if (icInput.trim() !== cleanIc) {
+        const q2 = query(collection(db, 'candidates'), where('ic', '==', icInput.trim()), limit(1));
+        const q2Snap = await getDocs(q2);
+        if (!q2Snap.empty) {
+          const d2 = q2Snap.docs[0];
+          setResult({ id: d2.id, ...d2.data() } as Candidate);
+          setLoading(false);
+          return;
+        }
+      }
+
+      setResult(null);
+    } catch (err) {
+      console.error("Ralat semakan tawaran:", err);
+      setResult(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMaklumBalas = (status: 'TERIMA' | 'TOLAK') => {
@@ -82,9 +136,11 @@ export default function SemakTawaran() {
           />
           <button 
             type="submit"
-            className="bg-emerald-600 text-white px-10 py-5 rounded-full font-extrabold hover:bg-emerald-700 shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-lg"
+            disabled={loading}
+            className="bg-emerald-600 text-white px-10 py-5 rounded-full font-extrabold hover:bg-emerald-700 shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Semak Status
+            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : null}
+            {loading ? 'Menyemak...' : 'Semak Status'}
           </button>
         </form>
       </div>
