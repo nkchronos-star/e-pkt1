@@ -171,9 +171,6 @@ export default function SemakTemuduga() {
                    >
                      <Printer className="w-5 h-5" /> Cetak Surat Panggilan
                    </button>
-                   <p className="text-xs text-slate-500 mt-3 text-center font-medium no-print print:hidden max-w-md mx-auto">
-                     * Nota: Jika pratonton berada di dalam tetingkap terbenam (iFrame), gunakan kekunci <kbd className="bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-sans font-bold">Ctrl + P</kbd> atau buka sistem di tab / domain sebenar (Vercel) untuk mencetak.
-                   </p>
                  </div>
               </div>
               
