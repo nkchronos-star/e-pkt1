@@ -63,7 +63,7 @@ interface AppContextType extends AppState {
 const defaultSettings: ApplicationSettings = {
   borangBuka: true,
   tarikhBukaBorang: '2026-09-07',
-  tarikhTutupBorang: '2026-09-30',
+  tarikhTutupBorang: '2026-10-31',
   temudugaBuka: false,
   tarikhBukaTemuduga: '2026-10-02',
   tarikhTutupTemuduga: '2026-10-09',
