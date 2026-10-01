@@ -162,48 +162,56 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
         @media print {
           @page { 
             size: A4 portrait; 
-            margin: 7mm 12mm 5mm 12mm; 
+            margin: 6mm 10mm 4mm 10mm; 
+          }
+
+          /* Buang terus elemen antaramuka skrin daripada aliran dokumen */
+          header, nav, footer, .no-print, [class*="no-print"], [class*="print:hidden"] {
+            display: none !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
           html, body {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
-            font-size: 11.5px !important;
-            line-height: 1.3 !important;
+            width: 100% !important;
             height: auto !important;
             overflow: visible !important;
+            font-size: 11.5px !important;
+            line-height: 1.3 !important;
           }
           
-          body * { visibility: hidden !important; }
-          
-          /* Keep modal wrappers open and unrestrained for print */
-          .fixed.inset-0 { 
-             position: static !important; 
-             overflow: visible !important; 
-             background: transparent !important; 
-             height: auto !important; 
-             min-height: 100% !important; 
-             display: block !important; 
-             padding: 0 !important; 
+          body * { 
+            visibility: hidden !important; 
           }
           
-          .max-h-\[90vh\] { max-height: none !important; }
-          .overflow-y-auto { overflow: visible !important; }
+          /* Hanya paparkan kandungan surat panggilan */
+          #printable-surat, #printable-surat * { 
+            visibility: visible !important; 
+          }
           
-          #printable-surat, #printable-surat * { visibility: visible !important; }
           #printable-surat {
-            position: static !important; 
+            position: absolute !important; 
+            left: 0 !important; 
+            top: 0 !important; 
             width: 100% !important; 
             max-width: 100% !important;
             padding: 0 !important; 
-            margin: 0 auto !important;
+            margin: 0 !important;
+            background: white !important;
+            box-shadow: none !important;
+            border: none !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             page-break-after: avoid !important;
             page-break-before: avoid !important;
+            transform: scale(0.94);
+            transform-origin: top center;
           }
         }
       `}} />

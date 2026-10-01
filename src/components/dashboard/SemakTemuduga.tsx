@@ -99,8 +99,8 @@ export default function SemakTemuduga() {
   }
 
   return (
-    <div className="animate-in fade-in py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-      <div className="text-center mb-10 no-print">
+    <div className="animate-in fade-in py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto print:p-0 print:m-0 print:max-w-none print:py-0">
+      <div className="text-center mb-10 no-print print:hidden">
         <div className="inline-flex items-center justify-center p-3 bg-emerald-100 rounded-2xl mb-4">
            <Search className="w-8 h-8 text-emerald-600" />
         </div>
@@ -108,7 +108,7 @@ export default function SemakTemuduga() {
         <p className="text-slate-500 text-lg">Sila masukkan Nombor Kad Pengenalan pemohon tanpa sempang (-) untuk menyemak kelayakan.</p>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 p-6 sm:p-10 mb-8 no-print">
+      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 p-6 sm:p-10 mb-8 no-print print:hidden">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
           <div className="flex-grow">
             <label htmlFor="ic" className="sr-only">No. Kad Pengenalan</label>
@@ -133,7 +133,7 @@ export default function SemakTemuduga() {
       </div>
 
       {result === 'NOT_FOUND' && (
-        <div className="bg-red-50 text-red-900 p-8 rounded-[2rem] border border-red-100 text-center animate-in slide-in-from-bottom-4 shadow-lg shadow-red-100/50 no-print">
+        <div className="bg-red-50 text-red-900 p-8 rounded-[2rem] border border-red-100 text-center animate-in slide-in-from-bottom-4 shadow-lg shadow-red-100/50 no-print print:hidden">
            <div className="inline-flex p-3 bg-red-100 rounded-full mb-4">
              <XCircle className="w-10 h-10 text-red-500" />
            </div>
@@ -142,10 +142,10 @@ export default function SemakTemuduga() {
       )}
 
       {result && result !== 'NOT_FOUND' && (
-        <div className="animate-in slide-in-from-bottom-4">
+        <div className="animate-in slide-in-from-bottom-4 print:m-0 print:p-0">
           {result.statusTemuduga === 'LAYAK' ? (
-            <div>
-              <div className="bg-white rounded-[2rem] shadow-2xl shadow-emerald-200/50 border border-emerald-100 overflow-hidden text-center relative mb-8 no-print transition-transform hover:-translate-y-1">
+            <div className="print:m-0 print:p-0">
+              <div className="bg-white rounded-[2rem] shadow-2xl shadow-emerald-200/50 border border-emerald-100 overflow-hidden text-center relative mb-8 no-print print:hidden transition-transform hover:-translate-y-1">
                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 text-white">
                     <CheckCircle2 className="w-20 h-20 mx-auto mb-4 text-emerald-100 drop-shadow-lg" />
                     <h2 className="text-3xl font-extrabold tracking-tight">TAHNIAH!</h2>
@@ -160,16 +160,25 @@ export default function SemakTemuduga() {
                      Sila cetak <strong>Surat Panggilan Temuduga</strong> di bawah dan bawa bersama semasa pendaftaran temuduga.
                    </p>
                    <button 
-                     onClick={() => window.print()}
+                     onClick={() => {
+                       try {
+                         window.print();
+                       } catch (e) {
+                         console.warn("Print disekat oleh iFrame:", e);
+                       }
+                     }}
                      className="inline-flex items-center gap-3 bg-emerald-600 text-white px-8 py-4 rounded-full font-bold hover:bg-emerald-700 shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:scale-105 active:scale-95"
                    >
                      <Printer className="w-5 h-5" /> Cetak Surat Panggilan
                    </button>
+                   <p className="text-xs text-slate-500 mt-3 text-center font-medium no-print print:hidden max-w-md mx-auto">
+                     * Nota: Jika pratonton berada di dalam tetingkap terbenam (iFrame), gunakan kekunci <kbd className="bg-slate-200 px-1.5 py-0.5 rounded text-slate-800 font-sans font-bold">Ctrl + P</kbd> atau buka sistem di tab / domain sebenar (Vercel) untuk mencetak.
+                   </p>
                  </div>
               </div>
               
-              <div className="mt-12">
-                 <div className="text-center mb-4 no-print text-sm font-bold text-slate-400 uppercase tracking-widest">Pratonton Surat</div>
+              <div className="mt-12 print:mt-0 print:m-0 print:p-0">
+                 <div className="text-center mb-4 no-print print:hidden text-sm font-bold text-slate-400 uppercase tracking-widest">Pratonton Surat</div>
                  <SuratPanggilan candidate={result} />
               </div>
             </div>
