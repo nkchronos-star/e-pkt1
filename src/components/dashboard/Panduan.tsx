@@ -4,6 +4,37 @@ import { useAppContext } from '../../store';
 export default function Panduan() {
   const { infographics, settings } = useAppContext();
 
+  // Pengiraan automatik tahun kelayakan umur 13 tahun (Tahun Kemasukan Tingkatan 1)
+  const tahunKelayakan = (() => {
+    // 1. Semak tarikh buka borang jika ada tahun ditetapkan
+    if (settings.tarikhBukaBorang) {
+      const yearFromBuka = parseInt(settings.tarikhBukaBorang.substring(0, 4), 10);
+      if (!isNaN(yearFromBuka) && yearFromBuka >= 2026) {
+        const intakeYear = yearFromBuka + 1;
+        const currentYear = new Date().getFullYear();
+        if (currentYear > yearFromBuka) {
+          return currentYear + 1;
+        }
+        return intakeYear;
+      }
+    }
+    // 2. Semak tetapan sesiKemasukan (cth: "2027", "2028", "2027/2028")
+    if (settings.sesiKemasukan) {
+      const matches = settings.sesiKemasukan.match(/\b(20\d{2})\b/g);
+      if (matches && matches.length > 0) {
+        const lastYear = parseInt(matches[matches.length - 1], 10);
+        const currentYear = new Date().getFullYear();
+        if (currentYear >= lastYear) {
+          return currentYear + 1;
+        }
+        return lastYear;
+      }
+    }
+    // 3. Sandaran dinamik: tahun permohonan semasa + 1
+    const currentYear = new Date().getFullYear();
+    return currentYear + 1;
+  })();
+
   return (
     <div className="animate-in fade-in duration-500 py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
       <div className="text-center mb-12">
@@ -34,6 +65,52 @@ export default function Panduan() {
               <div className="absolute -left-[10px] top-1 w-5 h-5 rounded-full bg-slate-500 ring-[6px] ring-white transition-transform group-hover:scale-125"></div>
               <h3 className="text-xl font-bold text-slate-800 mb-3">Langkah 1: Isi Borang Permohonan</h3>
               <p className="text-slate-600 mb-5 leading-relaxed">Ibu bapa atau penjaga perlu mengisi borang permohonan secara atas talian. Pastikan semua maklumat peribadi, maklumat penjaga, dan maklumat akademik diisi dengan lengkap dan tepat.</p>
+
+              {/* Syarat-Syarat Permohonan (Kelayakan) */}
+              <div className="my-6 max-w-3xl">
+                <div className="flex justify-center -mb-3.5 relative z-10">
+                  <div className="bg-[#f04e38] text-white text-sm sm:text-base font-extrabold px-7 sm:px-9 py-2 rounded-2xl shadow-md border-2 border-white tracking-wide flex items-center gap-2">
+                    <span>Syarat-Syarat Permohonan</span>
+                  </div>
+                </div>
+                <div className="bg-[#d4e74e] border-2 border-[#b8cb36] rounded-3xl p-6 sm:p-8 pt-7 sm:pt-8 shadow-md">
+                  <ul className="space-y-2.5 text-slate-900 text-sm sm:text-[15px] font-semibold leading-relaxed">
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Warganegara Malaysia yang beragama Islam</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Berumur 13 tahun pada tahun {tahunKelayakan}</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Tamat Darjah 6 di Sekolah Kementerian Pendidikan atau setaraf dengannya</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Memperoleh sekurang-kurangnya TP4 bagi semua mata pelajaran dalam PBD</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Memperoleh sekurang-kurangnya 5A dalam UPKK atau setaraf dengannya</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Boleh menulis dan membaca jawi dengan baik</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Lancar bacaan Al-Quran dan mempunyai minat yang tinggi untuk menghafaz Al Quran</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-slate-900 font-bold select-none text-lg leading-none mt-0.5">-</span>
+                      <span>Memiliki tubuh badan yang sihat dan sahsiah yang baik</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
               <div className="bg-slate-50 rounded-xl p-5 border border-slate-200/60 mb-5">
                 <h4 className="font-bold text-sm text-slate-700 mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-emerald-600"/> Dokumen Diperlukan (Softcopy):</h4>
                 <ul className="grid sm:grid-cols-2 gap-2 pl-2 text-sm text-slate-600 font-medium">
