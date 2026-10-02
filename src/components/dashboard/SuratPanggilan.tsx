@@ -55,9 +55,9 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
 
       {/* Rujukan & Tarikh */}
       <div className="flex justify-end mb-5 print:mb-4 text-black">
-        <div className="text-[13px] print:text-[12px] leading-relaxed">
-          <p><span className="inline-block w-28 print:w-24">Rujukan Kami</span>: SMAKG03.700-2/1/1({rujukanNumber})</p>
-          <p><span className="inline-block w-28 print:w-24">Tarikh</span>: {settings.tarikhSuratPanggilan || tarikhSemasa}</p>
+        <div className="text-[13px] print:text-[12px] leading-relaxed whitespace-nowrap text-left">
+          <p>Rujukan Kami: SMAKG03.700-2/1/1({rujukanNumber} )</p>
+          <p>Tarikh: {settings.tarikhSuratPanggilan || tarikhSemasa}</p>
         </div>
       </div>
 
