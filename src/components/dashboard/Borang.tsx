@@ -79,11 +79,9 @@ export default function Borang() {
              }
          }
          if (name === 'ic' && typeof value === 'string') {
-             // Hanya nombor dibenarkan, maksimum 12 digit
-             const digitsOnly = value.replace(/\D/g, '').substring(0, 12);
-             updates.ic = digitsOnly;
+             updates.ic = value.trim();
 
-             const cleanIC = digitsOnly;
+             const cleanIC = value.replace(/\D/g, '');
              if (cleanIC.length >= 6) {
                  const yy = parseInt(cleanIC.substring(0, 2), 10);
                  const mm = cleanIC.substring(2, 4);
@@ -226,21 +224,53 @@ export default function Borang() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 1. Wajib muat naik gambar pasport pemohon
+    if (!formData.gambarUrl || !formData.gambarUrl.trim()) {
+      alert('Ralat: Sila muat naik Gambar Pasport Pemohon terlebih dahulu sebelum menghantar borang. Permohonan tidak boleh dihantar tanpa gambar pasport.');
+      const el = document.getElementById('section-upload-gambar');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    // 2. Semakan Nama Penuh Calon
     if (!formData.name?.trim()) {
       alert('Sila masukkan Nama Penuh Calon.');
       return;
     }
 
-    if (!formData.ic?.trim()) {
+    // 3. Semakan Ketat No. Kad Pengenalan Calon (Tepat 12 digit nombor sahaja, tiada -, tiada huruf, tidak lebih, tidak kurang)
+    const rawIC = (formData.ic || '').trim();
+    if (!rawIC) {
       alert('Sila masukkan No. Kad Pengenalan Calon.');
       return;
     }
 
-    const cleanFormIC = (formData.ic || '').replace(/\D/g, '');
-    if (cleanFormIC.length !== 12 || !/^\d{12}$/.test(cleanFormIC)) {
-      alert('Ralat: No. Kad Pengenalan Calon mestilah mengandungi tepat 12 digit nombor sahaja tanpa tanda sengkang (-) atau perkataan (contoh: 140101061234).');
+    if (rawIC.includes('-')) {
+      alert('Ralat: No. Kad Pengenalan tidak boleh mengandungi simbol sengkang (-). Sila masukkan 12 digit nombor sahaja tanpa tanda (-) (contoh: 140101061234).');
       return;
     }
+
+    if (/[a-zA-Z]/.test(rawIC)) {
+      alert('Ralat: No. Kad Pengenalan tidak boleh mengandungi sebarang huruf. Sila masukkan 12 digit nombor sahaja (contoh: 140101061234).');
+      return;
+    }
+
+    if (rawIC.length > 12) {
+      alert(`Ralat: No. Kad Pengenalan tidak boleh melebihi 12 digit (semasa: ${rawIC.length} aksara). Sila masukkan tepat 12 digit nombor sahaja.`);
+      return;
+    }
+
+    if (rawIC.length < 12) {
+      alert(`Ralat: No. Kad Pengenalan mestilah mengandungi tepat 12 digit nombor (semasa: ${rawIC.length} digit).`);
+      return;
+    }
+
+    if (!/^\d{12}$/.test(rawIC)) {
+      alert('Ralat: No. Kad Pengenalan mestilah mengandungi tepat 12 digit nombor sahaja tanpa sebarang simbol atau huruf.');
+      return;
+    }
+
+    const cleanFormIC = rawIC;
 
     // Check for duplicate IC in Firestore securely
     setIsSubmitting(true);
@@ -507,23 +537,33 @@ export default function Borang() {
 
       <form onSubmit={handleSubmit} noValidate className="space-y-10">
         {/* Gambar */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
-           <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100">
+        <div id="section-upload-gambar" className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
+           <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100 flex items-center justify-between flex-wrap gap-2">
              <h2 className="text-xl font-extrabold text-emerald-900 flex items-center gap-3">
                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-black shadow-sm">1</span>
-               MUAT NAIK GAMBAR PASPORT
+               MUAT NAIK GAMBAR PASPORT <span className="text-red-500 text-sm font-bold">*WAJIB</span>
              </h2>
+             {!formData.gambarUrl && (
+               <span className="text-xs font-extrabold px-3 py-1 bg-red-100 text-red-700 rounded-full border border-red-200 uppercase tracking-wide">
+                 Belum Dimuat Naik
+               </span>
+             )}
+             {formData.gambarUrl && (
+               <span className="text-xs font-extrabold px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200 uppercase tracking-wide">
+                 ✓ Gambar Siap Dimuat Naik
+               </span>
+             )}
            </div>
            <div className="p-8 sm:p-12">
              <div className="flex flex-col sm:flex-row items-center gap-8">
                 {!formData.gambarUrl && (
-                   <div className="w-32 h-40 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center text-slate-400 group hover:border-emerald-400 hover:bg-slate-50 transition-colors">
-                      <FileText className="w-8 h-8 mb-2 group-hover:text-emerald-500 transition-colors" />
-                      <span className="text-xs font-medium">Gambar</span>
+                   <div className="w-32 h-40 bg-slate-50 border-2 border-dashed border-red-300 rounded-2xl flex flex-col items-center justify-center text-red-400 group hover:border-red-500 hover:bg-red-50/50 transition-colors">
+                      <FileText className="w-8 h-8 mb-2 group-hover:text-red-500 transition-colors" />
+                      <span className="text-xs font-bold text-center px-2">Wajib Upload Gambar</span>
                    </div>
                 )}
               {formData.gambarUrl && (
-                 <img src={formData.gambarUrl} alt="Passport" className="w-32 h-40 object-cover rounded-2xl border-2 border-slate-200" />
+                 <img src={formData.gambarUrl} alt="Passport" className="w-32 h-40 object-cover rounded-2xl border-2 border-emerald-500 shadow-md" />
               )}
               <div className="flex-1 w-full text-center sm:text-left">
                 <input 
@@ -543,8 +583,9 @@ export default function Borang() {
                   </p>
                 )}
                 {!formData.gambarUrl && !isCompressingImage && (
-                  <div className="mt-3 inline-flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg border border-red-100">
-                    <span className="text-xs font-bold uppercase tracking-wide">Wajib: Sila muat naik gambar pasport</span>
+                  <div className="mt-3 inline-flex items-center gap-2 bg-red-50 text-red-600 px-3.5 py-2 rounded-xl border border-red-200">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    <span className="text-xs font-bold uppercase tracking-wide">Peringatan: Borang permohonan tidak boleh dihantar tanpa gambar pasport pemohon.</span>
                   </div>
                 )}
               </div>
@@ -572,13 +613,38 @@ export default function Borang() {
                   type="text" 
                   name="ic" 
                   inputMode="numeric"
-                  maxLength={12}
                   value={formData.ic || ''} 
                   onChange={handleChange} 
-                  className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-mono font-bold text-slate-800 bg-slate-50 focus:bg-white" 
+                  className={`w-full border-2 rounded-xl px-4 py-3 focus:ring-4 transition-all font-mono font-bold text-slate-800 ${
+                    formData.ic && (formData.ic.includes('-') || /[a-zA-Z]/.test(formData.ic) || formData.ic.length !== 12 || !/^\d{12}$/.test(formData.ic))
+                      ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-slate-200 bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-emerald-500/20'
+                  }`} 
                   placeholder="Cth: 140101061234"
                   required
                 />
+                {/* Mesej amaran sekiranya ada sengkang (-), huruf atau bukan 12 digit */}
+                {formData.ic && (formData.ic.includes('-') || /[a-zA-Z]/.test(formData.ic) || formData.ic.length !== 12 || !/^\d{12}$/.test(formData.ic)) && (
+                  <div className="mt-2 text-xs font-bold text-red-600 bg-red-50 border border-red-200 p-2.5 rounded-lg space-y-1 animate-in fade-in">
+                    {formData.ic.includes('-') && (
+                      <p className="flex items-center gap-1.5">❌ Tanda sengkang (-) tidak dibenarkan. Sila buang tanda (-).</p>
+                    )}
+                    {/[a-zA-Z]/.test(formData.ic) && (
+                      <p className="flex items-center gap-1.5">❌ Huruf tidak dibenarkan. Sila masukkan 12 digit nombor sahaja.</p>
+                    )}
+                    {formData.ic.length > 12 && (
+                      <p className="flex items-center gap-1.5">❌ Melebihi 12 digit (semasa: {formData.ic.length} aksara). Sila pastikan tepat 12 digit nombor.</p>
+                    )}
+                    {formData.ic.length < 12 && !formData.ic.includes('-') && !/[a-zA-Z]/.test(formData.ic) && (
+                      <p className="flex items-center gap-1.5">⚠️ Mesti tepat 12 digit nombor (semasa: {formData.ic.length}/12 digit).</p>
+                    )}
+                  </div>
+                )}
+                {formData.ic && /^\d{12}$/.test(formData.ic) && (
+                  <p className="mt-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg animate-in fade-in flex items-center gap-1.5">
+                    ✓ Format No. KP sah (tepat 12 digit nombor).
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">No. Sijil Kelahiran</label>
