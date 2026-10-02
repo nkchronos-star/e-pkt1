@@ -24,13 +24,16 @@ export const isDateActive = (tarikhMula?: string, tarikhAkhir?: string): boolean
 export const applyAutoDates = (s: ApplicationSettings): ApplicationSettings => {
   const res = { ...s };
   if (s.tarikhBukaBorang) {
-    res.borangBuka = isDateActive(s.tarikhBukaBorang, s.tarikhTutupBorang);
+    const active = isDateActive(s.tarikhBukaBorang, s.tarikhTutupBorang);
+    res.borangBuka = active || Boolean(s.borangBuka);
   }
   if (s.tarikhBukaTemuduga) {
-    res.temudugaBuka = isDateActive(s.tarikhBukaTemuduga, s.tarikhTutupTemuduga);
+    const active = isDateActive(s.tarikhBukaTemuduga, s.tarikhTutupTemuduga);
+    res.temudugaBuka = active || Boolean(s.temudugaBuka);
   }
   if (s.tarikhBukaTawaran) {
-    res.tawaranBuka = isDateActive(s.tarikhBukaTawaran, s.tarikhTutupTawaran);
+    const active = isDateActive(s.tarikhBukaTawaran, s.tarikhTutupTawaran);
+    res.tawaranBuka = active || Boolean(s.tawaranBuka);
   }
   return res;
 };
@@ -64,7 +67,7 @@ const defaultSettings: ApplicationSettings = {
   borangBuka: true,
   tarikhBukaBorang: '2026-09-07',
   tarikhTutupBorang: '2026-10-31',
-  temudugaBuka: false,
+  temudugaBuka: true,
   tarikhBukaTemuduga: '2026-10-02',
   tarikhTutupTemuduga: '2026-10-09',
   tawaranBuka: false,
@@ -215,6 +218,22 @@ const loadCachedSessionUser = (): User | null => {
   return null;
 };
 
+const loadCachedCandidates = (hasUser: boolean): Candidate[] => {
+  if (!hasUser) return [];
+  try {
+    const raw = localStorage.getItem(CANDIDATES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as Candidate[];
+      }
+    }
+  } catch (e) {
+    console.warn('Gagal membaca cache calon:', e);
+  }
+  return [];
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
@@ -228,7 +247,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     return {
       settings: loadCachedSettings(),
-      candidates: [],
+      candidates: loadCachedCandidates(Boolean(initialUser)),
       users: initialUser ? defaultUsers : [],
       currentUser: initialUser,
       userRole: initialUser ? initialUser.role : null,
@@ -356,6 +375,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         candidatesList.push({ id: docSnap.id, ...docSnap.data() } as Candidate);
       });
       setState(prev => ({ ...prev, candidates: candidatesList }));
+      try {
+        localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(candidatesList));
+      } catch (e) {
+        console.warn('Gagal menyimpan cache calon:', e);
+      }
     }, (error) => {
       console.error("Firestore candidates error:", error);
     });
