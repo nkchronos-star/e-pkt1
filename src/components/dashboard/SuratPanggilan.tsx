@@ -88,11 +88,11 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
         
         <div className="mb-4 print:mb-3 text-justify flex">
           <span className="w-8 print:w-7 shrink-0 font-bold">2.</span>
-          <div>
+          <div className="flex-1 min-w-0">
             <span>Sukacitanya dimaklumkan bahawa saudara/saudari telah <strong>TERPILIH</strong> untuk ditemuduga bagi Pengambilan Pelajar Tingkatan 1 di SMA Kota Gelanggi 3 tahun {tahunSesi}. Sesi temuduga akan dilaksanakan pada ketetapan berikut:</span>
             
             {/* Butiran Temuduga */}
-            <div className="ml-6 print:ml-4 mt-3 print:mt-2 mb-4 print:mb-3">
+            <div className="mt-3 print:mt-2 mb-4 print:mb-3">
               <table className="w-full text-[13px] print:text-[12px]">
                 <tbody>
                   <tr>
@@ -105,7 +105,7 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
                   </tr>
                   <tr>
                     <td className="py-1 print:py-0.5 font-medium">Masa</td>
-                    <td className="py-1 print:py-0.5 font-bold">: {settings.masaTemuduga || '8.00 pagi'}</td>
+                    <td className="py-1 print:py-0.5 font-bold">: {settings.masaTemuduga || '8.30 pagi'}</td>
                   </tr>
                   <tr>
                     <td className="py-1 print:py-0.5 font-medium">Tempat</td>
@@ -124,30 +124,30 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
             </div>
 
             {/* Jadual Tentatif */}
-            <div className="ml-6 print:ml-4 mb-4 print:mb-3">
-                <table className="w-full text-[13px] print:text-[11.5px] border-collapse border-2 border-black">
+            <div className="mb-4 print:mb-3 w-full overflow-hidden">
+                <table className="w-full text-[13px] print:text-[11.5px] border-collapse border border-black table-fixed">
                     <thead>
-                        <tr className="bg-slate-100 print:bg-slate-100">
-                            <th className="border border-black py-1.5 px-3 text-center font-bold w-1/3 text-black">MASA</th>
-                            <th className="border border-black py-1.5 px-3 text-center font-bold text-black">AKTIVITI</th>
+                        <tr className="bg-[#b8d4f0] print:bg-[#b8d4f0] text-black">
+                            <th className="border border-black py-1.5 px-3 text-center font-bold w-1/3">MASA</th>
+                            <th className="border border-black py-1.5 px-3 text-center font-bold">AKTIVITI</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td className="border border-black py-1.5 px-3 font-medium text-black">8.00 pagi - 9.00 pagi</td>
-                            <td className="border border-black py-1.5 px-3 text-black">Pendaftaran Calon & Penjaga</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">8.30 pagi - 9.00 pagi</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">Pendaftaran</td>
                         </tr>
                         <tr>
-                            <td className="border border-black py-1.5 px-3 font-medium text-black">9.00 pagi - 9.30 pagi</td>
-                            <td className="border border-black py-1.5 px-3 text-black">Taklimat oleh Ustaz Marzuki bin Hassan</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">9.00 pagi - 9.30 pagi</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">Taklimat Temuduga</td>
                         </tr>
                         <tr>
-                            <td className="border border-black py-1.5 px-3 font-medium text-black">9.30 pagi - 12.30 tengah hari</td>
-                            <td className="border border-black py-1.5 px-3 text-black">Kuarantin sebelum ujian, Ujian Hafazan dan Ujian Akademik</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">9.30 pagi - 12.30 tengah hari</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">Kuarantin sebelum ujian , Ujian Hafazan dan Ujian Akademik</td>
                         </tr>
                         <tr>
-                            <td className="border border-black py-1.5 px-3 font-medium text-black">12.30 tengah hari - 1.00 petang</td>
-                            <td className="border border-black py-1.5 px-3 text-black">Tamat dan bersurai</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">12.30 tengah hari</td>
+                            <td className="border border-black py-1.5 px-3 font-bold text-black">Tamat dan bersurai</td>
                         </tr>
                     </tbody>
                 </table>
@@ -172,17 +172,23 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
       <div className="mt-4 print:mt-3 text-[13px] print:text-[12px] leading-snug">
         <p className="font-extrabold italic mb-1">"MALAYSIA MADANI"</p>
         <p className="font-extrabold italic mb-3 print:mb-2">"BERKHIDMAT UNTUK NEGARA"</p>
-        <p className="mb-3 print:mb-2 font-medium">Saya yang menjalankan amanah,</p>
+        <p className="mb-2 font-medium">Saya yang menjalankan amanah,</p>
         
-        <div>
+        <div className="w-64 max-w-[280px]">
           {sigPengetua ? (
-            <img src={sigPengetua} alt="Tandatangan Pengetua" className="h-16 print:h-14 max-w-[170px] object-contain mb-1.5 select-none block" />
+            <div className="flex justify-center my-1">
+              <img 
+                src={sigPengetua} 
+                alt="Tandatangan Pengetua" 
+                className="h-24 print:h-20 w-auto max-w-[240px] object-contain select-none block" 
+              />
+            </div>
           ) : (
-            <p className="mb-4 print:mb-2 mt-6 print:mt-4">.......................................................</p>
+            <div className="h-20"></div>
           )}
-          <p className="font-extrabold uppercase text-slate-950">({settings.namaPengetua || 'HAJAH JUITA BINTI HAMZAH'})</p>
-          <p className="text-slate-800">Pengetua</p>
-          <p className="text-slate-800">SMA Kota Gelanggi 3</p>
+          <p className="text-slate-800 tracking-widest text-[11px] select-none mb-1 text-center font-bold">........................................................</p>
+          <p className="font-extrabold uppercase text-slate-950">({settings.namaPengetua || 'JUITA BINTI HAMZAH'})</p>
+          <p className="text-slate-800 font-medium">Pengetua</p>
         </div>
       </div>
       
