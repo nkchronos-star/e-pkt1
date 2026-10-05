@@ -1374,6 +1374,7 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
   const [activeTab, setActiveTab] = useState<'KAWALAN' | 'PENGGUNA' | 'ANALISIS' | 'PERMOHONAN' | 'MARKAH'>('KAWALAN');
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
+  const [printPukalLayak, setPrintPukalLayak] = useState<boolean>(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [signaturePadTarget, setSignaturePadTarget] = useState<'PENGETUA' | 'PENGARAH' | null>(null);
@@ -1606,6 +1607,7 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
 
 
   if (printCandidate) return <BorangCetakPDF candidate={printCandidate} onClose={() => setPrintCandidate(null)} />;
+  if (printPukalLayak) return <BorangPukalCetakPDF candidates={layakCandidates} onClose={() => setPrintPukalLayak(false)} titlePrefix="Calon Layak Temuduga" />;
   if (printPukalBorang) return <BorangPukalCetakPDF candidates={filteredPermohonan} onClose={() => setPrintPukalBorang(false)} />;
 
   return (
@@ -2419,15 +2421,26 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                       Cetak Pukal {statusFilter === 'LAYAK' ? '(Layak)' : ''}
                     </button>
                     
-                    {/* Butang Muat Turun Calon Layak Temuduga Khusus */}
+                    {/* Butang PDF Borang Permohonan Calon Layak Temuduga */}
+                    <button 
+                      type="button"
+                      onClick={() => setPrintPukalLayak(true)}
+                      className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap ring-2 ring-rose-300"
+                      title="Buka pratonton dan simpan semua borang permohonan calon layak temuduga dalam format PDF"
+                    >
+                      <FileText className="w-4 h-4" />
+                      PDF Borang Calon Layak ({layakCandidates.length})
+                    </button>
+
+                    {/* Butang Muat Turun Calon Layak Temuduga (Excel/CSV) */}
                     <button 
                       type="button"
                       onClick={handleDownloadLayak}
                       className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap ring-2 ring-purple-300"
-                      title="Muat turun senarai calon berstatus Layak Temuduga sahaja"
+                      title="Muat turun senarai data calon berstatus Layak Temuduga ke Excel/CSV"
                     >
                       <Download className="w-4 h-4" />
-                      Muat Turun Calon Layak ({layakCandidates.length})
+                      Excel Calon Layak ({layakCandidates.length})
                     </button>
 
                     {/* Butang Muat Turun Semua */}
