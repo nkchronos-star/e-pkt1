@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
@@ -783,14 +783,23 @@ function TahfizView() {
 
 // ================= AKADEMIK VIEW =================
 function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, index }: any) {
+  // Calon dianggap telah dinilai jika sudah ada markah disimpan atau nama penilai
+  const isAlreadyEvaluated = Boolean(
+    candidate.markahAkademik && 
+    (candidate.markahAkademik.jumlah !== undefined || candidate.markahAkademik.dinilaiOleh) &&
+    (candidate.markahAkademik.jumlah > 0 || candidate.markahAkademik.dinilaiOleh)
+  );
+
   const [markah, setMarkah] = useState<Record<string, number>>(() => {
      const init: Record<string, number> = {};
      akademikItems.forEach((i: any) => {
-        init[i.id] = candidate.markahAkademik?.[i.id] || 0;
+        init[i.id] = candidate.markahAkademik?.[i.id] ?? 0;
      });
      return init;
   });
-  const [isSaved, setIsSaved] = useState(!!candidate.markahAkademik);
+
+  const [isLocked, setIsLocked] = useState<boolean>(isAlreadyEvaluated);
+  const [isSaved, setIsSaved] = useState<boolean>(isAlreadyEvaluated);
 
   const handleSave = () => {
     const jumlah = akademikItems.reduce((acc: number, item: any) => acc + (markah[item.id] || 0), 0);
@@ -798,14 +807,16 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
       markahAkademik: {
         ...markah,
         jumlah,
-        dinilaiOleh: currentUser?.name,
+        dinilaiOleh: currentUser?.name || 'Penyelaras Akademik',
         tarikhDinilai: new Date().toISOString()
       }
     });
     setIsSaved(true);
+    setIsLocked(true);
   };
 
   const handleChange = (e: any, field: string, maxWeight: number, itemName: string) => {
+    if (isLocked) return;
     let val = parseInt(e.target.value);
     if (isNaN(val)) {
       const newMarkah = {...markah};
@@ -825,7 +836,7 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
   };
 
   return (
-    <tr className="hover:bg-blue-50/30 transition-colors">
+    <tr className={`transition-colors ${isLocked ? 'bg-slate-50/40 hover:bg-slate-50' : 'hover:bg-blue-50/30'}`}>
       <td className="px-4 py-3 border-b border-slate-100 text-center font-bold text-slate-500 text-sm w-12">
         {index + 1}
       </td>
@@ -839,9 +850,14 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
              type="number" 
              min="0" 
              max={item.weight} 
+             disabled={isLocked}
              value={markah[item.id] !== undefined ? markah[item.id] : ''} 
              onChange={e => handleChange(e, item.id, item.weight, item.name)} 
-             className={`w-16 border-2 border-slate-200 rounded-md p-2 text-center focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-bold ${isSaved ? 'bg-slate-50' : 'bg-white'}`} 
+             className={`w-16 border-2 rounded-md p-2 text-center font-bold transition-all ${
+               isLocked 
+                 ? 'bg-slate-100/80 border-slate-200 text-slate-600 cursor-not-allowed shadow-inner' 
+                 : 'bg-white border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-slate-900 shadow-xs'
+             }`} 
            />
          </td>
       ))}
@@ -849,12 +865,37 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
         {akademikItems.reduce((acc: number, item: any) => acc + (markah[item.id] || 0), 0)}
       </td>
       <td className="px-4 py-3 border-b border-slate-100 text-center">
-        <button 
-           onClick={handleSave} 
-           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm ${isSaved ? 'bg-slate-100 text-slate-500 border border-slate-200' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
-        >
-          {isSaved ? 'Telah Disimpan' : 'Simpan'}
-        </button>
+        {isLocked ? (
+          <div className="flex flex-col items-center justify-center gap-1">
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Selesai Dinilai
+            </span>
+            {candidate.markahAkademik?.dinilaiOleh && (
+              <span className="text-[10px] text-slate-500 font-medium max-w-[130px] truncate" title={`Dinilai oleh: ${candidate.markahAkademik.dinilaiOleh}`}>
+                Oleh: {candidate.markahAkademik.dinilaiOleh}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Adakah anda pasti mahu membuka kunci untuk mengemas kini markah ${candidate.name}?`)) {
+                  setIsLocked(false);
+                  setIsSaved(false);
+                }
+              }}
+              className="mt-1 text-[11px] font-bold text-slate-500 hover:text-blue-600 hover:underline flex items-center gap-1 transition"
+            >
+              <Unlock className="w-3 h-3 text-slate-400" /> Buka Kunci
+            </button>
+          </div>
+        ) : (
+          <button 
+             onClick={handleSave} 
+             className="px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 active:scale-95"
+          >
+            Simpan & Kunci
+          </button>
+        )}
       </td>
     </tr>
   );
@@ -1337,13 +1378,53 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
   const [showAddModal, setShowAddModal] = useState(false);
   const [signaturePadTarget, setSignaturePadTarget] = useState<'PENGETUA' | 'PENGARAH' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'SEMUA' | 'LAYAK' | 'TIDAK_LAYAK'>('SEMUA');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const layakCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK');
+  const tidakLayakCandidates = candidates.filter(c => c.statusTemuduga === 'TIDAK_LAYAK');
+
   const filteredPermohonan = candidates.filter(c => {
-     const searchLower = searchQuery.toLowerCase();
-     return c.name?.toLowerCase().includes(searchLower) || c.name?.toLowerCase().includes(searchLower) || c.ic?.includes(searchQuery) || c.ic?.includes(searchQuery);
+     if (statusFilter === 'LAYAK' && c.statusTemuduga !== 'LAYAK') return false;
+     if (statusFilter === 'TIDAK_LAYAK' && c.statusTemuduga !== 'TIDAK_LAYAK') return false;
+
+     if (!searchQuery.trim()) return true;
+     const searchLower = searchQuery.toLowerCase().trim();
+     return c.name?.toLowerCase().includes(searchLower) || c.ic?.includes(searchQuery);
   });
+
+  const handleDownloadLayak = () => {
+    const headers = [
+      "Bil", "No. Kad Pengenalan", "Nama Calon", "Jantina", "Tarikh Lahir", "Tempat Lahir", 
+      "Sekolah Asal", "No. KP Bapa", "Nama Bapa", "No. Tel Bapa", "No. KP Ibu", "Nama Ibu", "No. Tel Ibu",
+      "Status Temuduga", "Markah Tahfiz", "Markah Akademik", "Status Tawaran", "Maklum Balas"
+    ];
+    const rows = layakCandidates.map((c, i) => [
+      i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
+      c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
+      c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
+      c.markahTahfiz?.jumlah || '0', c.markahAkademik?.jumlah || '0', 
+      c.statusTawaran || '', c.maklumBalasTawaran || ''
+    ]);
+    downloadCSV([headers, ...rows], `Senarai_Calon_Layak_Temuduga_${layakCandidates.length}.csv`);
+  };
+
+  const handleDownloadSemua = () => {
+    const headers = [
+      "Bil", "No. Kad Pengenalan", "Nama Calon", "Jantina", "Tarikh Lahir", "Tempat Lahir", 
+      "Sekolah Asal", "No. KP Bapa", "Nama Bapa", "No. Tel Bapa", "No. KP Ibu", "Nama Ibu", "No. Tel Ibu",
+      "Status Temuduga", "Markah Tahfiz", "Markah Akademik", "Status Tawaran", "Maklum Balas"
+    ];
+    const rows = candidates.map((c, i) => [
+      i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
+      c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
+      c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
+      c.markahTahfiz?.jumlah || '0', c.markahAkademik?.jumlah || '0', 
+      c.statusTawaran || '', c.maklumBalasTawaran || ''
+    ]);
+    downloadCSV([headers, ...rows], `Senarai_Keseluruhan_Calon_${candidates.length}.csv`);
+  };
 
 
 
@@ -2261,58 +2342,105 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
        )}
        {activeTab === 'PERMOHONAN' && (
           <div className="space-y-6 animate-in fade-in">
-             <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3 w-full xl:w-auto">
+             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
                   <div className="p-3 bg-blue-100 rounded-xl hidden sm:block flex-shrink-0">
                     <Users className="w-7 h-7 text-blue-700" />
                   </div>
-                  <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Senarai Keseluruhan Permohonan</h3>
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Senarai Keseluruhan Permohonan</h3>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">Urus maklumat calon, tapisan status temuduga, dan muat turun senarai calon.</p>
+                  </div>
                 </div>
-                
-                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-start xl:justify-end">
-                    <div className="relative w-full sm:w-64">
-                       <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                       <input type="text" placeholder="Cari nama atau No. KP..." value={searchQuery} onChange={(e) => {setSearchQuery(e.target.value); setCurrentPage(1);}} className="w-full pl-10 pr-4 py-2 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 font-medium" />
-                    </div>
+
+                {/* Tapisan Status Calon */}
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 self-stretch sm:self-auto overflow-x-auto">
+                   <button
+                     type="button"
+                     onClick={() => { setStatusFilter('SEMUA'); setCurrentPage(1); }}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                       statusFilter === 'SEMUA' 
+                         ? 'bg-white text-slate-900 shadow-xs' 
+                         : 'text-slate-600 hover:text-slate-900'
+                     }`}
+                   >
+                     Semua ({candidates.length})
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => { setStatusFilter('LAYAK'); setCurrentPage(1); }}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                       statusFilter === 'LAYAK' 
+                         ? 'bg-purple-600 text-white shadow-xs' 
+                         : 'text-purple-700 hover:text-purple-900'
+                     }`}
+                   >
+                     <span className={`w-2 h-2 rounded-full ${statusFilter === 'LAYAK' ? 'bg-white' : 'bg-purple-600'}`}></span>
+                     Layak Temuduga ({layakCandidates.length})
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => { setStatusFilter('TIDAK_LAYAK'); setCurrentPage(1); }}
+                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                       statusFilter === 'TIDAK_LAYAK' 
+                         ? 'bg-rose-600 text-white shadow-xs' 
+                         : 'text-rose-700 hover:text-rose-900'
+                     }`}
+                   >
+                     <span className={`w-2 h-2 rounded-full ${statusFilter === 'TIDAK_LAYAK' ? 'bg-white' : 'bg-rose-600'}`}></span>
+                     Tidak Layak ({tidakLayakCandidates.length})
+                   </button>
+                </div>
+             </div>
+             
+             <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 mb-2">
+                <div className="relative flex-1 min-w-[240px] max-w-md">
+                   <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                   <input type="text" placeholder="Cari nama atau No. KP..." value={searchQuery} onChange={(e) => {setSearchQuery(e.target.value); setCurrentPage(1);}} className="w-full pl-10 pr-4 py-2 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 font-medium" />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
                     <button 
                       type="button"
                       onClick={() => setShowAddModal(true)}
-                      className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm text-sm whitespace-nowrap"
+                      className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2.5 rounded-xl font-bold transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap"
                     >
                       <UserPlus className="w-4 h-4" />
-                      + Tambah Calon Tercicir
+                      + Tambah Calon
                     </button>
                     
                     <button 
+                      type="button"
                       onClick={() => setPrintPukalBorang(true)}
-                      className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm text-sm whitespace-nowrap"
+                      className="flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2.5 rounded-xl font-bold transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap"
+                      title={statusFilter === 'LAYAK' ? 'Cetak borang calon layak sahaja' : 'Cetak borang'}
                     >
                       <Printer className="w-4 h-4" />
-                      Cetak Pukal
+                      Cetak Pukal {statusFilter === 'LAYAK' ? '(Layak)' : ''}
                     </button>
                     
+                    {/* Butang Muat Turun Calon Layak Temuduga Khusus */}
                     <button 
-                      onClick={() => {
-                    const headers = [
-                      "No", "No. Kad Pengenalan", "Nama Calon", "Jantina", "Tarikh Lahir", "Tempat Lahir", 
-                      "Sekolah Asal", "No. KP Bapa", "Nama Bapa", "No. Tel Bapa", "No. KP Ibu", "Nama Ibu", "No. Tel Ibu",
-                      "Status Temuduga", "Markah Tahfiz", "Markah Akademik", "Status Tawaran", "Maklum Balas"
-                    ];
-                    const rows = candidates.map((c, i) => [
-                      i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
-                      c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
-                      c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
-                      c.markahTahfiz?.jumlah || '0', c.markahAkademik?.jumlah || '0', 
-                      c.statusTawaran || '', c.maklumBalasTawaran || ''
-                    ]);
-                    downloadCSV([headers, ...rows], `Senarai_Keseluruhan_Calon.csv`);
-                  }}
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  Muat Turun Semua
-                </button>
-             </div>
+                      type="button"
+                      onClick={handleDownloadLayak}
+                      className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap ring-2 ring-purple-300"
+                      title="Muat turun senarai calon berstatus Layak Temuduga sahaja"
+                    >
+                      <Download className="w-4 h-4" />
+                      Muat Turun Calon Layak ({layakCandidates.length})
+                    </button>
+
+                    {/* Butang Muat Turun Semua */}
+                    <button 
+                      type="button"
+                      onClick={handleDownloadSemua}
+                      className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white px-3.5 py-2.5 rounded-xl font-bold transition-all shadow-sm text-xs sm:text-sm whitespace-nowrap"
+                      title="Muat turun keseluruhan senarai calon"
+                    >
+                      <Download className="w-4 h-4" />
+                      Semua ({candidates.length})
+                    </button>
+                </div>
              </div>
              
              <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">

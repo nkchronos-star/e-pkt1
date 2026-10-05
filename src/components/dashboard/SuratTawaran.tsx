@@ -32,7 +32,14 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
       {/* Header Surat */}
       <div className="flex items-start gap-3 mb-3 border-b-[1.5px] border-[#0e4394] pb-2 w-full">
         <div className="w-[78px] flex-shrink-0">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" referrerPolicy="no-referrer" alt="Jata Negara" className="w-full h-auto object-contain" />
+          <img 
+            src="/jata-negara.svg" 
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = "https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg";
+            }}
+            alt="Jata Negara Malaysia" 
+            className="w-full h-auto object-contain block select-none" 
+          />
         </div>
         <div className="flex-1 pt-0.5">
           <h1 className="font-bold text-[14.5px] mb-0 tracking-wide text-[#0e4394]">KEMENTERIAN PENDIDIKAN MALAYSIA</h1>
