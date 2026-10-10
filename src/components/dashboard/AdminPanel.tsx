@@ -2649,6 +2649,10 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                     <input type="text" name="tarikhAkhirTerimaTawaran" value={settings.tarikhAkhirTerimaTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 28 November 2026" />
                   </div>
                   <div>
+                    <label className="block text-xs font-bold text-amber-700 mb-1">Tarikh Semak Semula (Calon Dalam Pertimbangan)</label>
+                    <input type="text" name="tarikhSemakPertimbangan" value={settings.tarikhSemakPertimbangan || ''} onChange={handleSettingsChange} className="w-full border border-amber-300 bg-amber-50/50 rounded-lg px-3 py-2 text-sm font-semibold text-amber-900" placeholder="cth: 30 Oktober 2026" />
+                  </div>
+                  <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Nama Ketua Penolong Pengarah Kanan (Penandatangan Surat Tawaran)</label>
                     <input type="text" name="namaPengarahTawaran" value={settings.namaPengarahTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold uppercase text-slate-800" placeholder="HAJI HASDAN BIN HASAN" />
                   </div>

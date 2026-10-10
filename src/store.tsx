@@ -76,6 +76,7 @@ const defaultSettings: ApplicationSettings = {
   tarikhTemuduga: '10 Oktober 2026',
   tarikhLaporDiri: '3 Januari 2027',
   tarikhAkhirTerimaTawaran: '28 November 2026',
+  tarikhSemakPertimbangan: '30 Oktober 2026',
   tarikhSuratPanggilan: '28 September 2026',
   hariTemuduga: 'Sabtu',
   masaTemuduga: '8.30 pagi',

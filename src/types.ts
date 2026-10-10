@@ -27,6 +27,7 @@ export interface ApplicationSettings {
   tarikhTemuduga?: string;
   tarikhLaporDiri?: string;
   tarikhAkhirTerimaTawaran?: string;
+  tarikhSemakPertimbangan?: string;
   tarikhSuratPanggilan?: string;
   hariTemuduga?: string;
   masaTemuduga?: string;
