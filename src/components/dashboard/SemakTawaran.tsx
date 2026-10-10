@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAppContext } from '../../store';
-import { Search, Info, CheckCircle, XCircle, Clock, Printer, Calendar, Download, FileText, Loader2 } from 'lucide-react';
+import { Search, Info, CheckCircle, XCircle, Clock, Printer, Calendar, Download, FileText, Loader2, ExternalLink } from 'lucide-react';
 import { Candidate } from '../../types';
 import SuratTawaran from './SuratTawaran';
+import BorangPendaftaranPDF from './BorangPendaftaranPDF';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
@@ -12,6 +13,7 @@ export default function SemakTawaran() {
   const [result, setResult] = useState<Candidate | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [showBorangPendaftaran, setShowBorangPendaftaran] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const formatTarikh = (tarikhStr: string) => {
@@ -192,17 +194,29 @@ export default function SemakTawaran() {
                              </p>
                            </div>
                            
-                           {settings.borangTingkatan1Link ? (
-                             <a href={settings.borangTingkatan1Link} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-3 no-print text-blue-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-blue-200 bg-white/50 hover:shadow-lg hover:shadow-blue-100/50 hover:-translate-y-1">
-                               <Download className="w-10 h-10" />
-                               <span className="font-bold text-sm tracking-wide text-center">2. MUAT TURUN<br/>BORANG PENDAFTARAN</span>
-                             </a>
-                           ) : (
-                             <button onClick={() => alert('Maaf, pautan borang belum dikemaskini oleh pihak sekolah.')} className="flex flex-col items-center justify-center gap-3 no-print text-slate-400 p-6 rounded-2xl border-2 border-slate-200 bg-slate-50 cursor-not-allowed">
-                               <Download className="w-10 h-10" />
-                               <span className="font-bold text-sm tracking-wide text-center">2. MUAT TURUN<br/>BORANG PENDAFTARAN</span>
+                           <div className="flex flex-col items-center w-full">
+                             <button 
+                               onClick={() => setShowBorangPendaftaran(true)} 
+                               className="w-full h-full flex flex-col items-center justify-center gap-3 no-print text-blue-600 hover:text-slate-900 transition-all p-6 rounded-2xl hover:bg-white border-2 border-blue-200 bg-white/50 hover:shadow-lg hover:shadow-blue-100/50 hover:-translate-y-1"
+                             >
+                               <Download className="w-10 h-10 text-blue-600" />
+                               <span className="font-bold text-sm tracking-wide text-center">2. MUAT TURUN / CETAK<br/>BORANG PENDAFTARAN (12 HALAMAN)</span>
                              </button>
-                           )}
+                             {settings.borangTingkatan1Link ? (
+                               <a 
+                                 href={settings.borangTingkatan1Link} 
+                                 target="_blank" 
+                                 rel="noopener noreferrer" 
+                                 className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline mt-2 font-semibold flex items-center gap-1 opacity-90"
+                               >
+                                 <ExternalLink className="w-3 h-3" /> Pautan Google Drive / PDF Luar
+                               </a>
+                             ) : (
+                               <span className="text-[10.5px] leading-tight text-slate-500 mt-2 text-center font-medium opacity-80 no-print">
+                                 * Mengandungi 12 halaman lengkap dokumen & borang rasmi sekolah
+                               </span>
+                             )}
+                           </div>
                          </div>
                       </div>
                       <div className="mt-12 print:mt-0">
@@ -297,6 +311,13 @@ export default function SemakTawaran() {
              </button>
            </div>
         </div>
+      )}
+
+      {showBorangPendaftaran && result && (
+        <BorangPendaftaranPDF 
+          candidate={result} 
+          onClose={() => setShowBorangPendaftaran(false)} 
+        />
       )}
     </div>
   );

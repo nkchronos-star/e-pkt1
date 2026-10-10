@@ -103,8 +103,8 @@ const defaultSettings: ApplicationSettings = {
     { id: 'sahsiah', name: 'Sahsiah', weight: 5 }
   ],
   akademikItems: [
-    { id: 'matematik', name: 'Matematik', weight: 50 },
-    { id: 'sains', name: 'Sains', weight: 50 }
+    { id: 'matematik', name: 'Matematik', weight: 20 },
+    { id: 'sains', name: 'Sains', weight: 20 }
   ]
 };
 
@@ -185,10 +185,19 @@ const loadCachedSettings = (): ApplicationSettings => {
           merged.akademikItems = merged.akademikItems.filter((item: any) => 
             item.id !== 'bm' && item.id !== 'bi' && !item.name?.toLowerCase().includes('bahasa')
           );
+          merged.akademikItems = merged.akademikItems.map((item: any) => {
+            if ((item.id === 'matematik' || item.name?.toLowerCase() === 'matematik') && (item.weight === 40 || item.weight === 50 || !item.weight)) {
+              return { ...item, weight: 20 };
+            }
+            if ((item.id === 'sains' || item.name?.toLowerCase() === 'sains') && (item.weight === 40 || item.weight === 50 || !item.weight)) {
+              return { ...item, weight: 20 };
+            }
+            return item;
+          });
           if (merged.akademikItems.length === 0) {
             merged.akademikItems = [
-              { id: 'matematik', name: 'Matematik', weight: 50 },
-              { id: 'sains', name: 'Sains', weight: 50 }
+              { id: 'matematik', name: 'Matematik', weight: 20 },
+              { id: 'sains', name: 'Sains', weight: 20 }
             ];
           }
         }
@@ -288,11 +297,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           cleanFirestoreData.akademikItems = cleanFirestoreData.akademikItems.filter((item: any) => 
             item.id !== 'bm' && item.id !== 'bi' && !item.name?.toLowerCase().includes('bahasa')
           );
+          let hasOldWeight = false;
+          cleanFirestoreData.akademikItems = cleanFirestoreData.akademikItems.map((item: any) => {
+            if ((item.id === 'matematik' || item.name?.toLowerCase() === 'matematik') && (item.weight === 40 || item.weight === 50 || !item.weight)) {
+              hasOldWeight = true;
+              return { ...item, weight: 20 };
+            }
+            if ((item.id === 'sains' || item.name?.toLowerCase() === 'sains') && (item.weight === 40 || item.weight === 50 || !item.weight)) {
+              hasOldWeight = true;
+              return { ...item, weight: 20 };
+            }
+            return item;
+          });
           if (cleanFirestoreData.akademikItems.length === 0) {
             cleanFirestoreData.akademikItems = [
-              { id: 'matematik', name: 'Matematik', weight: 50 },
-              { id: 'sains', name: 'Sains', weight: 50 }
+              { id: 'matematik', name: 'Matematik', weight: 20 },
+              { id: 'sains', name: 'Sains', weight: 20 }
             ];
+            hasOldWeight = true;
+          }
+          if (hasOldWeight) {
+            setDoc(doc(db, 'config', 'main'), { akademikItems: cleanFirestoreData.akademikItems }, { merge: true }).catch(err => {
+              console.warn("Kemaskini akademikItems ke Firestore:", err);
+            });
           }
         }
         setState(prev => {

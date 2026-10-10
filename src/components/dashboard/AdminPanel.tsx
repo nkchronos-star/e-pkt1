@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
@@ -793,7 +793,11 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
   const [markah, setMarkah] = useState<Record<string, number>>(() => {
      const init: Record<string, number> = {};
      akademikItems.forEach((i: any) => {
-        init[i.id] = candidate.markahAkademik?.[i.id] ?? 0;
+        let val = candidate.markahAkademik?.[i.id] ?? 0;
+        if (typeof val === 'number' && i.weight && val > i.weight) {
+          val = i.weight;
+        }
+        init[i.id] = val;
      });
      return init;
   });
@@ -1155,14 +1159,79 @@ function PentadbirView() {
 
   const { candidates, settings, updateCandidate } = useAppContext();
   const [filter, setFilter] = useState('LAYAK_TEMUDUGA');
+  const [genderFilter, setGenderFilter] = useState<'SEMUA' | 'LELAKI' | 'PEREMPUAN'>('SEMUA');
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [sortBy, setSortBy] = useState<'MARKAH_DESC' | 'MARKAH_ASC' | 'TAHFIZ_DESC' | 'AKADEMIK_DESC' | 'NAMA_ASC' | 'JANTINA_LELAKI_FIRST' | 'JANTINA_PEREMPUAN_FIRST'>('MARKAH_DESC');
 
-  const tahfizTotal = settings.tahfizItems?.reduce((a, b) => a + b.weight, 0) || 100;
-  const akademikTotal = settings.akademikItems?.reduce((a, b) => a + b.weight, 0) || 100;
+  const tahfizMax = settings.tahfizItems?.reduce((a, b) => a + Number(b.weight || 0), 0) || 100;
+  const akademikMax = settings.akademikItems?.reduce((a, b) => a + Number(b.weight || 0), 0) || 40;
+  const jumlahMax = tahfizMax + akademikMax;
 
-  // Filter calon
+  // Helper untuk menentukan jantina secara tepat (fallback guna digit terakhir no KP jika kosong)
+  const getCandidateGender = (c: Candidate): 'LELAKI' | 'PEREMPUAN' => {
+    const raw = (c.jantina || '').toString().trim().toUpperCase();
+    if (raw === 'LELAKI' || raw === 'L' || raw.includes('BANIN')) return 'LELAKI';
+    if (raw === 'PEREMPUAN' || raw === 'P' || raw.includes('BANAT')) return 'PEREMPUAN';
+    const digits = (c.ic || '').replace(/\D/g, '');
+    if (digits.length >= 1) {
+      const last = parseInt(digits.slice(-1), 10);
+      if (!isNaN(last)) {
+        return last % 2 === 0 ? 'PEREMPUAN' : 'LELAKI';
+      }
+    }
+    return 'LELAKI';
+  };
+
+  // Helper untuk mendapatkan nilai nombor markah
+  const getTahfizScore = (c: Candidate): number | null => {
+    if (!c.markahTahfiz) return null;
+    const val = Number(c.markahTahfiz.jumlah);
+    return isNaN(val) ? null : val;
+  };
+
+  const getAkademikScore = (c: Candidate): number | null => {
+    if (!c.markahAkademik) return null;
+    let val = Number(c.markahAkademik.jumlah);
+    if (isNaN(val)) return null;
+    if (akademikMax > 0 && val > akademikMax) {
+      val = akademikMax;
+    }
+    return val;
+  };
+
+  // 1. Kira ranking merit global bagi semua calon yang mempunyai markah
+  const meritRankMap = new Map<string, number>();
+  const allScoredCandidates = [...candidates]
+    .filter(c => getTahfizScore(c) !== null || getAkademikScore(c) !== null)
+    .sort((a, b) => {
+      const aTotal = (getTahfizScore(a) ?? 0) + (getAkademikScore(a) ?? 0);
+      const bTotal = (getTahfizScore(b) ?? 0) + (getAkademikScore(b) ?? 0);
+      if (bTotal !== aTotal) return bTotal - aTotal;
+      const aTahfiz = getTahfizScore(a) ?? 0;
+      const bTahfiz = getTahfizScore(b) ?? 0;
+      if (bTahfiz !== aTahfiz) return bTahfiz - aTahfiz;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+  allScoredCandidates.forEach((c, idx) => {
+    meritRankMap.set(c.ic, idx + 1);
+  });
+
+  // 2. Kira ranking merit khusus Lelaki (Banin)
+  const meritRankMapLelaki = new Map<string, number>();
+  const scoredLelaki = allScoredCandidates.filter(c => getCandidateGender(c) === 'LELAKI');
+  scoredLelaki.forEach((c, idx) => {
+    meritRankMapLelaki.set(c.ic, idx + 1);
+  });
+
+  // 3. Kira ranking merit khusus Perempuan (Banat)
+  const meritRankMapPerempuan = new Map<string, number>();
+  const scoredPerempuan = allScoredCandidates.filter(c => getCandidateGender(c) === 'PEREMPUAN');
+  scoredPerempuan.forEach((c, idx) => {
+    meritRankMapPerempuan.set(c.ic, idx + 1);
+  });
+
+  // Filter calon mengikut status
   let baseCandidates = candidates;
   if (filter === 'SEMUA_PERMOHONAN') {
     baseCandidates = candidates;
@@ -1176,91 +1245,219 @@ function PentadbirView() {
     baseCandidates = candidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
   } else if (filter === 'TOLAK') {
     baseCandidates = candidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
+  } else if (filter === 'LENGKAP_DINILAI') {
+    baseCandidates = candidates.filter(c => getTahfizScore(c) !== null && getAkademikScore(c) !== null);
+  } else if (filter === 'BELUM_LENGKAP') {
+    baseCandidates = candidates.filter(c => getTahfizScore(c) === null || getAkademikScore(c) === null);
   } else {
     // Default 'LAYAK_TEMUDUGA'
     baseCandidates = candidates.filter(c => c.statusTemuduga === 'LAYAK');
   }
-  let filtered = baseCandidates;
-  
+
   if (searchQuery.trim() !== '') {
-    const q = searchQuery.toLowerCase();
-    filtered = filtered.filter(c => c.name?.toLowerCase().includes(q) || c.ic?.includes(q) || c.name?.toLowerCase().includes(q) || c.ic?.includes(q));
+    const q = searchQuery.toLowerCase().trim();
+    baseCandidates = baseCandidates.filter(c => 
+      c.name?.toLowerCase().includes(q) || 
+      c.ic?.includes(q) || 
+      c.namaSekolahRendah?.toLowerCase().includes(q)
+    );
   }
+
+  // Jumlah sebelum tapisan tab jantina
+  const countSemua = baseCandidates.length;
+  const countLelaki = baseCandidates.filter(c => getCandidateGender(c) === 'LELAKI').length;
+  const countPerempuan = baseCandidates.filter(c => getCandidateGender(c) === 'PEREMPUAN').length;
+
+  // Tapis mengikut jantina jika tab Lelaki atau Perempuan dipilih
+  let candidatesToDisplay = baseCandidates;
+  if (genderFilter === 'LELAKI') {
+    candidatesToDisplay = baseCandidates.filter(c => getCandidateGender(c) === 'LELAKI');
+  } else if (genderFilter === 'PEREMPUAN') {
+    candidatesToDisplay = baseCandidates.filter(c => getCandidateGender(c) === 'PEREMPUAN');
+  }
+
+  // Petakan calon dengan kiraan markah & %
+  const scoredItems = candidatesToDisplay.map(c => {
+    const tScore = getTahfizScore(c);
+    const aScore = getAkademikScore(c);
+    const hasTahfiz = tScore !== null;
+    const hasAkademik = aScore !== null;
+    const hasBoth = hasTahfiz && hasAkademik;
+    const hasAny = hasTahfiz || hasAkademik;
+    const jumlahScore = (tScore ?? 0) + (aScore ?? 0);
+    const peratus = jumlahMax > 0 ? (jumlahScore / jumlahMax) * 100 : 0;
+    
+    const cGender = getCandidateGender(c);
+    const globalRank = meritRankMap.get(c.ic) || null;
+    const genderRank = cGender === 'LELAKI' 
+      ? (meritRankMapLelaki.get(c.ic) || null)
+      : (meritRankMapPerempuan.get(c.ic) || null);
+
+    // Sekiranya sedang melihat tab Lelaki atau Perempuan, utamakan paparan rank jantina
+    const rank = (genderFilter === 'LELAKI' || genderFilter === 'PEREMPUAN')
+      ? genderRank
+      : globalRank;
+
+    return {
+      candidate: c,
+      gender: cGender,
+      tScore,
+      aScore,
+      hasTahfiz,
+      hasAkademik,
+      hasBoth,
+      hasAny,
+      jumlahScore,
+      peratus,
+      rank,
+      globalRank,
+      genderRank
+    };
+  });
+
+  // Susunan murid (Sorting)
+  const sortedItems = [...scoredItems].sort((a, b) => {
+    if (sortBy === 'MARKAH_DESC') {
+      if (a.hasAny && !b.hasAny) return -1;
+      if (!a.hasAny && b.hasAny) return 1;
+      if (b.jumlahScore !== a.jumlahScore) return b.jumlahScore - a.jumlahScore;
+      if ((b.tScore ?? 0) !== (a.tScore ?? 0)) return (b.tScore ?? 0) - (a.tScore ?? 0);
+      return (a.candidate.name || '').localeCompare(b.candidate.name || '');
+    }
+    if (sortBy === 'MARKAH_ASC') {
+      if (a.hasAny && !b.hasAny) return -1;
+      if (!a.hasAny && b.hasAny) return 1;
+      if (a.jumlahScore !== b.jumlahScore) return a.jumlahScore - b.jumlahScore;
+      return (a.candidate.name || '').localeCompare(b.candidate.name || '');
+    }
+    if (sortBy === 'TAHFIZ_DESC') {
+      const at = a.tScore ?? -1;
+      const bt = b.tScore ?? -1;
+      if (bt !== at) return bt - at;
+      return b.jumlahScore - a.jumlahScore;
+    }
+    if (sortBy === 'AKADEMIK_DESC') {
+      const aa = a.aScore ?? -1;
+      const ba = b.aScore ?? -1;
+      if (ba !== aa) return ba - aa;
+      return b.jumlahScore - a.jumlahScore;
+    }
+    if (sortBy === 'JANTINA_LELAKI_FIRST') {
+      if (a.gender !== b.gender) return a.gender === 'LELAKI' ? -1 : 1;
+      if (b.jumlahScore !== a.jumlahScore) return b.jumlahScore - a.jumlahScore;
+      return (a.candidate.name || '').localeCompare(b.candidate.name || '');
+    }
+    if (sortBy === 'JANTINA_PEREMPUAN_FIRST') {
+      if (a.gender !== b.gender) return a.gender === 'PEREMPUAN' ? -1 : 1;
+      if (b.jumlahScore !== a.jumlahScore) return b.jumlahScore - a.jumlahScore;
+      return (a.candidate.name || '').localeCompare(b.candidate.name || '');
+    }
+    if (sortBy === 'NAMA_ASC') {
+      return (a.candidate.name || '').localeCompare(b.candidate.name || '');
+    }
+    return 0;
+  });
+
+  // Statistik Ringkasan
+  const evaluatedItems = sortedItems.filter(i => i.hasAny);
+  const avgPercent = evaluatedItems.length > 0 
+    ? (evaluatedItems.reduce((acc, i) => acc + i.peratus, 0) / evaluatedItems.length).toFixed(1)
+    : '0.0';
+  const topCandidateItem = evaluatedItems.length > 0
+    ? [...evaluatedItems].sort((a, b) => b.jumlahScore - a.jumlahScore)[0]
+    : null;
+  const lengkapCount = sortedItems.filter(i => i.hasBoth).length;
+  const ditawarkanCount = sortedItems.filter(i => i.candidate.statusTawaran === 'BERJAYA').length;
+
+  // Calon terbaik Lelaki & Perempuan bagi maklumat komprehensif
+  const topBoyCandidate = scoredLelaki.length > 0 ? scoredLelaki[0] : null;
+  const topGirlCandidate = scoredPerempuan.length > 0 ? scoredPerempuan[0] : null;
 
   const handleDownloadExcel = () => {
     const headers = [
-      "No", "No. Kad Pengenalan", "Nama Calon", "Jantina", "Tarikh Lahir", "Tempat Lahir", 
-      "Sekolah Asal", "No. KP Bapa", "Nama Bapa", "No. Tel Bapa", "No. KP Ibu", "Nama Ibu", "No. Tel Ibu",
-      "Status Temuduga", "Markah Tahfiz", "Markah Akademik", "Status Tawaran", "Maklum Balas"
+      "Kedudukan Keseluruhan",
+      "Kedudukan Jantina",
+      "Kategori Jantina",
+      "No. Kad Pengenalan",
+      "Nama Calon",
+      "Jantina Asal",
+      "Sekolah Asal",
+      "Markah Tahfiz",
+      `Tahfiz Max (${tahfizMax})`,
+      "Penilai Tahfiz",
+      "Markah Akademik",
+      `Akademik Max (${akademikMax})`,
+      "Penilai Akademik",
+      "Markah Keseluruhan (Tahfiz + Akademik)",
+      `Jumlah Max (${jumlahMax})`,
+      "Markah Peratus (%)",
+      "Status Temuduga",
+      "Status Tawaran",
+      "Maklum Balas Tawaran",
+      "No. Tel Bapa",
+      "No. Tel Ibu"
     ];
     
-    const rows = filtered.map((c, i) => [
-      i + 1,
-      c.ic || '',
-      c.name || '',
-      c.jantina || '',
-      c.tarikhLahir || '',
-      c.tempatLahir || '',
-      c.namaSekolahRendah || '',
-      c.icBapa || '',
-      c.namaBapa || '',
-      c.telefonBapa || '',
-      c.icIbu || '',
-      c.namaIbu || '',
-      c.telefonIbu || '',
-      c.statusTemuduga || '',
-      c.markahTahfiz?.jumlah || '0',
-      c.markahAkademik?.jumlah || '0',
-      c.statusTawaran || '',
-      c.maklumBalasTawaran || ''
+    const rows = sortedItems.map((item) => [
+      item.globalRank ? `#${item.globalRank}` : '-',
+      item.genderRank ? `#${item.genderRank} (${item.gender === 'LELAKI' ? 'L' : 'P'})` : '-',
+      item.gender === 'LELAKI' ? 'Lelaki' : 'Perempuan',
+      item.candidate.ic || '',
+      item.candidate.name || '',
+      item.candidate.jantina || (item.gender === 'LELAKI' ? 'Lelaki' : 'Perempuan'),
+      item.candidate.namaSekolahRendah || '',
+      item.tScore !== null ? item.tScore : 'Belum Dinilai',
+      tahfizMax,
+      item.candidate.markahTahfiz?.dinilaiOleh || '',
+      item.aScore !== null ? item.aScore : 'Belum Dinilai',
+      akademikMax,
+      item.candidate.markahAkademik?.dinilaiOleh || '',
+      item.hasAny ? item.jumlahScore : '0',
+      jumlahMax,
+      item.hasAny ? `${item.peratus.toFixed(1)}%` : '0%',
+      item.candidate.statusTemuduga || '',
+      item.candidate.statusTawaran || '',
+      item.candidate.maklumBalasTawaran || '',
+      item.candidate.telefonBapa || '',
+      item.candidate.telefonIbu || ''
     ]);
 
-    downloadCSV([headers, ...rows], `Senarai_Calon_${filter}.csv`);
+    const labelJantina = genderFilter === 'LELAKI' ? 'Lelaki' : genderFilter === 'PEREMPUAN' ? 'Perempuan' : 'Semua';
+    downloadCSV([headers, ...rows], `Keputusan_Ranking_${labelJantina}_${filter}.csv`);
   };
 
-
   if (printCandidate) return <BorangCetakPDF candidate={printCandidate} onClose={() => setPrintCandidate(null)} />;
-  if (printPukalBorang) return <BorangPukalCetakPDF candidates={filtered} onClose={() => setPrintPukalBorang(false)} />;
+  if (printPukalBorang) return <BorangPukalCetakPDF candidates={baseCandidates} onClose={() => setPrintPukalBorang(false)} />;
 
   return (
-    <div>
-       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-8">
+    <div className="space-y-6">
+       {/* Tajuk & Header */}
+       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
          <div className="flex items-center gap-4">
-           <div className="p-3 bg-emerald-100 rounded-xl">
-             <CheckSquare className="w-7 h-7 text-emerald-700" />
+           <div className="p-3 bg-emerald-100 rounded-xl shadow-xs">
+             <Trophy className="w-7 h-7 text-emerald-700" />
            </div>
-           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Keputusan Temuduga & Tawaran</h3>
+           <div>
+             <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Keputusan Temuduga & Tawaran</h3>
+             <p className="text-sm text-slate-500 font-medium mt-0.5">
+               Analisis markah keseluruhan (Tahfiz + Akademik), peratusan akhir dan susunan merit murid.
+             </p>
+           </div>
          </div>
-       </div>
 
-
-       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-         <select 
-           value={filter}
-           onChange={(e) => { setFilter(e.target.value); setCurrentPage(1); }}
-           className="px-6 py-3 rounded-xl text-sm font-bold border-2 border-slate-200 bg-white text-slate-800 shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 min-w-[260px]"
-         >
-           <option value="SEMUA_PERMOHONAN">Semua Permohonan Berdaftar ({candidates.length})</option>
-           <option value="MENUNGGU">Menunggu Saringan ({candidates.filter(c => c.statusTemuduga === 'MENUNGGU' || !c.statusTemuduga).length})</option>
-           <option value="LAYAK_TEMUDUGA">Layak Temuduga ({candidates.filter(c => c.statusTemuduga === 'LAYAK').length})</option>
-           <option value="BERJAYA">Ditawarkan ({candidates.filter(c => c.statusTawaran === 'BERJAYA').length})</option>
-           <option value="GAGAL">Tidak Berjaya ({candidates.filter(c => c.statusTawaran === 'GAGAL').length})</option>
-           <option value="TERIMA">Tawaran Diterima ({candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length})</option>
-           <option value="TOLAK">Tolak Tawaran ({candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length})</option>
-         </select>
-
-         <div className="flex flex-wrap items-center gap-3">
+         <div className="flex items-center gap-3">
            <button 
-             type="button"
-             onClick={() => setShowAddModal(true)}
-             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-sm text-sm"
+             onClick={() => window.print()}
+             className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl font-bold transition-all shadow-xs text-sm"
+             title="Cetak senarai keputusan ini"
            >
-             <UserPlus className="w-4 h-4" />
-             + Tambah Calon Tercicir
+             <Printer className="w-4 h-4 text-slate-500" />
+             Cetak Senarai
            </button>
            <button 
              onClick={handleDownloadExcel}
-             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-sm text-sm"
+             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-sm"
+             title="Muat turun data dalam format CSV/Excel"
            >
              <Download className="w-4 h-4" />
              Muat Turun CSV
@@ -1268,88 +1465,524 @@ function PentadbirView() {
          </div>
        </div>
 
+       {/* Kad Ringkasan Statistik Markah */}
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-2xl p-4 shadow-xs">
+           <div className="flex items-center justify-between mb-2">
+             <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
+               {genderFilter === 'LELAKI' ? 'Calon Lelaki' : genderFilter === 'PEREMPUAN' ? 'Calon Perempuan' : 'Jumlah Calon'}
+             </span>
+             <Users className="w-4 h-4 text-emerald-600" />
+           </div>
+           <div className="text-2xl font-black text-slate-900">{sortedItems.length}</div>
+           <div className="text-xs text-slate-500 mt-1 font-medium">
+             {genderFilter === 'SEMUA' ? (
+               <span>👦 {countLelaki} Lelaki &bull; 👧 {countPerempuan} Perempuan</span>
+             ) : (
+               <span>Daripada {countSemua} calon</span>
+             )}
+           </div>
+         </div>
+
+         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-4 shadow-xs">
+           <div className="flex items-center justify-between mb-2">
+             <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">Lengkap Dinilai</span>
+             <CheckCircle className="w-4 h-4 text-blue-600" />
+           </div>
+           <div className="text-2xl font-black text-slate-900">
+             {lengkapCount} <span className="text-xs font-bold text-slate-500">/ {sortedItems.length}</span>
+           </div>
+           <div className="text-xs text-slate-500 mt-1 font-medium">Tahfiz & Akademik lengkap</div>
+         </div>
+
+         <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200/80 rounded-2xl p-4 shadow-xs">
+           <div className="flex items-center justify-between mb-2">
+             <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">Purata Markah %</span>
+             <TrendingUp className="w-4 h-4 text-purple-600" />
+           </div>
+           <div className="text-2xl font-black text-purple-900">{avgPercent}%</div>
+           <div className="text-xs text-slate-500 mt-1 font-medium">
+             Bagi {genderFilter === 'LELAKI' ? 'lelaki dinilai' : genderFilter === 'PEREMPUAN' ? 'perempuan dinilai' : 'calon dinilai'}
+           </div>
+         </div>
+
+         <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 rounded-2xl p-4 shadow-xs">
+           <div className="flex items-center justify-between mb-2">
+             <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+               {genderFilter === 'LELAKI' ? '👦 Juara Lelaki' : genderFilter === 'PEREMPUAN' ? '👧 Juara Perempuan' : 'Markah Tertinggi'}
+             </span>
+             <Award className="w-4 h-4 text-amber-600" />
+           </div>
+           <div className="text-2xl font-black text-amber-900">
+             {topCandidateItem ? `${topCandidateItem.peratus.toFixed(1)}%` : '-'}
+           </div>
+           <div className="text-xs text-slate-600 mt-1 font-medium truncate" title={topCandidateItem?.candidate.name}>
+             {topCandidateItem ? topCandidateItem.candidate.name : 'Belum ada penilaian'}
+           </div>
+           {genderFilter === 'SEMUA' && (topBoyCandidate || topGirlCandidate) && (
+             <div className="mt-2 pt-2 border-t border-amber-200/60 flex flex-col gap-0.5 text-[10px]">
+               {topBoyCandidate && (
+                 <div className="truncate text-blue-800 font-semibold" title={topBoyCandidate.name}>
+                   👦 Top L: {topBoyCandidate.name}
+                 </div>
+               )}
+               {topGirlCandidate && (
+                 <div className="truncate text-pink-800 font-semibold" title={topGirlCandidate.name}>
+                   👧 Top P: {topGirlCandidate.name}
+                 </div>
+               )}
+             </div>
+           )}
+         </div>
+       </div>
+
+       {/* Bahagian Kawalan, Penapis, Susunan & Carian */}
+       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+         {/* Tab Kategori Ranking: Semua, Lelaki, Perempuan */}
+         <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-200/90">
+           <div className="flex flex-wrap items-center gap-1.5">
+             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Kategori Ranking:</span>
+             <button
+               type="button"
+               onClick={() => setGenderFilter('SEMUA')}
+               className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                 genderFilter === 'SEMUA'
+                   ? 'bg-slate-900 text-white shadow-sm ring-2 ring-slate-900/20'
+                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+               }`}
+             >
+               <Users className="w-3.5 h-3.5" />
+               <span>Semua Calon</span>
+               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${genderFilter === 'SEMUA' ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-600'}`}>
+                 {countSemua}
+               </span>
+             </button>
+
+             <button
+               type="button"
+               onClick={() => setGenderFilter('LELAKI')}
+               className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                 genderFilter === 'LELAKI'
+                   ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/30'
+                   : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
+               }`}
+             >
+               <span>👦 Lelaki (Banin)</span>
+               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${genderFilter === 'LELAKI' ? 'bg-blue-700 text-blue-100' : 'bg-blue-50 text-blue-700'}`}>
+                 {countLelaki}
+               </span>
+             </button>
+
+             <button
+               type="button"
+               onClick={() => setGenderFilter('PEREMPUAN')}
+               className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                 genderFilter === 'PEREMPUAN'
+                   ? 'bg-pink-600 text-white shadow-sm ring-2 ring-pink-500/30'
+                   : 'bg-white text-pink-700 hover:bg-pink-50 border border-pink-200'
+               }`}
+             >
+               <span>👧 Perempuan (Banat)</span>
+               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${genderFilter === 'PEREMPUAN' ? 'bg-pink-700 text-pink-100' : 'bg-pink-50 text-pink-700'}`}>
+                 {countPerempuan}
+               </span>
+             </button>
+           </div>
+
+           <div className="px-2 text-xs font-bold">
+             {genderFilter === 'LELAKI' && (
+               <span className="text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 inline-flex items-center gap-1.5">
+                 👦 Memaparkan senarai & ranking calon Lelaki sahaja
+               </span>
+             )}
+             {genderFilter === 'PEREMPUAN' && (
+               <span className="text-pink-700 bg-pink-50 px-2.5 py-1 rounded-lg border border-pink-100 inline-flex items-center gap-1.5">
+                 👧 Memaparkan senarai & ranking calon Perempuan sahaja
+               </span>
+             )}
+             {genderFilter === 'SEMUA' && (
+               <span className="text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200 inline-flex items-center gap-1.5">
+                 👥 Memaparkan semua calon dengan ranking keseluruhan & jantina
+               </span>
+             )}
+           </div>
+         </div>
+
+         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+           {/* Carian Pantas */}
+           <div className="relative flex-1 min-w-[260px]">
+             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+             <input 
+               type="text" 
+               placeholder="Cari nama calon, No. KP atau sekolah..." 
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-semibold border-2 border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition outline-none"
+             />
+             {searchQuery && (
+               <button 
+                 onClick={() => setSearchQuery('')}
+                 className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-600"
+               >
+                 ✕
+               </button>
+             )}
+           </div>
+
+           {/* Filter Status Calon */}
+           <div className="flex flex-wrap items-center gap-3">
+             <div className="flex items-center gap-2">
+               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Tapisan:</span>
+               <select 
+                 value={filter}
+                 onChange={(e) => setFilter(e.target.value)}
+                 className="px-4 py-2.5 rounded-xl text-xs font-bold border-2 border-slate-200 bg-white text-slate-800 shadow-xs focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+               >
+                 <option value="LAYAK_TEMUDUGA">Layak Temuduga ({candidates.filter(c => c.statusTemuduga === 'LAYAK').length})</option>
+                 <option value="SEMUA_PERMOHONAN">Semua Permohonan ({candidates.length})</option>
+                 <option value="LENGKAP_DINILAI">Lengkap Dinilai ({candidates.filter(c => getTahfizScore(c) !== null && getAkademikScore(c) !== null).length})</option>
+                 <option value="BELUM_LENGKAP">Belum Lengkap Dinilai ({candidates.filter(c => getTahfizScore(c) === null || getAkademikScore(c) === null).length})</option>
+                 <option value="BERJAYA">Ditawarkan ({candidates.filter(c => c.statusTawaran === 'BERJAYA').length})</option>
+                 <option value="GAGAL">Tidak Berjaya ({candidates.filter(c => c.statusTawaran === 'GAGAL').length})</option>
+                 <option value="TERIMA">Tawaran Diterima ({candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length})</option>
+                 <option value="TOLAK">Tolak Tawaran ({candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length})</option>
+                 <option value="MENUNGGU">Menunggu Saringan ({candidates.filter(c => c.statusTemuduga === 'MENUNGGU' || !c.statusTemuduga).length})</option>
+               </select>
+             </div>
+
+             {/* Susunan Murid */}
+             <div className="flex items-center gap-2">
+               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Susunan:</span>
+               <select 
+                 value={sortBy}
+                 onChange={(e) => setSortBy(e.target.value as any)}
+                 className="px-4 py-2.5 rounded-xl text-xs font-bold border-2 border-emerald-300 bg-emerald-50/60 text-emerald-900 shadow-xs focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
+               >
+                 <option value="MARKAH_DESC">🏆 Markah Akhir (Tertinggi ke Terendah)</option>
+                 <option value="MARKAH_ASC">Markah Akhir (Terendah ke Tertinggi)</option>
+                 <option value="JANTINA_LELAKI_FIRST">👦 Susun Lelaki Dahulu (Kemudian Markah)</option>
+                 <option value="JANTINA_PEREMPUAN_FIRST">👧 Susun Perempuan Dahulu (Kemudian Markah)</option>
+                 <option value="TAHFIZ_DESC">Markah Tahfiz Tertinggi</option>
+                 <option value="AKADEMIK_DESC">Markah Akademik Tertinggi</option>
+                 <option value="NAMA_ASC">Nama Calon (A - Z)</option>
+               </select>
+             </div>
+
+             <button 
+               type="button"
+               onClick={() => setShowAddModal(true)}
+               className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-xs text-xs whitespace-nowrap"
+             >
+               <UserPlus className="w-3.5 h-3.5" />
+               + Tambah Calon
+             </button>
+           </div>
+         </div>
+
+         {/* Bar Pemberitahuan Susunan & Skala Markah */}
+         <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 border-t border-slate-100 pt-3 gap-2">
+           <div className="flex items-center gap-2 font-medium">
+             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+             <span>Skala Penilaian: <strong>Tahfiz (/{tahfizMax})</strong> + <strong>Akademik (/{akademikMax})</strong> = <strong>Jumlah Penuh (/{jumlahMax})</strong></span>
+           </div>
+           <div className="flex items-center gap-4 text-[11px] font-semibold">
+             <span>Ditawarkan: <strong className="text-emerald-700">{ditawarkanCount}</strong></span>
+             <span>Belum Ditawarkan: <strong className="text-slate-700">{sortedItems.length - ditawarkanCount}</strong></span>
+           </div>
+         </div>
+       </div>
+
        {showAddModal && <AddCandidateModal onClose={() => setShowAddModal(false)} />}
 
+       {/* Jadual Keputusan Murid */}
        <div className="overflow-hidden bg-white border border-slate-200 rounded-2xl shadow-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+            <table className="w-full divide-y divide-slate-200 text-left text-sm table-auto">
+              <thead className="bg-slate-50/90 text-slate-600">
                 <tr>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest w-12">Bil</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Nama & Gambar Calon</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Tahfiz/Penilai</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Akademik/Penilai</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Maklum Balas</th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">Tindakan</th>
+                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider w-16 whitespace-nowrap">
+                    {genderFilter === 'LELAKI' ? 'Ked. Lelaki' : genderFilter === 'PEREMPUAN' ? 'Ked. Perempuan' : 'Ked (Merit)'}
+                  </th>
+                  <th className="px-2.5 py-3 text-xs font-bold uppercase tracking-wider min-w-[160px] max-w-[220px]">
+                    Nama Calon & No. KP
+                  </th>
+                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                    Tahfiz ({tahfizMax})
+                  </th>
+                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                    Akademik ({akademikMax})
+                  </th>
+                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
+                    Jumlah ({jumlahMax})
+                  </th>
+                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
+                    %
+                  </th>
+                  <th className="px-2 py-3 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
+                    Status Tawaran
+                  </th>
+                  <th className="px-2 py-3 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
+                    Maklum Balas
+                  </th>
+                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                    Tindakan
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
-                {filtered.map((c, idx) => (
-                  <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-5 text-center text-sm font-medium text-slate-500">{idx + 1}</td>
-                    <td className="px-6 py-5">
-                       <div className="flex items-center gap-3">
-                         <div className="w-10 h-13 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
-                           {c.gambarUrl ? (
-                             <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover" />
-                           ) : (
-                             <Camera className="w-4 h-4 text-slate-400 stroke-1" />
-                           )}
+                {sortedItems.map((item, idx) => {
+                  const c = item.candidate;
+                  return (
+                    <tr key={c.id || c.ic} className="hover:bg-slate-50/80 transition-colors">
+                      {/* Kedudukan / Ranking */}
+                      <td className="px-2 py-2.5 text-center whitespace-nowrap">
+                        {item.rank === 1 ? (
+                          <div className="flex flex-col items-center">
+                            <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-xs">
+                              🏆 #1 {genderFilter === 'LELAKI' ? 'L' : genderFilter === 'PEREMPUAN' ? 'P' : ''}
+                            </span>
+                            {genderFilter === 'SEMUA' && item.genderRank && (
+                              <span className="text-[10px] font-bold text-slate-500 mt-0.5">
+                                {item.gender === 'LELAKI' ? '👦 L' : '👧 P'} #{item.genderRank}
+                              </span>
+                            )}
+                            {(genderFilter === 'LELAKI' || genderFilter === 'PEREMPUAN') && item.globalRank && (
+                              <span className="text-[10px] text-slate-400 mt-0.5">
+                                Semua: #{item.globalRank}
+                              </span>
+                            )}
+                          </div>
+                        ) : item.rank === 2 ? (
+                          <div className="flex flex-col items-center">
+                            <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-slate-200 text-slate-800 border border-slate-300 shadow-xs">
+                              🥈 #2 {genderFilter === 'LELAKI' ? 'L' : genderFilter === 'PEREMPUAN' ? 'P' : ''}
+                            </span>
+                            {genderFilter === 'SEMUA' && item.genderRank && (
+                              <span className="text-[10px] font-bold text-slate-500 mt-0.5">
+                                {item.gender === 'LELAKI' ? '👦 L' : '👧 P'} #{item.genderRank}
+                              </span>
+                            )}
+                            {(genderFilter === 'LELAKI' || genderFilter === 'PEREMPUAN') && item.globalRank && (
+                              <span className="text-[10px] text-slate-400 mt-0.5">
+                                Semua: #{item.globalRank}
+                              </span>
+                            )}
+                          </div>
+                        ) : item.rank === 3 ? (
+                          <div className="flex flex-col items-center">
+                            <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200 shadow-xs">
+                              🥉 #3 {genderFilter === 'LELAKI' ? 'L' : genderFilter === 'PEREMPUAN' ? 'P' : ''}
+                            </span>
+                            {genderFilter === 'SEMUA' && item.genderRank && (
+                              <span className="text-[10px] font-bold text-slate-500 mt-0.5">
+                                {item.gender === 'LELAKI' ? '👦 L' : '👧 P'} #{item.genderRank}
+                              </span>
+                            )}
+                            {(genderFilter === 'LELAKI' || genderFilter === 'PEREMPUAN') && item.globalRank && (
+                              <span className="text-[10px] text-slate-400 mt-0.5">
+                                Semua: #{item.globalRank}
+                              </span>
+                            )}
+                          </div>
+                        ) : item.rank ? (
+                          <div className="flex flex-col items-center">
+                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-black ${
+                              genderFilter === 'LELAKI'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                : genderFilter === 'PEREMPUAN'
+                                ? 'bg-pink-100 text-pink-800 border border-pink-200'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}>
+                              #{item.rank}
+                            </span>
+                            {genderFilter === 'SEMUA' && item.genderRank && (
+                              <span className="text-[10px] font-bold text-slate-400 mt-0.5">
+                                {item.gender === 'LELAKI' ? '👦 L' : '👧 P'} #{item.genderRank}
+                              </span>
+                            )}
+                            {(genderFilter === 'LELAKI' || genderFilter === 'PEREMPUAN') && item.globalRank && (
+                              <span className="text-[10px] text-slate-400 mt-0.5">
+                                Semua: #{item.globalRank}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium">#{idx + 1}</span>
+                        )}
+                      </td>
+
+                      {/* Nama & IC Sahaja (Kotak Padat Sesuai) */}
+                      <td className="px-2.5 py-2.5 max-w-[220px]">
+                         <div className="flex items-center gap-2">
+                           <div className="w-8 h-10 bg-slate-100 border border-slate-200 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center shadow-2xs">
+                             {c.gambarUrl ? (
+                               <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover" />
+                             ) : (
+                               <Camera className="w-3.5 h-3.5 text-slate-400 stroke-1" />
+                             )}
+                           </div>
+                           <div className="min-w-0 flex-1">
+                             <div className="font-bold text-slate-900 truncate text-xs leading-snug" title={c.name}>
+                               {c.name}
+                             </div>
+                             <div className="flex items-center gap-1.5 mt-0.5">
+                               <span className="text-[11px] font-mono font-semibold text-slate-600 truncate">
+                                 {c.ic}
+                               </span>
+                               <span className={`inline-flex items-center text-[10px] font-extrabold px-1.5 py-0.2 rounded ${
+                                 item.gender === 'LELAKI'
+                                   ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                   : 'bg-pink-100 text-pink-700 border border-pink-200'
+                               }`}>
+                                 {item.gender === 'LELAKI' ? '👦 L' : '👧 P'}
+                               </span>
+                             </div>
+                           </div>
                          </div>
-                         <div>
-                           <span className="font-bold text-slate-900 block mb-0.5">{c.name}</span>
-                           <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded inline-block">{c.ic}</span>
-                         </div>
-                       </div>
-                    </td>
-                    <td className="px-6 py-5">
-                       {c.markahTahfiz ? <span className="font-extrabold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-md">{c.markahTahfiz.jumlah}/{tahfizTotal}</span> : <span className="text-sm font-medium text-slate-400">Belum Dinilai</span>}
-                       {c.markahTahfiz?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahTahfiz.dinilaiOleh}</div>}
-                    </td>
-                    <td className="px-6 py-5">
-                       {c.markahAkademik ? <span className="font-extrabold text-blue-600 bg-blue-50 px-3 py-1 rounded-md">{c.markahAkademik.jumlah}/{akademikTotal}</span> : <span className="text-sm font-medium text-slate-400">Belum Dinilai</span>}
-                       {c.markahAkademik?.dinilaiOleh && <div className="text-[10px] text-slate-400 mt-1 uppercase">Oleh: {c.markahAkademik.dinilaiOleh}</div>}
-                    </td>
-                    <td className="px-6 py-5">
-                       <select
-                         value={c.statusTawaran || 'DALAM_PERTIMBANGAN'}
-                         onChange={(e) => updateCandidate(c.ic, { statusTawaran: e.target.value as any })}
-                         className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border cursor-pointer outline-none transition-colors appearance-none text-center ${
-                           c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200' :
-                           c.statusTawaran === 'GAGAL' ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                         }`}
-                       >
-                         <option value="DALAM_PERTIMBANGAN">DALAM PERTIMBANGAN</option>
-                         <option value="BERJAYA">DITAWARKAN</option>
-                         <option value="GAGAL">TIDAK DITAWARKAN</option>
-                       </select>
-                    </td>
-                    <td className="px-6 py-5 font-bold text-slate-700">
-                       {c.maklumBalasTawaran ? (
-                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                           c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-800 border border-red-200'
-                         }`}>
-                           {c.maklumBalasTawaran}
-                         </span>
-                       ) : <span className="text-slate-400">-</span>}
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                       <button
-                         type="button"
-                         onClick={() => setEditCandidate(c)}
-                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition shadow-sm"
-                         title="Kemaskini Maklumat & Gambar Calon"
-                       >
-                         <Edit className="w-3.5 h-3.5" />
-                         Kemaskini
-                       </button>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
+                      </td>
+
+                      {/* Markah Tahfiz */}
+                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                         {item.hasTahfiz ? (
+                           <div>
+                             <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg text-sm border border-emerald-100 inline-block">
+                               {item.tScore} <span className="text-xs font-semibold text-emerald-500">/{tahfizMax}</span>
+                             </span>
+                             {c.markahTahfiz?.dinilaiOleh && (
+                               <div className="text-[10px] text-slate-400 mt-1 uppercase font-medium">
+                                 Oleh: {c.markahTahfiz.dinilaiOleh}
+                               </div>
+                             )}
+                           </div>
+                         ) : (
+                           <span className="text-xs font-medium text-slate-400 italic">Belum Dinilai</span>
+                         )}
+                      </td>
+
+                      {/* Markah Akademik */}
+                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                         {item.hasAkademik ? (
+                           <div>
+                             <span className="font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg text-sm border border-blue-100 inline-block">
+                               {item.aScore} <span className="text-xs font-semibold text-blue-500">/{akademikMax}</span>
+                             </span>
+                             {c.markahAkademik?.dinilaiOleh && (
+                               <div className="text-[10px] text-slate-400 mt-1 uppercase font-medium">
+                                 Oleh: {c.markahAkademik.dinilaiOleh}
+                               </div>
+                             )}
+                           </div>
+                         ) : (
+                           <span className="text-xs font-medium text-slate-400 italic">Belum Dinilai</span>
+                         )}
+                      </td>
+
+                      {/* Markah Keseluruhan (Tahfiz + Akademik) */}
+                      <td className="px-2 py-2.5 whitespace-nowrap text-center bg-slate-50/50">
+                         {item.hasAny ? (
+                           <div>
+                             <div className="inline-flex items-baseline gap-1 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                               <span className="font-black text-base text-slate-900">
+                                 {item.jumlahScore}
+                               </span>
+                               <span className="text-xs font-bold text-slate-400">
+                                 /{jumlahMax}
+                               </span>
+                             </div>
+                             {!item.hasBoth && (
+                               <div className="text-[10px] font-bold text-amber-600 mt-1">
+                                 *Penilaian belum lengkap
+                               </div>
+                             )}
+                           </div>
+                         ) : (
+                           <span className="text-xs text-slate-400 font-medium italic">Tiada markah</span>
+                         )}
+                      </td>
+
+                      {/* Markah Peratus (%) */}
+                      <td className="px-2 py-2.5 whitespace-nowrap text-center bg-slate-50/50">
+                         {item.hasAny ? (
+                           <div className="w-20 mx-auto">
+                             <div className="flex items-center justify-between mb-1">
+                               <span className={`text-sm font-black ${
+                                 item.peratus >= 80 ? 'text-emerald-700' :
+                                 item.peratus >= 65 ? 'text-blue-700' :
+                                 item.peratus >= 50 ? 'text-amber-700' : 'text-rose-700'
+                               }`}>
+                                 {item.peratus.toFixed(1)}%
+                               </span>
+                             </div>
+                             <div className="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden">
+                               <div 
+                                 className={`h-full rounded-full transition-all duration-300 ${
+                                   item.peratus >= 80 ? 'bg-emerald-500' :
+                                   item.peratus >= 65 ? 'bg-blue-500' :
+                                   item.peratus >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                                 }`}
+                                 style={{ width: `${Math.min(100, Math.max(0, item.peratus))}%` }}
+                               />
+                             </div>
+                           </div>
+                         ) : (
+                           <span className="text-xs text-slate-400 font-medium">-</span>
+                         )}
+                      </td>
+
+                      {/* Status Tawaran */}
+                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                         <select
+                           value={c.statusTawaran || 'DALAM_PERTIMBANGAN'}
+                           onChange={(e) => updateCandidate(c.ic, { statusTawaran: e.target.value as any })}
+                           className={`px-2 py-1 rounded-full text-[11px] font-extrabold uppercase border cursor-pointer outline-none transition-colors appearance-none text-center ${
+                             c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200' :
+                             c.statusTawaran === 'GAGAL' ? 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                           }`}
+                         >
+                           <option value="DALAM_PERTIMBANGAN">DALAM PERTIMBANGAN</option>
+                           <option value="BERJAYA">DITAWARKAN</option>
+                           <option value="GAGAL">TIDAK DITAWARKAN</option>
+                         </select>
+                      </td>
+
+                      {/* Maklum Balas */}
+                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                         {c.maklumBalasTawaran ? (
+                           <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase ${
+                             c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                           }`}>
+                             {c.maklumBalasTawaran}
+                           </span>
+                         ) : (
+                           <span className="text-xs text-slate-400 font-medium">-</span>
+                         )}
+                      </td>
+
+                      {/* Tindakan */}
+                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                         <button
+                           type="button"
+                           onClick={() => setEditCandidate(c)}
+                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition shadow-2xs"
+                           title="Kemaskini Maklumat & Gambar Calon"
+                         >
+                           <Edit className="w-3.5 h-3.5" />
+                           Kemaskini
+                         </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {sortedItems.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-medium">Tiada rekod ditemui untuk tapisan ini.</td>
+                    <td colSpan={9} className="px-6 py-16 text-center text-slate-500 font-medium">
+                      <div className="max-w-sm mx-auto space-y-2">
+                        <AlertCircle className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="font-semibold text-slate-700">Tiada rekod calon ditemui</p>
+                        <p className="text-xs text-slate-400">Cuba ubah kata kunci carian atau tetapan tapisan di atas.</p>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -1395,19 +2028,32 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
      return c.name?.toLowerCase().includes(searchLower) || c.ic?.includes(searchQuery);
   });
 
+  const tahfizMax = settings.tahfizItems?.reduce((a, b) => a + Number(b.weight || 0), 0) || 100;
+  const akademikMax = settings.akademikItems?.reduce((a, b) => a + Number(b.weight || 0), 0) || 40;
+  const jumlahMax = tahfizMax + akademikMax;
+
   const handleDownloadLayak = () => {
     const headers = [
       "Bil", "No. Kad Pengenalan", "Nama Calon", "Jantina", "Tarikh Lahir", "Tempat Lahir", 
       "Sekolah Asal", "No. KP Bapa", "Nama Bapa", "No. Tel Bapa", "No. KP Ibu", "Nama Ibu", "No. Tel Ibu",
-      "Status Temuduga", "Markah Tahfiz", "Markah Akademik", "Status Tawaran", "Maklum Balas"
+      "Status Temuduga", "Markah Tahfiz", `Tahfiz Max (${tahfizMax})`, "Markah Akademik", `Akademik Max (${akademikMax})`, 
+      "Markah Keseluruhan", `Jumlah Max (${jumlahMax})`, "Markah Peratus (%)", "Status Tawaran", "Maklum Balas"
     ];
-    const rows = layakCandidates.map((c, i) => [
-      i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
-      c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
-      c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
-      c.markahTahfiz?.jumlah || '0', c.markahAkademik?.jumlah || '0', 
-      c.statusTawaran || '', c.maklumBalasTawaran || ''
-    ]);
+    const rows = layakCandidates.map((c, i) => {
+      const t = Number(c.markahTahfiz?.jumlah || 0);
+      const a = Number(c.markahAkademik?.jumlah || 0);
+      const total = t + a;
+      const pct = jumlahMax > 0 ? ((total / jumlahMax) * 100).toFixed(1) + '%' : '0%';
+      return [
+        i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
+        c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
+        c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
+        c.markahTahfiz?.jumlah || '0', tahfizMax,
+        c.markahAkademik?.jumlah || '0', akademikMax,
+        total, jumlahMax, pct,
+        c.statusTawaran || '', c.maklumBalasTawaran || ''
+      ];
+    });
     downloadCSV([headers, ...rows], `Senarai_Calon_Layak_Temuduga_${layakCandidates.length}.csv`);
   };
 
@@ -1415,15 +2061,24 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
     const headers = [
       "Bil", "No. Kad Pengenalan", "Nama Calon", "Jantina", "Tarikh Lahir", "Tempat Lahir", 
       "Sekolah Asal", "No. KP Bapa", "Nama Bapa", "No. Tel Bapa", "No. KP Ibu", "Nama Ibu", "No. Tel Ibu",
-      "Status Temuduga", "Markah Tahfiz", "Markah Akademik", "Status Tawaran", "Maklum Balas"
+      "Status Temuduga", "Markah Tahfiz", `Tahfiz Max (${tahfizMax})`, "Markah Akademik", `Akademik Max (${akademikMax})`, 
+      "Markah Keseluruhan", `Jumlah Max (${jumlahMax})`, "Markah Peratus (%)", "Status Tawaran", "Maklum Balas"
     ];
-    const rows = candidates.map((c, i) => [
-      i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
-      c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
-      c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
-      c.markahTahfiz?.jumlah || '0', c.markahAkademik?.jumlah || '0', 
-      c.statusTawaran || '', c.maklumBalasTawaran || ''
-    ]);
+    const rows = candidates.map((c, i) => {
+      const t = Number(c.markahTahfiz?.jumlah || 0);
+      const a = Number(c.markahAkademik?.jumlah || 0);
+      const total = t + a;
+      const pct = jumlahMax > 0 ? ((total / jumlahMax) * 100).toFixed(1) + '%' : '0%';
+      return [
+        i + 1, c.ic || '', c.name || '', c.jantina || '', c.tarikhLahir || '', c.tempatLahir || '', 
+        c.namaSekolahRendah || '', c.icBapa || '', c.namaBapa || '', c.telefonBapa || '', 
+        c.icIbu || '', c.namaIbu || '', c.telefonIbu || '', c.statusTemuduga || '', 
+        c.markahTahfiz?.jumlah || '0', tahfizMax,
+        c.markahAkademik?.jumlah || '0', akademikMax,
+        total, jumlahMax, pct,
+        c.statusTawaran || '', c.maklumBalasTawaran || ''
+      ];
+    });
     downloadCSV([headers, ...rows], `Senarai_Keseluruhan_Calon_${candidates.length}.csv`);
   };
 
