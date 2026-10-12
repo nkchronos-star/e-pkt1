@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye, BookOpen } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
@@ -275,7 +275,7 @@ export default function AdminPanel() {
     if (!currentUser) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-slate-200/60 p-8 sm:p-12 max-w-md w-full animate-in zoom-in-95 duration-300">
+        <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-slate-200 p-8 sm:p-12 max-w-md w-full animate-in zoom-in-95 duration-300">
           <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-emerald-200/60">
              <Lock className="w-10 h-10" />
           </div>
@@ -330,45 +330,29 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="w-full py-2 sm:py-4 animate-in fade-in">
+    <div className="w-full py-2 sm:py-3 animate-in fade-in">
       {passwordModalUser && (
         <ChangePasswordModal user={passwordModalUser} onClose={() => setPasswordModalUser(null)} />
       )}
-      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden mb-10 flex flex-col md:flex-row justify-between items-center p-8 transition-all hover:shadow-2xl hover:shadow-slate-200/50">
-         <div className="flex items-center gap-5 mb-6 md:mb-0">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center text-emerald-700 font-extrabold text-2xl shadow-inner">
-               {currentUser.name.charAt(0)}
-            </div>
-            <div>
-               <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">{currentUser.name}</h2>
-               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 mt-1 border border-emerald-200/60 uppercase tracking-wider">
-                  Peranan: {currentUser.role.replace('_', ' ')}
-               </span>
-            </div>
-         </div>
-         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <button 
-              type="button"
-              onClick={() => setPasswordModalUser(currentUser)}
-              className="text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-2 transition-all duration-300 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 px-5 py-3 rounded-xl shadow-sm w-full sm:w-auto justify-center"
-            >
-              <Lock className="w-5 h-5" /> Tukar Kata Laluan
-            </button>
-            <button 
-              onClick={logout}
-              className="text-slate-600 hover:text-red-700 font-bold flex items-center gap-2 transition-all duration-300 bg-slate-50 hover:bg-red-50 border-2 border-slate-200 hover:border-red-200 px-6 py-3 rounded-xl hover:shadow-lg hover:shadow-red-100/50 w-full sm:w-auto justify-center"
-            >
-              <LogOut className="w-5 h-5" /> Log Keluar
-            </button>
-         </div>
-      </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 p-8 sm:p-12 transition-all hover:shadow-2xl hover:shadow-slate-200/50">
-        {currentUser.role === 'TAHFIZ' && <TahfizView />}
-        {currentUser.role === 'AKADEMIK' && <AkademikView />}
-        {currentUser.role === 'PENTADBIR' && <PentadbirView />}
-        {currentUser.role === 'SUPER_ADMIN' && <SuperAdminView onOpenChangePassword={setPasswordModalUser} />}
-      </div>
+      {currentUser.role === 'TAHFIZ' && (
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/80 p-6 sm:p-10">
+          <TahfizView />
+        </div>
+      )}
+      {currentUser.role === 'AKADEMIK' && (
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/80 p-6 sm:p-10">
+          <AkademikView />
+        </div>
+      )}
+      {currentUser.role === 'PENTADBIR' && (
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/80 p-6 sm:p-10">
+          <PentadbirView />
+        </div>
+      )}
+      {currentUser.role === 'SUPER_ADMIN' && (
+        <SuperAdminView onOpenChangePassword={setPasswordModalUser} />
+      )}
     </div>
   );
 }
@@ -2435,13 +2419,73 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
            onClose={() => setSignaturePadTarget(null)} 
          />
        )}
-       <div className="flex gap-4 border-b border-slate-200 pb-4 overflow-x-auto custom-scrollbar">
-         <button onClick={() => setActiveTab('KAWALAN')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'KAWALAN' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Kawalan Sistem</button>
-         <button onClick={() => setActiveTab('PENGGUNA')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENGGUNA' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Daftar Pengguna</button>
-         <button onClick={() => { setActiveTab('PERMOHONAN'); setCurrentPage(1); }} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Permohonan ({candidates.length})</button>
-         <button onClick={() => setActiveTab('PENILAIAN' as any)} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'PENILAIAN' as any ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Penilaian</button>
-         <button onClick={() => setActiveTab('MARKAH')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'MARKAH' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Keputusan</button>
-         <button onClick={() => setActiveTab('ANALISIS')} className={`px-6 py-3 font-bold rounded-xl whitespace-nowrap ${activeTab === 'ANALISIS' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Analisis</button>
+       {/* Bar Tab Pembekuan (Sticky Freeze Tab Bar) Mengikut Permintaan Pengguna */}
+       <div 
+         style={{ top: 'var(--header-height, 116px)' }}
+         className="sticky z-40 bg-white rounded-2xl shadow-md border border-slate-200 p-2 sm:p-2.5 mb-6 flex flex-wrap items-center justify-between gap-3 transition-all"
+       >
+         <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar flex-1 py-0.5">
+           <button 
+             type="button"
+             onClick={() => setActiveTab('KAWALAN')} 
+             className={`px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 ${
+               activeTab === 'KAWALAN' ? 'bg-slate-900 text-white shadow-slate-300 scale-[1.02]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <Settings className="w-4 h-4 text-emerald-400" />
+             <span>Kawalan Sistem</span>
+           </button>
+           <button 
+             type="button"
+             onClick={() => setActiveTab('PENGGUNA')} 
+             className={`px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 ${
+               activeTab === 'PENGGUNA' ? 'bg-amber-600 text-white shadow-amber-200 scale-[1.02]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <Users className="w-4 h-4 text-amber-200" />
+             <span>Daftar Pengguna</span>
+           </button>
+           <button 
+             type="button"
+             onClick={() => { setActiveTab('PERMOHONAN'); setCurrentPage(1); }} 
+             className={`px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 ${
+               activeTab === 'PERMOHONAN' ? 'bg-blue-600 text-white shadow-blue-200 scale-[1.02]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <FileText className="w-4 h-4 text-blue-200" />
+             <span>Permohonan ({candidates.length})</span>
+           </button>
+           <button 
+             type="button"
+             onClick={() => setActiveTab('PENILAIAN' as any)} 
+             className={`px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 ${
+               activeTab === 'PENILAIAN' as any ? 'bg-indigo-600 text-white shadow-indigo-200 scale-[1.02]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <BookOpen className="w-4 h-4 text-indigo-200" />
+             <span>Penilaian</span>
+           </button>
+           <button 
+             type="button"
+             onClick={() => setActiveTab('MARKAH')} 
+             className={`px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 ${
+               activeTab === 'MARKAH' ? 'bg-emerald-600 text-white shadow-emerald-200 scale-[1.02]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <CheckCircle className="w-4 h-4 text-emerald-200" />
+             <span>Keputusan</span>
+           </button>
+           <button 
+             type="button"
+             onClick={() => setActiveTab('ANALISIS')} 
+             className={`px-4 sm:px-5 py-2.5 font-bold rounded-xl text-xs sm:text-sm whitespace-nowrap transition-all shadow-xs flex items-center gap-1.5 ${
+               activeTab === 'ANALISIS' ? 'bg-purple-600 text-white shadow-purple-200 scale-[1.02]' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+             }`}
+           >
+             <BarChart2 className="w-4 h-4 text-purple-200" />
+             <span>Analisis</span>
+           </button>
+         </div>
        </div>
 
        {activeTab === 'KAWALAN' && (
@@ -3195,14 +3239,6 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
 
        {activeTab === 'PENGGUNA' && (
           <div className="space-y-12 animate-in fade-in">
-             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex justify-between items-center">
-                <div>
-                   <h4 className="font-bold text-blue-900 text-lg mb-1">Akaun Anda (Super Admin)</h4>
-                   <p className="text-blue-700 text-sm">Urus kata laluan anda sendiri untuk keselamatan.</p>
-                </div>
-                <button onClick={handleUpdateOwnPassword} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Tukar Kata Laluan</button>
-             </div>
-
              <div>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                    <div>
@@ -3693,7 +3729,7 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
        
 
        {activeTab === 'MARKAH' && (
-          <div className="space-y-6 animate-in fade-in">
+          <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 p-6 sm:p-8 md:p-10 animate-in fade-in">
              <PentadbirView />
           </div>
        )}

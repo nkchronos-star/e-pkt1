@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppProvider, useAppContext } from './store';
-import { Home, FileText, CheckCircle, GraduationCap, Settings, BookOpen, Menu, X } from 'lucide-react';
+import { Home, FileText, CheckCircle, GraduationCap, Settings, BookOpen, Menu, X, LogOut } from 'lucide-react';
 
 import Utama from './components/dashboard/Utama';
 import Panduan from './components/dashboard/Panduan';
@@ -13,10 +13,27 @@ import { EQabulEmblem } from './components/brand/EQabulBrand';
 type View = 'utama' | 'panduan' | 'borang' | 'temuduga' | 'tawaran' | 'admin';
 
 function AppContent() {
-  const { settings, isInitialized } = useAppContext();
+  const { settings, isInitialized, currentUser, logout } = useAppContext();
   const sesiKemasukan = settings?.sesiKemasukan || 'Sesi Kemasukan 2026/2027';
   const [activeView, setActiveView] = useState<View>('utama');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        const height = headerRef.current.offsetHeight;
+        document.documentElement.style.setProperty('--header-height', `${height}px`);
+      }
+    };
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+    const timeout = setTimeout(updateHeaderHeight, 60);
+    return () => {
+      window.removeEventListener('resize', updateHeaderHeight);
+      clearTimeout(timeout);
+    };
+  }, [mobileMenuOpen, currentUser, activeView]);
 
   const navItems = [
     { id: 'utama', label: 'Utama', icon: Home },
@@ -41,13 +58,13 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f4f7ee] text-slate-800 font-sans selection:bg-emerald-100 selection:text-emerald-900">
       
-      {/* Sticky Frozen Floating Header Container (Kiri Kanan Ada Ruang & Freeze Bila Scroll) */}
-      <div className="sticky top-0 z-50 w-full print:hidden">
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 pt-2.5 sm:pt-3 pb-1">
-          {/* Header Card Hijau Zamrud Diraja Eksklusif (Kemas, Berwibawa & Tidak Terlalu Cerah) */}
-          <header className="bg-gradient-to-r from-[#084e36] via-[#0d6e4d] to-[#084e36] text-white rounded-2xl sm:rounded-3xl shadow-2xl border border-emerald-500/40 backdrop-blur-md overflow-hidden ring-1 ring-amber-400/20">
-            {/* Bahagian Atas Header: Susunan Harmoni 2 Logo, Tipografi Rasmi Lengkap & Kad Sesi */}
-            <div className="px-3.5 sm:px-6 py-2.5 sm:py-3.5 flex justify-between items-center gap-3 lg:gap-6">
+      {/* Header Utama Rasmi - Penuh Selebar Skrin (Edge-to-Edge) & Melekat Kekal (Sticky Frozen) */}
+      <header 
+        ref={headerRef}
+        className="sticky top-0 z-50 w-full bg-gradient-to-r from-[#084e36] via-[#0d6e4d] to-[#084e36] text-white shadow-xl border-b border-emerald-500/40 backdrop-blur-md print:hidden"
+      >
+        {/* Bahagian Atas Header: Susunan Harmoni 2 Logo, Tipografi Rasmi Lengkap & Kad Sesi */}
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-2.5 sm:py-3.5 flex justify-between items-center gap-3 lg:gap-6">
               
               {/* Sisi Kiri: Gandingan Harmoni Dua Logo & Blok Tipografi Padu */}
               <div className="flex items-center gap-3 sm:gap-4 md:gap-5 min-w-0">
@@ -132,27 +149,52 @@ function AppContent() {
                 </div>
               </div>
 
-              {/* Sisi Kanan: Kad Ringkasan Sesi Kemasukan & Status Portal */}
+              {/* Sisi Kanan: Kad Ringkasan Sesi Kemasukan & Status Admin / Log Keluar */}
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                <div className="hidden lg:flex items-center">
-                  <div className="bg-emerald-950/75 border border-amber-400/40 px-3.5 sm:px-4 py-2 rounded-2xl text-right shadow-lg backdrop-blur-md flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-300 shrink-0">
-                      <GraduationCap className="w-5 h-5" />
+                {currentUser ? (
+                  <div className="flex items-center gap-2 sm:gap-3 bg-emerald-950/85 border border-amber-400/50 px-2.5 sm:px-3.5 py-1.5 rounded-2xl shadow-lg backdrop-blur-md">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-300 text-emerald-950 font-black flex items-center justify-center text-xs sm:text-sm shadow-sm shrink-0">
+                      {currentUser.name.charAt(0)}
                     </div>
-                    <div>
-                      <div className="text-[9px] uppercase font-bold text-emerald-200/90 tracking-wider">
-                        Sesi Kemasukan
+                    <div className="text-left hidden sm:block">
+                      <div className="text-xs font-black text-amber-300 leading-tight truncate max-w-[130px]" title={currentUser.name}>
+                        {currentUser.name}
                       </div>
-                      <div className="text-xs sm:text-sm font-black text-amber-300 tracking-wide leading-tight">
-                        {settings.sesiKemasukan || '2025 / 2026'}
+                      <div className="text-[9px] uppercase font-bold text-emerald-300 tracking-wider">
+                        {currentUser.role.replace('_', ' ')}
                       </div>
-                      <div className="flex items-center justify-end gap-1.5 text-[9px] text-emerald-300 font-semibold mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span>Portal Aktif</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => { logout(); setActiveView('utama'); }}
+                      className="flex items-center gap-1.5 bg-rose-600/90 hover:bg-rose-600 text-white border border-rose-400/50 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs hover:scale-[1.02] active:scale-95"
+                      title="Log Keluar dari Sistem"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Log Keluar</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="hidden lg:flex items-center">
+                    <div className="bg-emerald-950/75 border border-amber-400/40 px-3.5 sm:px-4 py-2 rounded-2xl text-right shadow-lg backdrop-blur-md flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-300 shrink-0">
+                        <GraduationCap className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[9px] uppercase font-bold text-emerald-200/90 tracking-wider">
+                          Sesi Kemasukan
+                        </div>
+                        <div className="text-xs sm:text-sm font-black text-amber-300 tracking-wide leading-tight">
+                          {settings.sesiKemasukan || '2025 / 2026'}
+                        </div>
+                        <div className="flex items-center justify-end gap-1.5 text-[9px] text-emerald-300 font-semibold mt-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                          <span>Portal Aktif</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <button 
                   className="md:hidden p-2 text-emerald-100 hover:text-white hover:bg-white/10 rounded-xl transition-colors shrink-0"
@@ -165,38 +207,59 @@ function AppContent() {
             </div>
 
             {/* Bahagian Bawah Header: Navigasi Hijau Zamrud Berwibawa & Butang Emas (FREEZE SEKALI) */}
-            <nav className="bg-[#053d2b] border-t border-emerald-500/40 px-3 sm:px-5 py-1.5 hidden md:flex items-center justify-between gap-1 overflow-x-auto shadow-inner">
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeView === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveView(item.id as View)}
-                      className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-[13px] font-bold uppercase tracking-wider transition-all duration-200 whitespace-nowrap ${
-                        isActive 
-                          ? 'bg-gradient-to-r from-amber-400 to-amber-300 text-emerald-950 shadow-md font-black scale-[1.02]' 
-                          : 'text-emerald-100 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-950' : 'text-amber-300'}`} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            <nav className="bg-[#053d2b] border-t border-emerald-500/40 shadow-inner">
+              <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-1.5 hidden md:flex items-center justify-between gap-1 overflow-x-auto">
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeView === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveView(item.id as View)}
+                        className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-[13px] font-bold uppercase tracking-wider transition-all duration-200 whitespace-nowrap ${
+                          isActive 
+                            ? 'bg-gradient-to-r from-amber-400 to-amber-300 text-emerald-950 shadow-md font-black scale-[1.02]' 
+                            : 'text-emerald-100 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-950' : 'text-amber-300'}`} />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-              {/* Status Portal Aktif di Sebelah Kanan */}
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/60 border border-emerald-400/30 text-[11px] text-emerald-200 font-semibold shrink-0">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Portal Aktif</span>
+                {/* Status Portal Aktif di Sebelah Kanan */}
+                <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/60 border border-emerald-400/30 text-[11px] text-emerald-200 font-semibold shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Portal Aktif</span>
+                </div>
               </div>
             </nav>
 
             {/* Mobile Nav Dropdown (Hijau Zamrud Dalaman) */}
             {mobileMenuOpen && (
               <div className="md:hidden bg-[#053d2b] border-t border-emerald-600/60 p-2.5 space-y-1 animate-in slide-in-from-top-2">
+                {currentUser && (
+                  <div className="bg-emerald-950/90 border border-amber-400/40 rounded-xl p-2.5 flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-amber-400 text-emerald-950 font-black flex items-center justify-center text-xs shrink-0">
+                        {currentUser.name.charAt(0)}
+                      </div>
+                      <div className="text-left min-w-0">
+                        <div className="text-xs font-bold text-amber-200 leading-tight truncate">{currentUser.name}</div>
+                        <div className="text-[9px] text-emerald-300 uppercase">{currentUser.role.replace('_', ' ')}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { logout(); setActiveView('utama'); setMobileMenuOpen(false); }}
+                      className="bg-rose-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shrink-0"
+                    >
+                      <LogOut className="w-3 h-3" /> Log Keluar
+                    </button>
+                  </div>
+                )}
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeView === item.id;
@@ -218,8 +281,6 @@ function AppContent() {
               </div>
             )}
           </header>
-        </div>
-      </div>
 
       {/* Main Content - Saiz Selaras Tepat Dengan Header & Footer (max-w-[1400px] & px-3 sm:px-5 lg:px-6) */}
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6 print:p-0 print:m-0 print:max-w-none">

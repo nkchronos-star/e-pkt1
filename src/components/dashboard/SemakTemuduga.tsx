@@ -108,7 +108,7 @@ export default function SemakTemuduga() {
         <p className="text-slate-500 text-lg">Sila masukkan Nombor Kad Pengenalan pemohon tanpa sempang (-) untuk menyemak kelayakan.</p>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 p-6 sm:p-10 mb-8 no-print print:hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 mb-8 no-print print:hidden">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
           <div className="flex-grow">
             <label htmlFor="ic" className="sr-only">No. Kad Pengenalan</label>

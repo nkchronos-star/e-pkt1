@@ -543,7 +543,7 @@ export default function Borang() {
 
       <form onSubmit={handleSubmit} noValidate className="space-y-10">
         {/* Gambar */}
-        <div id="section-upload-gambar" className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
+        <div id="section-upload-gambar" className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
            <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100 flex items-center justify-between flex-wrap gap-2">
              <h2 className="text-xl font-extrabold text-emerald-900 flex items-center gap-3">
                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-black shadow-sm">1</span>
@@ -600,7 +600,7 @@ export default function Borang() {
         </div>
 
         {/* Bahagian A */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
            <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100">
              <h2 className="text-xl font-extrabold text-emerald-900 flex items-center gap-3">
                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-black shadow-sm">2</span>
@@ -721,7 +721,7 @@ export default function Borang() {
         </div>
 
         {/* Bahagian B */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
            <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100">
              <h2 className="text-xl font-extrabold text-emerald-900 flex items-center gap-3">
                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-black shadow-sm">3</span>
@@ -881,7 +881,7 @@ export default function Borang() {
            </div>
         </div>
         {/* Bahagian C */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
            <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100">
              <h2 className="text-xl font-extrabold text-emerald-900 flex items-center gap-3">
                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-black shadow-sm">4</span>
@@ -949,7 +949,7 @@ export default function Borang() {
         </div>
 
         {/* Bahagian D */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:shadow-slate-200/50">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
            <div className="bg-emerald-50 px-8 sm:px-12 py-4 border-b-2 border-emerald-100">
              <h2 className="text-xl font-extrabold text-emerald-900 flex items-center gap-3">
                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-sm font-black shadow-sm">5</span>
