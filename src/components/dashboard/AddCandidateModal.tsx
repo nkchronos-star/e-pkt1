@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, UserPlus, Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import { useAppContext } from '../../store';
@@ -110,8 +111,8 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden my-8 animate-in zoom-in-95">
         <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-emerald-50">
           <div className="flex items-center gap-3">
@@ -273,6 +274,7 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
 import AddCandidateModal from './AddCandidateModal';
+import CandidateDetailModal from './CandidateDetailModal';
 import SearchableCandidateSelect from './SearchableCandidateSelect';
 
 import PenilaianView from './PenilaianView';
 import { Candidate, Role, User, ApplicationSettings } from '../../types';
 import { compressImageFile, compressSignatureFile, DEFAULT_TANDATANGAN_PENGETUA, DEFAULT_TANDATANGAN_PENGARAH } from '../../lib/imageUtils';
+import { EQabulLogoIcon, EQabulBrand } from '../brand/EQabulBrand';
 
 function SignaturePadModal({ title = 'Tandatangan Digital', onSave, onClose }: { title?: string; onSave: (dataUrl: string) => void; onClose: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -328,7 +330,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in">
+    <div className="w-full py-2 sm:py-4 animate-in fade-in">
       {passwordModalUser && (
         <ChangePasswordModal user={passwordModalUser} onClose={() => setPasswordModalUser(null)} />
       )}
@@ -378,6 +380,7 @@ function TahfizView() {
   const [activeTab, setActiveTab] = useState<'NILAI' | 'SENARAI'>('NILAI');
   const [markah, setMarkah] = useState<Record<string, number>>({});
   const [catatan, setCatatan] = useState('');
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 
   const items = settings.tahfizItems || [];
   
@@ -602,14 +605,23 @@ function TahfizView() {
                )}
 
                <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/50 flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
-                 {currentC.gambarUrl ? (
-                   <img src={currentC.gambarUrl} alt={currentC.name} className="w-24 h-32 object-cover rounded-xl border-2 border-slate-200 shadow-sm" />
-                 ) : (
-                   <div className="w-24 h-32 bg-slate-100 rounded-xl border-2 border-slate-200 flex flex-col items-center justify-center text-slate-400">
-                     <Users className="w-8 h-8 mb-1" />
-                     <span className="text-[10px] font-bold uppercase">Tiada Gambar</span>
+                 <div 
+                   onClick={() => setDetailCandidate(currentC)}
+                   className="w-24 h-32 rounded-xl border-2 border-slate-200 overflow-hidden shadow-sm flex items-center justify-center bg-slate-100 cursor-pointer hover:ring-2 hover:ring-emerald-500 hover:scale-105 transition-all group relative shrink-0"
+                   title="Klik untuk lihat maklumat calon"
+                 >
+                   {currentC.gambarUrl ? (
+                     <img src={currentC.gambarUrl} alt={currentC.name} className="w-full h-full object-cover group-hover:brightness-95 transition" />
+                   ) : (
+                     <div className="flex flex-col items-center justify-center text-slate-400 p-2">
+                       <Users className="w-8 h-8 mb-1" />
+                       <span className="text-[10px] font-bold uppercase">Tiada Gambar</span>
+                     </div>
+                   )}
+                   <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                     <Eye className="w-6 h-6 text-white drop-shadow" />
                    </div>
-                 )}
+                 </div>
                  <div className="flex-1">
                    <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-1">Maklumat Calon:</span>
                    <span className="font-extrabold text-2xl text-slate-900 block mb-2">{currentC.name}</span>
@@ -729,16 +741,32 @@ function TahfizView() {
                        return (
                          <tr key={c.id} className="hover:bg-slate-50 transition-colors">
                            <td className="px-6 py-4 whitespace-nowrap">
-                             {c.gambarUrl ? (
-                               <img src={c.gambarUrl} alt={c.name} className="w-12 h-16 rounded-lg object-cover border border-slate-200" />
-                             ) : (
-                               <div className="w-12 h-16 rounded-lg bg-slate-100 border border-slate-200 flex flex-col items-center justify-center text-slate-400">
-                                 <Users className="w-5 h-5 mb-1" />
+                             <div 
+                               onClick={() => setDetailCandidate(c)}
+                               className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 cursor-pointer hover:ring-2 hover:ring-emerald-500 hover:scale-105 active:scale-95 transition-all group relative shrink-0 flex items-center justify-center bg-slate-100"
+                               title="Klik untuk lihat maklumat calon"
+                             >
+                               {c.gambarUrl ? (
+                                 <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover group-hover:brightness-95 transition" />
+                               ) : (
+                                 <div className="flex flex-col items-center justify-center text-slate-400">
+                                   <Users className="w-5 h-5 mb-1" />
+                                 </div>
+                               )}
+                               <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                 <Eye className="w-4 h-4 text-white drop-shadow" />
                                </div>
-                             )}
+                             </div>
                            </td>
                            <td className="px-6 py-4">
-                             <div className="font-bold text-slate-900">{c.name}</div>
+                             <button 
+                               type="button"
+                               onClick={() => setDetailCandidate(c)}
+                               className="font-bold text-slate-900 hover:text-emerald-700 hover:underline transition text-left block"
+                               title={`Klik untuk lihat maklumat ${c.name}`}
+                             >
+                               {c.name}
+                             </button>
                              <div className="text-sm font-medium text-slate-500 mt-1">{c.ic}</div>
                              <div className="text-xs text-slate-400 mt-1">{new Date(c.markahTahfiz?.tarikhDinilai || '').toLocaleDateString('ms-MY')}</div>
                            </td>
@@ -776,6 +804,13 @@ function TahfizView() {
            </div>
          </div>
        )}
+
+       {detailCandidate && (
+         <CandidateDetailModal 
+            candidate={detailCandidate} 
+            onClose={() => setDetailCandidate(null)} 
+         />
+       )}
     </div>
   );
 }
@@ -793,7 +828,11 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
   const [markah, setMarkah] = useState<Record<string, number>>(() => {
      const init: Record<string, number> = {};
      akademikItems.forEach((i: any) => {
-        let val = candidate.markahAkademik?.[i.id] ?? 0;
+        let val = candidate.markahAkademik?.[i.id];
+        if (val === undefined && (i.id === 'sains' || i.name?.toLowerCase().includes('sains'))) {
+          val = candidate.markahAkademik?.sains ?? candidate.markahAkademik?.a_1791595296044;
+        }
+        val = val ?? 0;
         if (typeof val === 'number' && i.weight && val > i.weight) {
           val = i.weight;
         }
@@ -1156,6 +1195,7 @@ function PentadbirView() {
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 
   const { candidates, settings, updateCandidate } = useAppContext();
   const [filter, setFilter] = useState('LAYAK_TEMUDUGA');
@@ -1700,31 +1740,31 @@ function PentadbirView() {
             <table className="w-full divide-y divide-slate-200 text-left text-sm table-auto">
               <thead className="bg-slate-50/90 text-slate-600">
                 <tr>
-                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider w-16 whitespace-nowrap">
-                    {genderFilter === 'LELAKI' ? 'Ked. Lelaki' : genderFilter === 'PEREMPUAN' ? 'Ked. Perempuan' : 'Ked (Merit)'}
+                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider w-14 whitespace-nowrap">
+                    {genderFilter === 'LELAKI' ? 'Ked. L' : genderFilter === 'PEREMPUAN' ? 'Ked. P' : 'Ked (Merit)'}
                   </th>
-                  <th className="px-2.5 py-3 text-xs font-bold uppercase tracking-wider min-w-[160px] max-w-[220px]">
+                  <th className="px-2 py-2.5 text-xs font-bold uppercase tracking-wider min-w-[140px] max-w-[200px]">
                     Nama Calon & No. KP
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                     Tahfiz ({tahfizMax})
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                     Akademik ({akademikMax})
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
+                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
                     Jumlah ({jumlahMax})
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
+                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
                     %
                   </th>
-                  <th className="px-2 py-3 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
+                  <th className="px-1.5 py-2.5 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
                     Status Tawaran
                   </th>
-                  <th className="px-2 py-3 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
+                  <th className="px-1.5 py-2.5 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
                     Maklum Balas
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                     Tindakan
                   </th>
                 </tr>
@@ -1811,20 +1851,32 @@ function PentadbirView() {
                         )}
                       </td>
 
-                      {/* Nama & IC Sahaja (Kotak Padat Sesuai) */}
-                      <td className="px-2.5 py-2.5 max-w-[220px]">
+                      {/* Nama & IC Sahaja (Kotak Padat Sesuai - Klik Gambar/Nama Untuk Lihat Maklumat Penuh) */}
+                      <td className="px-2 py-2 max-w-[200px]">
                          <div className="flex items-center gap-2">
-                           <div className="w-8 h-10 bg-slate-100 border border-slate-200 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center shadow-2xs">
+                           <div 
+                             onClick={() => setDetailCandidate(c)}
+                             className="w-8 h-10 bg-slate-100 border border-slate-200 rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center shadow-2xs cursor-pointer hover:ring-2 hover:ring-emerald-500 hover:scale-110 active:scale-95 transition-all group relative"
+                             title="Klik gambar untuk lihat maklumat calon"
+                           >
                              {c.gambarUrl ? (
-                               <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover" />
+                               <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover group-hover:brightness-95 transition" />
                              ) : (
                                <Camera className="w-3.5 h-3.5 text-slate-400 stroke-1" />
                              )}
+                             <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                               <Eye className="w-3 h-3 text-white drop-shadow" />
+                             </div>
                            </div>
                            <div className="min-w-0 flex-1">
-                             <div className="font-bold text-slate-900 truncate text-xs leading-snug" title={c.name}>
+                             <button
+                               type="button"
+                               onClick={() => setDetailCandidate(c)}
+                               className="font-bold text-slate-900 truncate text-xs leading-snug hover:text-emerald-700 hover:underline transition text-left block w-full"
+                               title={`Klik untuk lihat maklumat ${c.name}`}
+                             >
                                {c.name}
-                             </div>
+                             </button>
                              <div className="flex items-center gap-1.5 mt-0.5">
                                <span className="text-[11px] font-mono font-semibold text-slate-600 truncate">
                                  {c.ic}
@@ -1842,56 +1894,56 @@ function PentadbirView() {
                       </td>
 
                       {/* Markah Tahfiz */}
-                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
                          {item.hasTahfiz ? (
                            <div>
-                             <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg text-sm border border-emerald-100 inline-block">
-                               {item.tScore} <span className="text-xs font-semibold text-emerald-500">/{tahfizMax}</span>
+                             <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg text-xs sm:text-sm border border-emerald-100 inline-block">
+                               {item.tScore} <span className="text-[10px] font-semibold text-emerald-500">/{tahfizMax}</span>
                              </span>
                              {c.markahTahfiz?.dinilaiOleh && (
-                               <div className="text-[10px] text-slate-400 mt-1 uppercase font-medium">
+                               <div className="text-[9px] text-slate-400 mt-0.5 uppercase font-medium">
                                  Oleh: {c.markahTahfiz.dinilaiOleh}
                                </div>
                              )}
                            </div>
                          ) : (
-                           <span className="text-xs font-medium text-slate-400 italic">Belum Dinilai</span>
+                           <span className="text-xs font-medium text-slate-400 italic">Belum</span>
                          )}
                       </td>
 
                       {/* Markah Akademik */}
-                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
                          {item.hasAkademik ? (
                            <div>
-                             <span className="font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg text-sm border border-blue-100 inline-block">
-                               {item.aScore} <span className="text-xs font-semibold text-blue-500">/{akademikMax}</span>
+                             <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg text-xs sm:text-sm border border-blue-100 inline-block">
+                               {item.aScore} <span className="text-[10px] font-semibold text-blue-500">/{akademikMax}</span>
                              </span>
                              {c.markahAkademik?.dinilaiOleh && (
-                               <div className="text-[10px] text-slate-400 mt-1 uppercase font-medium">
+                               <div className="text-[9px] text-slate-400 mt-0.5 uppercase font-medium">
                                  Oleh: {c.markahAkademik.dinilaiOleh}
                                </div>
                              )}
                            </div>
                          ) : (
-                           <span className="text-xs font-medium text-slate-400 italic">Belum Dinilai</span>
+                           <span className="text-xs font-medium text-slate-400 italic">Belum</span>
                          )}
                       </td>
 
                       {/* Markah Keseluruhan (Tahfiz + Akademik) */}
-                      <td className="px-2 py-2.5 whitespace-nowrap text-center bg-slate-50/50">
+                      <td className="px-1.5 py-2 whitespace-nowrap text-center bg-slate-50/50">
                          {item.hasAny ? (
                            <div>
-                             <div className="inline-flex items-baseline gap-1 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-2xs">
-                               <span className="font-black text-base text-slate-900">
+                             <div className="inline-flex items-baseline gap-1 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                               <span className="font-black text-sm sm:text-base text-slate-900">
                                  {item.jumlahScore}
                                </span>
-                               <span className="text-xs font-bold text-slate-400">
+                               <span className="text-[10px] font-bold text-slate-400">
                                  /{jumlahMax}
                                </span>
                              </div>
                              {!item.hasBoth && (
-                               <div className="text-[10px] font-bold text-amber-600 mt-1">
-                                 *Penilaian belum lengkap
+                               <div className="text-[9px] font-bold text-amber-600 mt-0.5">
+                                 *Belum lengkap
                                </div>
                              )}
                            </div>
@@ -1901,11 +1953,11 @@ function PentadbirView() {
                       </td>
 
                       {/* Markah Peratus (%) */}
-                      <td className="px-2 py-2.5 whitespace-nowrap text-center bg-slate-50/50">
+                      <td className="px-1.5 py-2 whitespace-nowrap text-center bg-slate-50/50">
                          {item.hasAny ? (
-                           <div className="w-20 mx-auto">
-                             <div className="flex items-center justify-between mb-1">
-                               <span className={`text-sm font-black ${
+                           <div className="w-16 mx-auto">
+                             <div className="flex items-center justify-center mb-0.5">
+                               <span className={`text-xs sm:text-sm font-black ${
                                  item.peratus >= 80 ? 'text-emerald-700' :
                                  item.peratus >= 65 ? 'text-blue-700' :
                                  item.peratus >= 50 ? 'text-amber-700' : 'text-rose-700'
@@ -1913,7 +1965,7 @@ function PentadbirView() {
                                  {item.peratus.toFixed(1)}%
                                </span>
                              </div>
-                             <div className="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden">
+                             <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
                                <div 
                                  className={`h-full rounded-full transition-all duration-300 ${
                                    item.peratus >= 80 ? 'bg-emerald-500' :
@@ -1929,26 +1981,27 @@ function PentadbirView() {
                          )}
                       </td>
 
-                      {/* Status Tawaran */}
-                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                      {/* Status Tawaran - Tulisan Dikecilkan & Kemas Mengikut Permintaan Pengguna */}
+                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
                          <select
                            value={c.statusTawaran || 'DALAM_PERTIMBANGAN'}
                            onChange={(e) => updateCandidate(c.ic, { statusTawaran: e.target.value as any })}
-                           className={`px-2 py-1 rounded-full text-[11px] font-extrabold uppercase border cursor-pointer outline-none transition-colors appearance-none text-center ${
+                           className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase border cursor-pointer outline-none transition-colors appearance-none text-center ${
                              c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200' :
                              c.statusTawaran === 'GAGAL' ? 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
                            }`}
+                           title="Status Tawaran Calon"
                          >
-                           <option value="DALAM_PERTIMBANGAN">DALAM PERTIMBANGAN</option>
-                           <option value="BERJAYA">DITAWARKAN</option>
-                           <option value="GAGAL">TIDAK DITAWARKAN</option>
+                           <option value="DALAM_PERTIMBANGAN">Dalam Proses Penilaian</option>
+                           <option value="BERJAYA">Ditawarkan</option>
+                           <option value="GAGAL">Tidak Ditawarkan</option>
                          </select>
                       </td>
 
                       {/* Maklum Balas */}
-                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
                          {c.maklumBalasTawaran ? (
-                           <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase ${
+                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
                              c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
                            }`}>
                              {c.maklumBalasTawaran}
@@ -1959,14 +2012,14 @@ function PentadbirView() {
                       </td>
 
                       {/* Tindakan */}
-                      <td className="px-2 py-2.5 whitespace-nowrap text-center">
+                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
                          <button
                            type="button"
                            onClick={() => setEditCandidate(c)}
-                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition shadow-2xs"
+                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition shadow-2xs"
                            title="Kemaskini Maklumat & Gambar Calon"
                          >
-                           <Edit className="w-3.5 h-3.5" />
+                           <Edit className="w-3 h-3" />
                            Kemaskini
                          </button>
                       </td>
@@ -1990,6 +2043,33 @@ function PentadbirView() {
           </div>
        </div>
 
+       {detailCandidate && (
+         <CandidateDetailModal 
+            candidate={detailCandidate} 
+            onClose={() => setDetailCandidate(null)} 
+            onEdit={(cand) => {
+              setDetailCandidate(null);
+              setEditCandidate(cand);
+            }}
+            onPrint={(cand) => {
+              setDetailCandidate(null);
+              setPrintCandidate(cand);
+            }}
+            meritRank={{
+              rank: meritRankMap.get(detailCandidate.ic) || null,
+              genderRank: (detailCandidate.jantina || '').toUpperCase().includes('L')
+                ? (meritRankMapLelaki.get(detailCandidate.ic) || null)
+                : (meritRankMapPerempuan.get(detailCandidate.ic) || null),
+              totalScore: (detailCandidate.markahTahfiz?.jumlah || 0) + (detailCandidate.markahAkademik?.jumlah || 0),
+              percentage: Number(
+                jumlahMax > 0 
+                  ? (((detailCandidate.markahTahfiz?.jumlah || 0) + (detailCandidate.markahAkademik?.jumlah || 0)) / jumlahMax * 100).toFixed(1)
+                  : 0
+              )
+            }}
+         />
+       )}
+
        {editCandidate && (
          <EditCandidateModal 
             candidate={editCandidate} 
@@ -2010,6 +2090,7 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
   const [printPukalLayak, setPrintPukalLayak] = useState<boolean>(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
   const [signaturePadTarget, setSignaturePadTarget] = useState<'PENGETUA' | 'PENGARAH' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'SEMUA' | 'LAYAK' | 'TIDAK_LAYAK'>('SEMUA');
@@ -2662,7 +2743,7 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                     <input type="text" name="tarikhAkhirTerimaTawaran" value={settings.tarikhAkhirTerimaTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 28 November 2026" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-amber-700 mb-1">Tarikh Semak Semula (Calon Dalam Pertimbangan)</label>
+                    <label className="block text-xs font-bold text-amber-700 mb-1">Tarikh Semak Semula (Calon Dalam Proses Penilaian)</label>
                     <input type="text" name="tarikhSemakPertimbangan" value={settings.tarikhSemakPertimbangan || ''} onChange={handleSettingsChange} className="w-full border border-amber-300 bg-amber-50/50 rounded-lg px-3 py-2 text-sm font-semibold text-amber-900" placeholder="cth: 30 Oktober 2026" />
                   </div>
                   <div>
@@ -2814,6 +2895,167 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                     {isSavingSettings ? 'Menyimpan...' : 'Simpan Tetapan Surat Tawaran'}
                   </button>
                 </div>
+             </div>
+           </div>
+
+           {/* Penjenamaan & Identiti Sistem (e-QABUL) */}
+           <div>
+             <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
+               <Award className="w-6 h-6 text-amber-500" /> 
+               Penjenamaan & Logo Sistem (e-QABUL & SMA Kota Gelanggi 3)
+             </h3>
+             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+               <div className="p-4 bg-emerald-50/80 rounded-xl border border-emerald-200 text-xs text-emerald-900 leading-relaxed flex items-start gap-3">
+                 <div className="p-2 bg-emerald-700 text-white rounded-lg shrink-0 mt-0.5">
+                   <Check className="w-4 h-4" />
+                 </div>
+                 <div>
+                   <strong className="block text-emerald-950 font-bold mb-0.5">Identiti Berganding: Logo Sekolah + Logo e-QABUL</strong>
+                   Logo rasmi sekolah SMA Kota Gelanggi 3 dikekalkan sepenuhnya. Sistem ini menggunakan jenama rasmi <strong className="text-emerald-800">e-QABUL (Sistem Kemasukan Digital SMAG3)</strong> yang memancarkan identiti institusi pendidikan Islam bertaraf moden.
+                 </div>
+               </div>
+
+               {/* Pratonton Langsung Header */}
+               <div>
+                 <label className="block text-xs font-bold text-slate-700 mb-2">Pratonton Gandingan Logo di Bar Utama (Header)</label>
+                 <div className="bg-gradient-to-r from-[#074731] via-[#0c6b4b] to-[#074731] p-4 rounded-xl text-white flex items-center justify-between border border-emerald-900 shadow-inner">
+                   <div className="flex items-center gap-4">
+                     {/* Logo Sekolah Sedia Ada */}
+                     <div className="bg-white p-1 rounded-full w-14 h-14 flex items-center justify-center shrink-0 shadow-md ring-2 ring-emerald-400/40">
+                       <img src="https://i.postimg.cc/mrcDcHn3/logo-sma-cantik.png" alt="Logo SMAG3" className="h-11 w-auto object-contain" />
+                     </div>
+                     <div className="hidden sm:block border-r border-emerald-400/30 pr-4 py-0.5">
+                       <span className="font-black text-sm tracking-tight uppercase block">SMA KOTA GELANGGI 3</span>
+                       <span className="text-[10px] text-emerald-200 uppercase font-semibold">Jerantut, Pahang</span>
+                     </div>
+                     {/* Logo e-QABUL */}
+                     <EQabulBrand customUrl={settings.logoEqabulUrl} />
+                   </div>
+                 </div>
+               </div>
+
+               {/* Tetapan Gambar Tersuai */}
+               <div className="space-y-6 pt-4 border-t border-slate-100">
+                 {/* 1. Logo Header (Image 2 - Logo eQabul) */}
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                   <div className="md:col-span-8 space-y-2">
+                     <label className="block text-xs font-bold text-slate-800 flex items-center gap-2">
+                       <span>Logo e-QABUL Header (Image 2)</span>
+                       <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold">Header</span>
+                     </label>
+                     <input 
+                       type="text" 
+                       name="logoEqabulUrl" 
+                       value={settings.logoEqabulUrl || ''} 
+                       onChange={handleSettingsChange} 
+                       placeholder="Pautan URL terus (contoh: https://i.postimg.cc/.../logo.png)" 
+                       className="w-full border border-slate-300 rounded-xl px-4 py-2 text-xs bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-sm"
+                     />
+                     <p className="text-[11px] text-slate-500">
+                       Muat naik fail <span className="font-semibold text-slate-700">Logo eQabul.png</span> asal atau tampal pautan imej luar.
+                     </p>
+                   </div>
+                   <div className="md:col-span-4 flex flex-col justify-center items-center gap-2">
+                     {settings.logoEqabulUrl && (
+                       <div className="relative group w-12 h-12 rounded-xl bg-white p-1 border border-slate-200 shadow-sm flex items-center justify-center">
+                         <img src={settings.logoEqabulUrl} alt="Preview Header" className="max-h-full max-w-full object-contain" />
+                         <button 
+                           type="button" 
+                           onClick={() => updateSettings({ logoEqabulUrl: '' })} 
+                           className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-0.5 rounded-full text-xs shadow-md hover:bg-red-600"
+                           title="Padam Gambar"
+                         >
+                           <X className="w-3 h-3" />
+                         </button>
+                       </div>
+                     )}
+                     <label className="w-full cursor-pointer bg-white border border-dashed border-emerald-500 hover:bg-emerald-50 text-slate-700 text-xs font-bold p-2.5 rounded-xl transition flex flex-col items-center justify-center gap-1 shadow-sm text-center">
+                       <Upload className="w-4 h-4 text-emerald-600" />
+                       <span>Muat Naik Logo Header (Image 2)</span>
+                       <span className="text-[10px] text-slate-400 font-normal">PNG / JPG / WEBP</span>
+                       <input 
+                         type="file" 
+                         accept="image/*" 
+                         className="hidden" 
+                         onChange={async (e) => {
+                           const file = e.target.files?.[0];
+                           if (file) {
+                             try {
+                               const compressed = await compressImageFile(file, 800, 800, 0.95);
+                               if (compressed) {
+                                 updateSettings({ logoEqabulUrl: compressed });
+                               }
+                             } catch (err) {
+                               console.error('Ralat logo e-qabul header:', err);
+                               alert('Gagal memproses fail gambar logo.');
+                             }
+                           }
+                         }}
+                       />
+                     </label>
+                   </div>
+                 </div>
+
+                 {/* 2. Logo Footer Melintang (Image 3 - eQabul melintang) */}
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                   <div className="md:col-span-8 space-y-2">
+                     <label className="block text-xs font-bold text-slate-800 flex items-center gap-2">
+                       <span>Logo e-QABUL Melintang Footer (Image 3)</span>
+                       <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">Footer</span>
+                     </label>
+                     <input 
+                       type="text" 
+                       name="logoEqabulHorizontalUrl" 
+                       value={settings.logoEqabulHorizontalUrl || ''} 
+                       onChange={handleSettingsChange} 
+                       placeholder="Pautan URL terus (contoh: https://i.postimg.cc/.../logo-melintang.png)" 
+                       className="w-full border border-slate-300 rounded-xl px-4 py-2 text-xs bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-sm"
+                     />
+                     <p className="text-[11px] text-slate-500">
+                       Muat naik fail <span className="font-semibold text-slate-700">eQabul melintang.png</span> asal atau tampal pautan imej luar.
+                     </p>
+                   </div>
+                   <div className="md:col-span-4 flex flex-col justify-center items-center gap-2">
+                     {settings.logoEqabulHorizontalUrl && (
+                       <div className="relative group h-12 px-3 rounded-xl bg-white p-1 border border-slate-200 shadow-sm flex items-center justify-center">
+                         <img src={settings.logoEqabulHorizontalUrl} alt="Preview Footer" className="max-h-full w-auto object-contain" />
+                         <button 
+                           type="button" 
+                           onClick={() => updateSettings({ logoEqabulHorizontalUrl: '' })} 
+                           className="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-0.5 rounded-full text-xs shadow-md hover:bg-red-600"
+                           title="Padam Gambar"
+                         >
+                           <X className="w-3 h-3" />
+                         </button>
+                       </div>
+                     )}
+                     <label className="w-full cursor-pointer bg-white border border-dashed border-amber-500 hover:bg-amber-50 text-slate-700 text-xs font-bold p-2.5 rounded-xl transition flex flex-col items-center justify-center gap-1 shadow-sm text-center">
+                       <Upload className="w-4 h-4 text-amber-600" />
+                       <span>Muat Naik Logo Footer (Image 3)</span>
+                       <span className="text-[10px] text-slate-400 font-normal">PNG / JPG / WEBP</span>
+                       <input 
+                         type="file" 
+                         accept="image/*" 
+                         className="hidden" 
+                         onChange={async (e) => {
+                           const file = e.target.files?.[0];
+                           if (file) {
+                             try {
+                               const compressed = await compressImageFile(file, 1200, 600, 0.95);
+                               if (compressed) {
+                                 updateSettings({ logoEqabulHorizontalUrl: compressed });
+                               }
+                             } catch (err) {
+                               console.error('Ralat logo e-qabul footer:', err);
+                               alert('Gagal memproses fail gambar logo.');
+                             }
+                           }
+                         }}
+                       />
+                     </label>
+                   </div>
+                 </div>
+               </div>
              </div>
            </div>
 
@@ -3258,15 +3500,29 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                                   </td>
                                   <td className="px-4 py-4">
                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-13 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs">
+                                        <div 
+                                          onClick={() => setDetailCandidate(c)}
+                                          className="w-10 h-13 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center shadow-xs cursor-pointer hover:ring-2 hover:ring-emerald-500 hover:scale-105 active:scale-95 transition-all group relative"
+                                          title="Klik gambar untuk lihat maklumat calon"
+                                        >
                                           {c.gambarUrl ? (
-                                            <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover" />
+                                            <img src={c.gambarUrl} alt={c.name} className="w-full h-full object-cover group-hover:brightness-95 transition" />
                                           ) : (
                                             <Camera className="w-4 h-4 text-slate-400 stroke-1" />
                                           )}
+                                          <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                            <Eye className="w-4 h-4 text-white drop-shadow" />
+                                          </div>
                                         </div>
                                         <div>
-                                           <div className="font-bold text-slate-800 text-sm">{c.name}</div>
+                                           <button 
+                                             type="button"
+                                             onClick={() => setDetailCandidate(c)}
+                                             className="font-bold text-slate-800 text-sm hover:text-emerald-700 hover:underline transition text-left block"
+                                             title={`Klik untuk lihat maklumat ${c.name}`}
+                                           >
+                                             {c.name}
+                                           </button>
                                            <div className="text-xs font-mono text-slate-500">{c.ic}</div>
                                         </div>
                                      </div>
@@ -3301,6 +3557,15 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                                   </td>
                                  <td className="px-4 py-4 text-center">
   <div className="flex items-center justify-center gap-2">
+
+    <button
+      type="button"
+      onClick={() => setDetailCandidate(c)}
+      className="text-emerald-700 hover:bg-emerald-50 p-2 rounded-lg transition"
+      title="Lihat Maklumat Calon"
+    >
+      <Eye className="w-5 h-5" />
+    </button>
 
     <button
       onClick={() => setPrintCandidate(c)}
@@ -3371,6 +3636,21 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
           <div className="space-y-6 animate-in fade-in">
              <PentadbirView />
           </div>
+       )}
+
+       {detailCandidate && (
+         <CandidateDetailModal 
+            candidate={detailCandidate} 
+            onClose={() => setDetailCandidate(null)} 
+            onEdit={(cand) => {
+              setDetailCandidate(null);
+              setEditCandidate(cand);
+            }}
+            onPrint={(cand) => {
+              setDetailCandidate(null);
+              setPrintCandidate(cand);
+            }}
+         />
        )}
 
        {editCandidate && (

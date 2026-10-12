@@ -101,6 +101,7 @@ const defaultSettings: ApplicationSettings = {
   utamaPanduanLink: '',
   utamaContent: '',
   panduanContent: '',
+  logoEqabulUrl: '',
   rujukanSuratTawaran: 'JPNP.SPI.800-1/1/4 Jld.2',
   tarikhSuratTawaran: '17 November 2025',
   masaLaporDiri: '8.30 PAGI',

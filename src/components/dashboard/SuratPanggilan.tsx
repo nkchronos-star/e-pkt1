@@ -190,6 +190,11 @@ export default function SuratPanggilan({ candidate }: { candidate: Candidate }) 
           <p className="font-extrabold uppercase text-slate-950">({settings.namaPengetua || 'JUITA BINTI HAMZAH'})</p>
           <p className="text-slate-800 font-medium">Pengetua</p>
         </div>
+
+        <div className="mt-4 pt-2 border-t border-slate-300 flex justify-between items-center text-[10px] print:text-[9.5px] text-slate-500 italic">
+          <span>* Surat panggilan ini dijana secara rasmi menerusi Sistem Kemasukan Digital e-QABUL SMA Kota Gelanggi 3 *</span>
+          <span className="font-semibold text-slate-600">e-QABUL SMAG3</span>
+        </div>
       </div>
       
       <style dangerouslySetInnerHTML={{__html: `

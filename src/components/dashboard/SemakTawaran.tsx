@@ -269,15 +269,15 @@ export default function SemakTawaran() {
                </div>
 
                <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-extrabold uppercase tracking-wider mb-4">
-                 Status: Dalam Pertimbangan
+                 Status: Dalam Proses Penilaian
                </div>
 
                <h2 className="text-3xl font-extrabold text-slate-900 mb-4 tracking-tight">
-                 Permohonan Dalam Pertimbangan
+                 Permohonan Dalam Proses Penilaian
                </h2>
                
                <p className="text-slate-700 leading-relaxed max-w-xl mx-auto mb-6 text-lg font-medium">
-                 Status permohonan kemasukan ke Tingkatan 1 SMA Kota Gelanggi 3 anda kini berada dalam status <strong className="text-amber-700">"Dalam Pertimbangan"</strong> (Senarai Menunggu / KIV).
+                 Status permohonan kemasukan ke Tingkatan 1 SMA Kota Gelanggi 3 anda kini berada dalam status <strong className="text-amber-700">"Dalam Proses Penilaian"</strong>.
                </p>
 
                <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300/80 rounded-2xl p-6 md:p-8 max-w-xl mx-auto mb-6 shadow-sm">
@@ -294,7 +294,7 @@ export default function SemakTawaran() {
                </div>
 
                <p className="text-slate-500 text-sm max-w-lg mx-auto">
-                 Pihak jawatankuasa pemilihan sedang memperhalusi kuota serta kekosongan tempat. Sebarang keputusan muktamad akan dipaparkan di sini pada tarikh tersebut.
+                 Pihak jawatankuasa pemilihan sedang memperhalusi proses penilaian serta pengesahan kuota kemasukan. Sebarang keputusan muktamad akan dipaparkan di sini pada tarikh tersebut.
                </p>
 
                <div className="mt-8 pt-6 border-t border-slate-100 text-sm text-slate-400 font-medium">

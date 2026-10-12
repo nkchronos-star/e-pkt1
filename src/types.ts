@@ -41,6 +41,8 @@ export interface ApplicationSettings {
   utamaPanduanLink?: string;
   utamaContent?: string;
   panduanContent?: string;
+  logoEqabulUrl?: string;
+  logoEqabulHorizontalUrl?: string;
   rujukanSuratTawaran?: string;
   tarikhSuratTawaran?: string;
   masaLaporDiri?: string;

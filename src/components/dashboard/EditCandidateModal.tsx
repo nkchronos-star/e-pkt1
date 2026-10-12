@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Upload, Camera, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import { useAppContext } from '../../store';
@@ -128,8 +129,8 @@ export default function EditCandidateModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden my-8 animate-in zoom-in-95">
         
         {/* Header */}
@@ -456,6 +457,7 @@ export default function EditCandidateModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

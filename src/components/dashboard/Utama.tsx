@@ -9,9 +9,7 @@ export default function Utama({ onNavigate }: UtamaProps) {
   const { settings } = useAppContext();
   return (
     <div className="animate-in fade-in duration-500 space-y-8">
-      {/* Top Grid: Pengenalan & Video */}
-            {/* Top Grid: Pengenalan, Video, Infografik */}
-            {/* Top Section: Pengenalan */}
+      {/* Top Section: Pengenalan */}
       <div className="bg-white rounded-xl shadow-sm border border-emerald-100 border-t-[6px] border-t-emerald-700 p-6 md:p-8">
         <h2 className="text-2xl font-bold text-slate-800 mb-6">Pengenalan</h2>
         <div className="text-slate-600 space-y-4 leading-relaxed text-sm">

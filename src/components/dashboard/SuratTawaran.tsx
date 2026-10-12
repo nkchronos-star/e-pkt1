@@ -194,6 +194,11 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
           <p>Pengetua</p>
           <p>SABK</p>
         </div>
+
+        <div className="mt-3 pt-1 border-t border-slate-300 flex justify-between items-center text-[9.5px] print:text-[9px] text-slate-500 italic">
+          <span>* Surat tawaran ini dijana secara rasmi menerusi Sistem Kemasukan Digital e-QABUL SMA Kota Gelanggi 3 *</span>
+          <span className="font-semibold text-slate-600">e-QABUL SMAG3</span>
+        </div>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
