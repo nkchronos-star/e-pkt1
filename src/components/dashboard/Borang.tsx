@@ -223,6 +223,12 @@ export default function Borang() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 0. Semakan Ketat: Pastikan permohonan masih dibuka dan tidak melepasi tarikh tutup
+    if (!settings.borangBuka || isPastClosing || isBeforeOpening) {
+      alert('Maaf, permohonan kemasukan Tingkatan 1 telah ditutup atau belum dibuka.');
+      return;
+    }
     
     // 1. Wajib muat naik gambar pasport pemohon
     if (!formData.gambarUrl || !formData.gambarUrl.trim()) {

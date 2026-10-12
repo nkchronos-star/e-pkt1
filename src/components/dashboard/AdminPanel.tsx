@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
@@ -2245,6 +2245,19 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
 
   // Pengguna State
   const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'TAHFIZ' });
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<'SEMUA' | 'TAHFIZ' | 'AKADEMIK' | 'PENTADBIR' | 'SUPER_ADMIN'>('SEMUA');
+
+  const filteredUsers = users.filter(u => {
+    if (userRoleFilter !== 'SEMUA' && u.role !== userRoleFilter) return false;
+    if (!userSearchQuery.trim()) return true;
+    const q = userSearchQuery.toLowerCase().trim();
+    return (
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.username && u.username.toLowerCase().includes(q)) ||
+      (u.role && u.role.toLowerCase().includes(q))
+    );
+  });
 
   const handleAddUser = (e: React.FormEvent) => {
      e.preventDefault();
@@ -2889,7 +2902,73 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
              </div>
 
              <div>
-                <h3 className="text-xl font-bold mb-6">Senarai Pengguna Sistem</h3>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                   <div>
+                      <div className="flex items-center gap-3">
+                         <h3 className="text-xl font-bold text-slate-900">Senarai Pengguna Sistem</h3>
+                         <span className="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-extrabold px-2.5 py-0.5 rounded-full">
+                           {users.length} Akaun
+                         </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">Urus senarai pengguna, cari nama pentadbir/guru, tukar kata laluan, dan peranan akaun.</p>
+                   </div>
+
+                   {/* Carian & Penapis Pengguna */}
+                   <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                      <div className="relative min-w-[280px]">
+                         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                         <input 
+                            type="text" 
+                            value={userSearchQuery} 
+                            onChange={e => setUserSearchQuery(e.target.value)} 
+                            placeholder="Cari nama pengguna atau ID login..." 
+                            className="w-full pl-10 pr-9 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition shadow-xs font-medium text-slate-800 placeholder:text-slate-400"
+                         />
+                         {userSearchQuery && (
+                            <button 
+                               type="button" 
+                               onClick={() => setUserSearchQuery('')} 
+                               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 transition"
+                               title="Kosongkan carian"
+                            >
+                               <X className="w-3.5 h-3.5" />
+                            </button>
+                         )}
+                      </div>
+
+                      {/* Tapisan Peranan */}
+                      <select 
+                         value={userRoleFilter} 
+                         onChange={e => setUserRoleFilter(e.target.value as any)} 
+                         className="text-xs font-semibold bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 shadow-xs"
+                      >
+                         <option value="SEMUA">Semua Peranan ({users.length})</option>
+                         <option value="TAHFIZ">Guru Tahfiz ({users.filter(u => u.role === "TAHFIZ").length})</option>
+                         <option value="AKADEMIK">Guru Akademik ({users.filter(u => u.role === "AKADEMIK").length})</option>
+                         <option value="PENTADBIR">Pentadbir ({users.filter(u => u.role === "PENTADBIR").length})</option>
+                         <option value="SUPER_ADMIN">Super Admin ({users.filter(u => u.role === "SUPER_ADMIN").length})</option>
+                      </select>
+                   </div>
+                </div>
+
+                {/* Maklumat Hasil Carian */}
+                {(userSearchQuery.trim() || userRoleFilter !== "SEMUA") && (
+                   <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between text-xs text-amber-900">
+                      <span className="font-medium">
+                         Menunjukkan <strong className="font-bold text-amber-950">{filteredUsers.length}</strong> daripada <strong className="font-bold text-amber-950">{users.length}</strong> pengguna
+                         {userSearchQuery.trim() && <> untuk carian nama/ID "<strong>{userSearchQuery}</strong>"</>}
+                         {userRoleFilter !== "SEMUA" && <> [Peranan: <strong>{userRoleFilter}</strong>]</>}
+                      </span>
+                      <button 
+                         type="button" 
+                         onClick={() => { setUserSearchQuery(''); setUserRoleFilter("SEMUA"); }}
+                         className="font-bold underline hover:text-amber-950 text-amber-800 text-xs ml-2 cursor-pointer"
+                      >
+                         Reset Carian
+                      </button>
+                   </div>
+                )}
+
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
                    <table className="w-full text-left">
                       <thead className="bg-slate-50 border-b border-slate-200">
@@ -2901,27 +2980,67 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                          </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                         {users.map(u => (
-                            <tr key={u.id} className="hover:bg-slate-50/50">
-                               <td className="px-6 py-4 font-medium text-slate-800">{u.name}</td>
-                               <td className="px-6 py-4 text-slate-600">{u.username}</td>
-                               <td className="px-6 py-4">
-                                  <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded text-xs font-bold">{u.role}</span>
-                               </td>
-                               <td className="px-6 py-4 text-right">
-                                  <button 
-                                     type="button" 
-                                     onClick={() => onOpenChangePassword && onOpenChangePassword(u)} 
-                                     className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold mr-2 transition-colors"
-                                  >
-                                     Tukar Kata Laluan
-                                  </button>
-                                  {u.id !== currentUser?.id && (
-                                     <button onClick={() => deleteUser(u.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                                  )}
+                         {filteredUsers.length > 0 ? (
+                            filteredUsers.map(u => (
+                               <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-6 py-4 font-medium text-slate-800">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-xs text-slate-700 flex-shrink-0">
+                                           {u.name ? u.name.trim().charAt(0).toUpperCase() : "U"}
+                                        </div>
+                                        <span className="font-semibold text-slate-800">{u.name}</span>
+                                     </div>
+                                  </td>
+                                  <td className="px-6 py-4 text-slate-600 font-mono text-xs">{u.username}</td>
+                                  <td className="px-6 py-4">
+                                     {u.role === "SUPER_ADMIN" ? (
+                                        <span className="bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1 rounded-full text-xs font-bold">Super Admin</span>
+                                     ) : u.role === "PENTADBIR" ? (
+                                        <span className="bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold">Pentadbir</span>
+                                     ) : u.role === "TAHFIZ" ? (
+                                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full text-xs font-bold">Guru Tahfiz</span>
+                                     ) : u.role === "AKADEMIK" ? (
+                                        <span className="bg-sky-100 text-sky-800 border border-sky-200 px-3 py-1 rounded-full text-xs font-bold">Guru Akademik</span>
+                                     ) : (
+                                        <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded text-xs font-bold">{u.role}</span>
+                                     )}
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                     <button 
+                                        type="button" 
+                                        onClick={() => onOpenChangePassword && onOpenChangePassword(u)} 
+                                        className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold mr-2 transition-colors"
+                                     >
+                                        Tukar Kata Laluan
+                                     </button>
+                                     {u.id !== currentUser?.id && (
+                                        <button onClick={() => deleteUser(u.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg" title="Padam Pengguna"><Trash2 className="w-4 h-4" /></button>
+                                     )}
+                                  </td>
+                               </tr>
+                            ))
+                         ) : (
+                            <tr>
+                               <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                                  <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                                     <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-3">
+                                        <Search className="w-6 h-6" />
+                                     </div>
+                                     <p className="font-bold text-slate-700 mb-1">Tiada pengguna dijumpai</p>
+                                     <p className="text-xs text-slate-500 mb-4">
+                                        Tiada akaun pengguna yang sepadan dengan nama atau carian "{userSearchQuery}".
+                                     </p>
+                                     <button 
+                                        type="button" 
+                                        onClick={() => { setUserSearchQuery(''); setUserRoleFilter("SEMUA"); }} 
+                                        className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-xl transition cursor-pointer"
+                                     >
+                                        Kosongkan Carian
+                                     </button>
+                                  </div>
                                </td>
                             </tr>
-                         ))}
+                         )}
                       </tbody>
                    </table>
                 </div>

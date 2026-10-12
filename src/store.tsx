@@ -23,18 +23,29 @@ export const isDateActive = (tarikhMula?: string, tarikhAkhir?: string): boolean
 
 export const applyAutoDates = (s: ApplicationSettings): ApplicationSettings => {
   const res = { ...s };
-  if (s.tarikhBukaBorang) {
-    const active = isDateActive(s.tarikhBukaBorang, s.tarikhTutupBorang);
-    res.borangBuka = active || Boolean(s.borangBuka);
+  const today = getTodayMalaysia();
+
+  // Borang Permohonan: Jika tarikh tutup telah lepas atau belum buka, MESTI DITUTUP
+  if (s.tarikhTutupBorang && today > s.tarikhTutupBorang) {
+    res.borangBuka = false;
+  } else if (s.tarikhBukaBorang && today < s.tarikhBukaBorang) {
+    res.borangBuka = false;
   }
-  if (s.tarikhBukaTemuduga) {
-    const active = isDateActive(s.tarikhBukaTemuduga, s.tarikhTutupTemuduga);
-    res.temudugaBuka = active || Boolean(s.temudugaBuka);
+
+  // Semakan Temuduga: Jika tempoh temuduga telah tamat, MESTI DITUTUP
+  if (s.tarikhTutupTemuduga && today > s.tarikhTutupTemuduga) {
+    res.temudugaBuka = false;
+  } else if (s.tarikhBukaTemuduga && today < s.tarikhBukaTemuduga) {
+    res.temudugaBuka = false;
   }
-  if (s.tarikhBukaTawaran) {
-    const active = isDateActive(s.tarikhBukaTawaran, s.tarikhTutupTawaran);
-    res.tawaranBuka = active || Boolean(s.tawaranBuka);
+
+  // Semakan Tawaran
+  if (s.tarikhTutupTawaran && today > s.tarikhTutupTawaran) {
+    res.tawaranBuka = false;
+  } else if (s.tarikhBukaTawaran && today < s.tarikhBukaTawaran) {
+    res.tawaranBuka = false;
   }
+
   return res;
 };
 
@@ -64,10 +75,10 @@ interface AppContextType extends AppState {
 }
 
 const defaultSettings: ApplicationSettings = {
-  borangBuka: true,
+  borangBuka: false,
   tarikhBukaBorang: '2026-09-07',
-  tarikhTutupBorang: '2026-10-31',
-  temudugaBuka: true,
+  tarikhTutupBorang: '2026-09-30',
+  temudugaBuka: false,
   tarikhBukaTemuduga: '2026-10-02',
   tarikhTutupTemuduga: '2026-10-09',
   tawaranBuka: false,
