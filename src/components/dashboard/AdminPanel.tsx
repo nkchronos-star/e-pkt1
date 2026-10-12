@@ -843,6 +843,7 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
 
   const [isLocked, setIsLocked] = useState<boolean>(isAlreadyEvaluated);
   const [isSaved, setIsSaved] = useState<boolean>(isAlreadyEvaluated);
+  const [catatan, setCatatan] = useState<string>(candidate.markahAkademik?.catatan || '');
 
   const handleSave = () => {
     const jumlah = akademikItems.reduce((acc: number, item: any) => acc + (markah[item.id] || 0), 0);
@@ -850,6 +851,7 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
       markahAkademik: {
         ...markah,
         jumlah,
+        catatan: catatan.trim(),
         dinilaiOleh: currentUser?.name || 'Penyelaras Akademik',
         tarikhDinilai: new Date().toISOString()
       }
@@ -906,6 +908,19 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
       ))}
       <td className="px-4 py-3 border-b border-slate-100 font-extrabold text-blue-700 bg-blue-50/50 text-center text-lg">
         {akademikItems.reduce((acc: number, item: any) => acc + (markah[item.id] || 0), 0)}
+      </td>
+      <td className="px-3 py-3 border-b border-slate-100 text-center min-w-[160px]">
+        {isLocked ? (
+          <span className="text-xs text-slate-600 italic block line-clamp-2" title={catatan}>{catatan || '-'}</span>
+        ) : (
+          <input 
+            type="text" 
+            value={catatan} 
+            onChange={e => setCatatan(e.target.value)} 
+            placeholder="Catatan penilai..." 
+            className="w-full border border-blue-200 rounded-lg p-1.5 text-xs text-slate-800 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-400 outline-none"
+          />
+        )}
       </td>
       <td className="px-4 py-3 border-b border-slate-100 text-center">
         {isLocked ? (
@@ -1018,20 +1033,21 @@ function AkademikView() {
                          <th key={item.id} className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">{item.name} ({item.weight})</th>
                       ))}
                       <th className="px-4 py-4 text-xs font-bold text-blue-700 uppercase tracking-widest border-b border-slate-200 bg-blue-50/50 text-center">Jumlah</th>
+                      <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Catatan Penilai</th>
                       <th className="px-4 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 text-center">Tindakan</th>
                    </tr>
                 </thead>
                 <tbody>
                    {eligibleCandidates.length === 0 ? (
                       <tr>
-                         <td colSpan={akademikItems.length + 4} className="px-6 py-12 text-center text-slate-500 font-medium bg-slate-50/30">
+                         <td colSpan={akademikItems.length + 5} className="px-6 py-12 text-center text-slate-500 font-medium bg-slate-50/30">
                             Tiada calon yang layak temuduga buat masa ini.<br/>
                             <span className="text-sm mt-2 inline-block text-slate-400">Sistem hanya memaparkan calon yang LAYAK untuk dinilai.</span>
                          </td>
                       </tr>
                    ) : filteredCandidates.length === 0 ? (
                       <tr>
-                         <td colSpan={akademikItems.length + 4} className="px-6 py-12 text-center text-slate-500 font-medium bg-slate-50/30">
+                         <td colSpan={akademikItems.length + 5} className="px-6 py-12 text-center text-slate-500 font-medium bg-slate-50/30">
                             <div className="text-slate-700 font-bold mb-1">Tiada calon sepadan dengan carian "{searchQuery}"</div>
                             <button 
                               type="button" 
@@ -1425,15 +1441,17 @@ function PentadbirView() {
       "Markah Tahfiz",
       `Tahfiz Max (${tahfizMax})`,
       "Penilai Tahfiz",
+      "Catatan Penilai Tahfiz",
       "Markah Akademik",
       `Akademik Max (${akademikMax})`,
       "Penilai Akademik",
+      "Catatan Penilai Akademik",
       "Markah Keseluruhan (Tahfiz + Akademik)",
       `Jumlah Max (${jumlahMax})`,
       "Markah Peratus (%)",
       "Status Temuduga",
       "Status Tawaran",
-      "Maklum Balas Tawaran",
+      "Maklum Balas Tawaran (Murid)",
       "No. Tel Bapa",
       "No. Tel Ibu"
     ];
@@ -1449,9 +1467,11 @@ function PentadbirView() {
       item.tScore !== null ? item.tScore : 'Belum Dinilai',
       tahfizMax,
       item.candidate.markahTahfiz?.dinilaiOleh || '',
+      item.candidate.markahTahfiz?.catatan || '',
       item.aScore !== null ? item.aScore : 'Belum Dinilai',
       akademikMax,
       item.candidate.markahAkademik?.dinilaiOleh || '',
+      item.candidate.markahAkademik?.catatan || '',
       item.hasAny ? item.jumlahScore : '0',
       jumlahMax,
       item.hasAny ? `${item.peratus.toFixed(1)}%` : '0%',
@@ -1761,8 +1781,8 @@ function PentadbirView() {
                   <th className="px-1.5 py-2.5 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
                     Status Tawaran
                   </th>
-                  <th className="px-1.5 py-2.5 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
-                    Maklum Balas
+                  <th className="px-2 py-2.5 text-xs font-bold uppercase tracking-wider text-center min-w-[130px] whitespace-nowrap" title="Catatan dan ulasan penilai temuduga">
+                    Catatan Penilai Temuduga
                   </th>
                   <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                     Tindakan
@@ -1996,18 +2016,43 @@ function PentadbirView() {
                            <option value="BERJAYA">Ditawarkan</option>
                            <option value="GAGAL">Tidak Ditawarkan</option>
                          </select>
+                         {/* Maklum Balas Penerimaan Murid (Jika ada) */}
+                         {c.statusTawaran === 'BERJAYA' && c.maklumBalasTawaran && (
+                           <div className="mt-1">
+                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-bold ${
+                               c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
+                             }`} title={`Maklum balas murid: ${c.maklumBalasTawaran === 'TERIMA' ? 'Terima Tawaran' : 'Tolak Tawaran'}`}>
+                               {c.maklumBalasTawaran === 'TERIMA' ? '✓ Diterima Murid' : '✗ Ditolak Murid'}
+                             </span>
+                           </div>
+                         )}
                       </td>
 
-                      {/* Maklum Balas */}
-                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
-                         {c.maklumBalasTawaran ? (
-                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                             c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
-                           }`}>
-                             {c.maklumBalasTawaran}
-                           </span>
+                      {/* Catatan Penilai Temuduga - Mengikut Permintaan Pengguna */}
+                      <td className="px-2 py-2 text-left min-w-[130px] max-w-[200px]">
+                         {c.markahTahfiz?.catatan || c.markahAkademik?.catatan ? (
+                           <div 
+                             className="space-y-1 cursor-pointer group"
+                             onClick={() => setDetailCandidate(c)}
+                             title="Klik untuk lihat maklumat terperinci calon"
+                           >
+                             {c.markahTahfiz?.catatan && (
+                               <div className="bg-emerald-50/90 border border-emerald-200/80 rounded px-1.5 py-0.5 text-[10px] text-emerald-950 line-clamp-2">
+                                 <span className="font-extrabold text-emerald-700">Tahfiz: </span>
+                                 <span className="italic">{c.markahTahfiz.catatan}</span>
+                               </div>
+                             )}
+                             {c.markahAkademik?.catatan && (
+                               <div className="bg-blue-50/90 border border-blue-200/80 rounded px-1.5 py-0.5 text-[10px] text-blue-950 line-clamp-2">
+                                 <span className="font-extrabold text-blue-700">Akademik: </span>
+                                 <span className="italic">{c.markahAkademik.catatan}</span>
+                               </div>
+                             )}
+                           </div>
                          ) : (
-                           <span className="text-xs text-slate-400 font-medium">-</span>
+                           <div className="text-center">
+                             <span className="text-xs text-slate-400 font-medium italic">-</span>
+                           </div>
                          )}
                       </td>
 
