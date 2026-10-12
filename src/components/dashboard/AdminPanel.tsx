@@ -1760,31 +1760,31 @@ function PentadbirView() {
             <table className="w-full divide-y divide-slate-200 text-left text-sm table-auto">
               <thead className="bg-slate-50/90 text-slate-600">
                 <tr>
-                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider w-14 whitespace-nowrap">
+                  <th className="px-1 py-2 text-center text-xs font-bold uppercase tracking-wider w-12 whitespace-nowrap">
                     {genderFilter === 'LELAKI' ? 'Ked. L' : genderFilter === 'PEREMPUAN' ? 'Ked. P' : 'Ked (Merit)'}
                   </th>
-                  <th className="px-2 py-2.5 text-xs font-bold uppercase tracking-wider min-w-[140px] max-w-[200px]">
+                  <th className="px-1.5 py-2 text-xs font-bold uppercase tracking-wider min-w-[130px] max-w-[180px]">
                     Nama Calon & No. KP
                   </th>
-                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-1 py-2 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                     Tahfiz ({tahfizMax})
                   </th>
-                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-1 py-2 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                     Akademik ({akademikMax})
                   </th>
-                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
+                  <th className="px-1 py-2 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
                     Jumlah ({jumlahMax})
                   </th>
-                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
+                  <th className="px-1 py-2 text-center text-xs font-bold uppercase tracking-wider bg-slate-100/70 whitespace-nowrap">
                     %
                   </th>
-                  <th className="px-1.5 py-2.5 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
+                  <th className="px-1 py-2 text-xs font-bold uppercase tracking-wider text-center whitespace-nowrap">
                     Status Tawaran
                   </th>
-                  <th className="px-2 py-2.5 text-xs font-bold uppercase tracking-wider text-center min-w-[130px] whitespace-nowrap" title="Catatan dan ulasan penilai temuduga">
+                  <th className="px-1.5 py-2 text-xs font-bold uppercase tracking-wider text-center max-w-[160px] whitespace-nowrap" title="Catatan dan ulasan penilai temuduga">
                     Catatan Penilai Temuduga
                   </th>
-                  <th className="px-1.5 py-2.5 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                  <th className="px-1 py-2 text-center text-xs font-bold uppercase tracking-wider whitespace-nowrap">
                     Tindakan
                   </th>
                 </tr>
@@ -1872,7 +1872,7 @@ function PentadbirView() {
                       </td>
 
                       {/* Nama & IC Sahaja (Kotak Padat Sesuai - Klik Gambar/Nama Untuk Lihat Maklumat Penuh) */}
-                      <td className="px-2 py-2 max-w-[200px]">
+                      <td className="px-1.5 py-1.5 max-w-[170px]">
                          <div className="flex items-center gap-2">
                            <div 
                              onClick={() => setDetailCandidate(c)}
@@ -1914,15 +1914,15 @@ function PentadbirView() {
                       </td>
 
                       {/* Markah Tahfiz */}
-                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
+                      <td className="px-1 py-1.5 whitespace-nowrap text-center">
                          {item.hasTahfiz ? (
                            <div>
-                             <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg text-xs sm:text-sm border border-emerald-100 inline-block">
+                             <span className="font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-lg text-xs sm:text-sm border border-emerald-100 inline-block">
                                {item.tScore} <span className="text-[10px] font-semibold text-emerald-500">/{tahfizMax}</span>
                              </span>
                              {c.markahTahfiz?.dinilaiOleh && (
-                               <div className="text-[9px] text-slate-400 mt-0.5 uppercase font-medium">
-                                 Oleh: {c.markahTahfiz.dinilaiOleh}
+                               <div className="text-[9px] text-slate-500 mt-0.5 uppercase font-semibold max-w-[100px] truncate mx-auto" title={c.markahTahfiz.dinilaiOleh}>
+                                 {c.markahTahfiz.dinilaiOleh}
                                </div>
                              )}
                            </div>
@@ -1932,15 +1932,15 @@ function PentadbirView() {
                       </td>
 
                       {/* Markah Akademik */}
-                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
+                      <td className="px-1 py-1.5 whitespace-nowrap text-center">
                          {item.hasAkademik ? (
                            <div>
-                             <span className="font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg text-xs sm:text-sm border border-blue-100 inline-block">
+                             <span className="font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-lg text-xs sm:text-sm border border-blue-100 inline-block">
                                {item.aScore} <span className="text-[10px] font-semibold text-blue-500">/{akademikMax}</span>
                              </span>
                              {c.markahAkademik?.dinilaiOleh && (
-                               <div className="text-[9px] text-slate-400 mt-0.5 uppercase font-medium">
-                                 Oleh: {c.markahAkademik.dinilaiOleh}
+                               <div className="text-[9px] text-slate-500 mt-0.5 uppercase font-semibold max-w-[100px] truncate mx-auto" title={c.markahAkademik.dinilaiOleh}>
+                                 {c.markahAkademik.dinilaiOleh}
                                </div>
                              )}
                            </div>
@@ -1950,34 +1950,34 @@ function PentadbirView() {
                       </td>
 
                       {/* Markah Keseluruhan (Tahfiz + Akademik) */}
-                      <td className="px-1.5 py-2 whitespace-nowrap text-center bg-slate-50/50">
+                      <td className="px-1 py-1.5 whitespace-nowrap text-center bg-slate-50/50">
                          {item.hasAny ? (
                            <div>
-                             <div className="inline-flex items-baseline gap-1 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-                               <span className="font-black text-sm sm:text-base text-slate-900">
+                             <div className="inline-flex items-baseline gap-0.5 bg-white px-1.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                               <span className="font-black text-xs sm:text-sm text-slate-900">
                                  {item.jumlahScore}
                                </span>
-                               <span className="text-[10px] font-bold text-slate-400">
+                               <span className="text-[9px] font-bold text-slate-400">
                                  /{jumlahMax}
                                </span>
                              </div>
                              {!item.hasBoth && (
-                               <div className="text-[9px] font-bold text-amber-600 mt-0.5">
+                               <div className="text-[8.5px] font-bold text-amber-600 mt-0.5">
                                  *Belum lengkap
                                </div>
                              )}
                            </div>
                          ) : (
-                           <span className="text-xs text-slate-400 font-medium italic">Tiada markah</span>
+                           <span className="text-xs text-slate-400 font-medium italic">-</span>
                          )}
                       </td>
 
                       {/* Markah Peratus (%) */}
-                      <td className="px-1.5 py-2 whitespace-nowrap text-center bg-slate-50/50">
+                      <td className="px-1 py-1.5 whitespace-nowrap text-center bg-slate-50/50">
                          {item.hasAny ? (
-                           <div className="w-16 mx-auto">
+                           <div className="w-12 mx-auto">
                              <div className="flex items-center justify-center mb-0.5">
-                               <span className={`text-xs sm:text-sm font-black ${
+                               <span className={`text-xs font-black ${
                                  item.peratus >= 80 ? 'text-emerald-700' :
                                  item.peratus >= 65 ? 'text-blue-700' :
                                  item.peratus >= 50 ? 'text-amber-700' : 'text-rose-700'
@@ -1985,7 +1985,7 @@ function PentadbirView() {
                                  {item.peratus.toFixed(1)}%
                                </span>
                              </div>
-                             <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+                             <div className="w-full bg-slate-200/80 rounded-full h-1 overflow-hidden">
                                <div 
                                  className={`h-full rounded-full transition-all duration-300 ${
                                    item.peratus >= 80 ? 'bg-emerald-500' :
@@ -2001,49 +2001,64 @@ function PentadbirView() {
                          )}
                       </td>
 
-                      {/* Status Tawaran - Tulisan Dikecilkan & Kemas Mengikut Permintaan Pengguna */}
-                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
-                         <select
-                           value={c.statusTawaran || 'DALAM_PERTIMBANGAN'}
-                           onChange={(e) => updateCandidate(c.ic, { statusTawaran: e.target.value as any })}
-                           className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold uppercase border cursor-pointer outline-none transition-colors appearance-none text-center ${
-                             c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200' :
-                             c.statusTawaran === 'GAGAL' ? 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                           }`}
-                           title="Status Tawaran Calon"
-                         >
-                           <option value="DALAM_PERTIMBANGAN">Dalam Proses Penilaian</option>
-                           <option value="BERJAYA">Ditawarkan</option>
-                           <option value="GAGAL">Tidak Ditawarkan</option>
-                         </select>
+                      {/* Status Tawaran - Dibuat 2 Baris Untuk Dalam Proses Penilaian */}
+                      <td className="px-1 py-1.5 whitespace-nowrap text-center">
+                         <div className="relative inline-block">
+                           <div className={`px-2 py-1 rounded-xl text-[10px] font-extrabold uppercase border text-center transition-colors pointer-events-none ${
+                             c.statusTawaran === 'BERJAYA' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                             c.statusTawaran === 'GAGAL' ? 'bg-rose-100 text-rose-800 border-rose-300' :
+                             'bg-slate-100 text-slate-700 border-slate-300'
+                           }`}>
+                             {c.statusTawaran === 'BERJAYA' ? (
+                               <span>Ditawarkan</span>
+                             ) : c.statusTawaran === 'GAGAL' ? (
+                               <span>Tidak Ditawarkan</span>
+                             ) : (
+                               <div className="leading-[1.15] text-[9px] tracking-tight">
+                                 <div>Dalam Proses</div>
+                                 <div className="mt-0.5">Penilaian</div>
+                               </div>
+                             )}
+                           </div>
+                           <select
+                             value={c.statusTawaran || 'DALAM_PERTIMBANGAN'}
+                             onChange={(e) => updateCandidate(c.ic, { statusTawaran: e.target.value as any })}
+                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                             title="Klik untuk tukar Status Tawaran Calon"
+                           >
+                             <option value="DALAM_PERTIMBANGAN">Dalam Proses Penilaian</option>
+                             <option value="BERJAYA">Ditawarkan</option>
+                             <option value="GAGAL">Tidak Ditawarkan</option>
+                           </select>
+                         </div>
                          {/* Maklum Balas Penerimaan Murid (Jika ada) */}
                          {c.statusTawaran === 'BERJAYA' && c.maklumBalasTawaran && (
-                           <div className="mt-1">
-                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9.5px] font-bold ${
+                           <div className="mt-0.5">
+                             <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-bold ${
                                c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
                              }`} title={`Maklum balas murid: ${c.maklumBalasTawaran === 'TERIMA' ? 'Terima Tawaran' : 'Tolak Tawaran'}`}>
-                               {c.maklumBalasTawaran === 'TERIMA' ? '✓ Diterima Murid' : '✗ Ditolak Murid'}
+                               {c.maklumBalasTawaran === 'TERIMA' ? '✓ Diterima' : '✗ Ditolak'}
                              </span>
                            </div>
                          )}
                       </td>
 
                       {/* Catatan Penilai Temuduga - Mengikut Permintaan Pengguna */}
-                      <td className="px-2 py-2 text-left min-w-[130px] max-w-[200px]">
+                      <td className="px-1.5 py-1.5 text-left max-w-[160px]">
                          {c.markahTahfiz?.catatan || c.markahAkademik?.catatan ? (
                            <div 
-                             className="space-y-1 cursor-pointer group"
+                             className="space-y-0.5 cursor-pointer group"
                              onClick={() => setDetailCandidate(c)}
                              title="Klik untuk lihat maklumat terperinci calon"
                            >
                              {c.markahTahfiz?.catatan && (
-                               <div className="bg-emerald-50/90 border border-emerald-200/80 rounded px-1.5 py-0.5 text-[10px] text-emerald-950 line-clamp-2">
+                               <div className="bg-emerald-50/90 border border-emerald-200/80 rounded px-1.5 py-0.5 text-[9.5px] text-emerald-950 line-clamp-2 leading-tight">
                                  <span className="font-extrabold text-emerald-700">Tahfiz: </span>
                                  <span className="italic">{c.markahTahfiz.catatan}</span>
                                </div>
                              )}
                              {c.markahAkademik?.catatan && (
-                               <div className="bg-blue-50/90 border border-blue-200/80 rounded px-1.5 py-0.5 text-[10px] text-blue-950 line-clamp-2">
+                               <div className="bg-blue-50/90 border border-blue-200/80 rounded px-1.5 py-0.5 text-[9.5px] text-blue-950 line-clamp-2 leading-tight">
                                  <span className="font-extrabold text-blue-700">Akademik: </span>
                                  <span className="italic">{c.markahAkademik.catatan}</span>
                                </div>
@@ -2057,11 +2072,11 @@ function PentadbirView() {
                       </td>
 
                       {/* Tindakan */}
-                      <td className="px-1.5 py-2 whitespace-nowrap text-center">
+                      <td className="px-1 py-1.5 whitespace-nowrap text-center">
                          <button
                            type="button"
                            onClick={() => setEditCandidate(c)}
-                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition shadow-2xs"
+                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10.5px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition shadow-2xs"
                            title="Kemaskini Maklumat & Gambar Calon"
                          >
                            <Edit className="w-3 h-3" />
