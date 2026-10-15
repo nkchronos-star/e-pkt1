@@ -21,6 +21,91 @@ export const isDateActive = (tarikhMula?: string, tarikhAkhir?: string): boolean
   return today >= tarikhMula;
 };
 
+export const parseMalayDateToIso = (str?: string): string | null => {
+  if (!str) return null;
+  const s = str.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+
+  // Format: DD/MM/YYYY or DD-MM-YYYY
+  const slashMatch = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  if (slashMatch) {
+    const day = slashMatch[1].padStart(2, '0');
+    const month = slashMatch[2].padStart(2, '0');
+    const year = slashMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  const months: Record<string, string> = {
+    januari: '01', jan: '01',
+    februari: '02', feb: '02',
+    mac: '03',
+    april: '04', apr: '04',
+    mei: '05', may: '05',
+    jun: '06',
+    julai: '07', jul: '07',
+    ogos: '08', ogo: '08', aug: '08',
+    september: '09', sep: '09', sept: '09',
+    oktober: '10', okt: '10', oct: '10',
+    november: '11', nov: '11',
+    disember: '12', dis: '12', dec: '12'
+  };
+
+  // Extract day, month word, and year from string like '28 November 2026' or '28 Nov 2026 (Sabtu)'
+  const wordMatch = s.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+  if (wordMatch) {
+    const day = wordMatch[1].padStart(2, '0');
+    const monthKey = wordMatch[2].toLowerCase();
+    const year = wordMatch[3];
+    if (months[monthKey]) {
+      return `${year}-${months[monthKey]}-${day}`;
+    }
+  }
+
+  const parts = s.split(/[\s,/-]+/);
+  if (parts.length >= 3) {
+    const day = parts[0].padStart(2, '0');
+    const monthName = parts[1].toLowerCase();
+    const year = parts[2];
+    if (months[monthName] && /^\d{4}$/.test(year)) {
+      return `${year}-${months[monthName]}-${day}`;
+    }
+  }
+  return null;
+};
+
+export const formatIsoToMalayDate = (iso?: string): string => {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso || '';
+  const months = ['Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun', 'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'];
+  const [year, m, d] = iso.split('-');
+  const monthName = months[parseInt(m, 10) - 1];
+  return `${parseInt(d, 10)} ${monthName} ${year}`;
+};
+
+export const isOfferExpired = (
+  candidate?: Candidate | null,
+  settings?: ApplicationSettings | null
+): boolean => {
+  if (!candidate || candidate.statusTawaran !== 'BERJAYA') return false;
+  if (candidate.maklumBalasTawaran === 'TERIMA' || candidate.maklumBalasTawaran === 'TOLAK') {
+    return false;
+  }
+  if (candidate.maklumBalasTawaran === 'TERBATAL') {
+    return true;
+  }
+
+  if (!settings) return false;
+
+  let deadlineIso = settings.tarikhAkhirTerimaTawaranDate;
+  if (!deadlineIso && settings.tarikhAkhirTerimaTawaran) {
+    deadlineIso = parseMalayDateToIso(settings.tarikhAkhirTerimaTawaran) || undefined;
+  }
+
+  if (!deadlineIso) return false;
+
+  const today = getTodayMalaysia();
+  return today > deadlineIso;
+};
+
 export const applyAutoDates = (s: ApplicationSettings): ApplicationSettings => {
   const res = { ...s };
   const today = getTodayMalaysia();
@@ -87,7 +172,10 @@ const defaultSettings: ApplicationSettings = {
   tarikhTemuduga: '10 Oktober 2026',
   tarikhLaporDiri: '3 Januari 2027',
   tarikhAkhirTerimaTawaran: '28 November 2026',
+  tarikhAkhirTerimaTawaranDate: '2026-11-28',
+  linkGroupWhatsapp: '',
   tarikhSemakPertimbangan: '30 Oktober 2026',
+  tarikhSemakPertimbanganDate: '2026-10-30',
   tarikhSuratPanggilan: '28 September 2026',
   hariTemuduga: 'Sabtu',
   masaTemuduga: '8.30 pagi',

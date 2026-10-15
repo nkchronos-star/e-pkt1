@@ -7,7 +7,7 @@ import {
   GraduationCap, Sparkles
 } from 'lucide-react';
 import { Candidate, ApplicationSettings } from '../../types';
-import { useAppContext } from '../../store';
+import { useAppContext, isOfferExpired } from '../../store';
 
 interface CandidateDetailModalProps {
   candidate: Candidate;
@@ -270,15 +270,35 @@ export default function CandidateDetailModal({
                   {candidate.statusTawaran === 'BERJAYA' ? 'DITAWARKAN' : candidate.statusTawaran === 'GAGAL' ? 'TIDAK BERJAYA' : 'DALAM PROSES PENILAIAN'}
                 </span>
 
-                {/* Maklum Balas */}
-                {candidate.maklumBalasTawaran && (
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-black uppercase border shadow-xs ${
-                    candidate.maklumBalasTawaran === 'TERIMA'
-                      ? 'bg-emerald-300 text-emerald-950 border-emerald-200'
-                      : 'bg-rose-300 text-rose-950 border-rose-200'
-                  }`}>
-                    {candidate.maklumBalasTawaran === 'TERIMA' ? 'Diterima' : 'Ditolak'}
+                {/* Tarikh Semakan Semula jika Dalam Proses Penilaian */}
+                {candidate.statusTawaran !== 'BERJAYA' && candidate.statusTawaran !== 'GAGAL' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-400/20 text-amber-200 border border-amber-400/40" title="Tarikh semakan semula keputusan untuk calon dalam proses penilaian">
+                    <Clock className="w-3 h-3" />
+                    Semak Semula: {settings.tarikhSemakPertimbangan || '30 Okt 2026'}
                   </span>
+                )}
+
+                {/* Maklum Balas */}
+                {candidate.statusTawaran === 'BERJAYA' && (
+                  candidate.maklumBalasTawaran ? (
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-black uppercase border shadow-xs ${
+                      candidate.maklumBalasTawaran === 'TERIMA'
+                        ? 'bg-emerald-300 text-emerald-950 border-emerald-200'
+                        : candidate.maklumBalasTawaran === 'TOLAK'
+                        ? 'bg-slate-300 text-slate-950 border-slate-200'
+                        : 'bg-rose-300 text-rose-950 border-rose-200'
+                    }`}>
+                      {candidate.maklumBalasTawaran === 'TERIMA' ? 'Diterima' : candidate.maklumBalasTawaran === 'TOLAK' ? 'Ditolak' : 'Terbatal'}
+                    </span>
+                  ) : isOfferExpired(candidate, settings) ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-black uppercase border shadow-xs bg-rose-300 text-rose-950 border-rose-200" title="Tawaran terbatal kerana tiada respons sebelum tarikh akhir">
+                      Terbatal (Gagal Respon)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-black uppercase border shadow-xs bg-amber-200 text-amber-950 border-amber-300" title="Menunggu pengesahan calon sebelum tarikh akhir">
+                      Menunggu Respon
+                    </span>
+                  )
                 )}
               </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAppContext, isDateActive, getTodayMalaysia } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye, BookOpen } from 'lucide-react';
+import { useAppContext, isDateActive, getTodayMalaysia, isOfferExpired, formatIsoToMalayDate, parseMalayDateToIso } from '../../store';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye, BookOpen, MessageCircle, ExternalLink, Calendar, AlertTriangle, Clock } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
@@ -1059,6 +1059,7 @@ function AkademikView() {
 // ================= PENTADBIR VIEW =================
 
 function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
+  const { settings } = useAppContext();
   const permohonan = candidates;
   const permohonanL = permohonan.filter(c => c.jantina?.toUpperCase() === 'LELAKI').length;
   const permohonanP = permohonan.filter(c => c.jantina?.toUpperCase() === 'PEREMPUAN').length;
@@ -1079,7 +1080,11 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
   const tolakL = tolak.filter(c => c.jantina?.toUpperCase() === 'LELAKI').length;
   const tolakP = tolak.filter(c => c.jantina?.toUpperCase() === 'PEREMPUAN').length;
 
-  const belum = ditawarkan.filter(c => !c.maklumBalasTawaran);
+  const terbatal = ditawarkan.filter(c => c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings)));
+  const terbatalL = terbatal.filter(c => c.jantina?.toUpperCase() === 'LELAKI').length;
+  const terbatalP = terbatal.filter(c => c.jantina?.toUpperCase() === 'PEREMPUAN').length;
+
+  const belum = ditawarkan.filter(c => !c.maklumBalasTawaran && !isOfferExpired(c, settings));
   const belumL = belum.filter(c => c.jantina?.toUpperCase() === 'LELAKI').length;
   const belumP = belum.filter(c => c.jantina?.toUpperCase() === 'PEREMPUAN').length;
 
@@ -1099,36 +1104,41 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
   return (
     <div className="mb-12 mt-4">
       <h4 className="font-bold text-lg text-slate-800 mb-4">Analisis Kemasukan Tahun Semasa</h4>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center flex flex-col justify-center items-center">
-            <div className="text-slate-500 font-bold mb-2 uppercase tracking-wide text-sm">Jumlah Permohonan</div>
-            <div className="text-5xl font-extrabold text-slate-800 mb-2">{permohonan.length}</div>
-            <div className="text-slate-500 font-bold">(L: {permohonanL} / P: {permohonanP})</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-center flex flex-col justify-center items-center">
+            <div className="text-slate-500 font-bold mb-1.5 uppercase tracking-wide text-xs">Jumlah Permohonan</div>
+            <div className="text-4xl font-extrabold text-slate-800 mb-1">{permohonan.length}</div>
+            <div className="text-slate-500 text-xs font-semibold">(L: {permohonanL} / P: {permohonanP})</div>
          </div>
-         <div className="bg-white rounded-2xl p-6 border border-purple-200 shadow-sm text-center flex flex-col justify-center items-center">
-            <div className="text-purple-600 font-bold mb-2 uppercase tracking-wide text-sm">Layak Temuduga</div>
-            <div className="text-5xl font-extrabold text-purple-600 mb-2">{temuduga.length}</div>
-            <div className="text-purple-600/80 font-bold">(L: {temudugaL} / P: {temudugaP})</div>
+         <div className="bg-white rounded-2xl p-5 border border-purple-200 shadow-sm text-center flex flex-col justify-center items-center">
+            <div className="text-purple-600 font-bold mb-1.5 uppercase tracking-wide text-xs">Layak Temuduga</div>
+            <div className="text-4xl font-extrabold text-purple-600 mb-1">{temuduga.length}</div>
+            <div className="text-purple-600/80 text-xs font-semibold">(L: {temudugaL} / P: {temudugaP})</div>
          </div>
-         <div className="bg-white rounded-2xl p-6 border border-blue-200 shadow-sm text-center flex flex-col justify-center items-center">
-            <div className="text-blue-600 font-bold mb-2 uppercase tracking-wide text-sm">Jumlah Ditawarkan</div>
-            <div className="text-5xl font-extrabold text-blue-600 mb-2">{ditawarkan.length}</div>
-            <div className="text-blue-600/80 font-bold">(L: {ditawarkanL} / P: {ditawarkanP})</div>
+         <div className="bg-white rounded-2xl p-5 border border-blue-200 shadow-sm text-center flex flex-col justify-center items-center">
+            <div className="text-blue-600 font-bold mb-1.5 uppercase tracking-wide text-xs">Jumlah Ditawarkan</div>
+            <div className="text-4xl font-extrabold text-blue-600 mb-1">{ditawarkan.length}</div>
+            <div className="text-blue-600/80 text-xs font-semibold">(L: {ditawarkanL} / P: {ditawarkanP})</div>
          </div>
-         <div className="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm text-center flex flex-col justify-center items-center">
-            <div className="text-emerald-600 font-bold mb-2 uppercase tracking-wide text-sm">Tawaran Diterima</div>
-            <div className="text-5xl font-extrabold text-emerald-600 mb-2">{terima.length}</div>
-            <div className="text-emerald-600/80 font-bold">(L: {terimaL} / P: {terimaP})</div>
+         <div className="bg-white rounded-2xl p-5 border border-emerald-200 shadow-sm text-center flex flex-col justify-center items-center">
+            <div className="text-emerald-600 font-bold mb-1.5 uppercase tracking-wide text-xs">Tawaran Diterima</div>
+            <div className="text-4xl font-extrabold text-emerald-600 mb-1">{terima.length}</div>
+            <div className="text-emerald-600/80 text-xs font-semibold">(L: {terimaL} / P: {terimaP})</div>
          </div>
-         <div className="bg-white rounded-2xl p-6 border border-red-200 shadow-sm text-center flex flex-col justify-center items-center">
-            <div className="text-red-600 font-bold mb-2 uppercase tracking-wide text-sm">Tawaran Ditolak</div>
-            <div className="text-5xl font-extrabold text-red-600 mb-2">{tolak.length}</div>
-            <div className="text-red-600/80 font-bold">(L: {tolakL} / P: {tolakP})</div>
+         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-center flex flex-col justify-center items-center">
+            <div className="text-slate-600 font-bold mb-1.5 uppercase tracking-wide text-xs">Tawaran Ditolak</div>
+            <div className="text-4xl font-extrabold text-slate-700 mb-1">{tolak.length}</div>
+            <div className="text-slate-500 text-xs font-semibold">(L: {tolakL} / P: {tolakP})</div>
          </div>
-         <div className="bg-white rounded-2xl p-6 border border-amber-200 shadow-sm text-center flex flex-col justify-center items-center">
-            <div className="text-amber-600 font-bold mb-2 uppercase tracking-wide text-sm">Belum Maklum Balas</div>
-            <div className="text-5xl font-extrabold text-amber-600 mb-2">{belum.length}</div>
-            <div className="text-amber-600/80 font-bold">(L: {belumL} / P: {belumP})</div>
+         <div className="bg-white rounded-2xl p-5 border border-rose-200 bg-rose-50/20 shadow-sm text-center flex flex-col justify-center items-center">
+            <div className="text-rose-600 font-bold mb-1.5 uppercase tracking-wide text-xs">Terbatal (Gagal Respon)</div>
+            <div className="text-4xl font-extrabold text-rose-600 mb-1">{terbatal.length}</div>
+            <div className="text-rose-600/80 text-xs font-semibold">(L: {terbatalL} / P: {terbatalP})</div>
+         </div>
+         <div className="bg-white rounded-2xl p-5 border border-amber-200 bg-amber-50/20 shadow-sm text-center flex flex-col justify-center items-center">
+            <div className="text-amber-600 font-bold mb-1.5 uppercase tracking-wide text-xs">Menunggu Maklum Balas</div>
+            <div className="text-4xl font-extrabold text-amber-600 mb-1">{belum.length}</div>
+            <div className="text-amber-600/80 text-xs font-semibold">(L: {belumL} / P: {belumP})</div>
          </div>
       </div>
       
@@ -1285,6 +1295,12 @@ function PentadbirView() {
     baseCandidates = candidates.filter(c => c.maklumBalasTawaran === 'TERIMA');
   } else if (filter === 'TOLAK') {
     baseCandidates = candidates.filter(c => c.maklumBalasTawaran === 'TOLAK');
+  } else if (filter === 'TERBATAL') {
+    baseCandidates = candidates.filter(c => c.statusTawaran === 'BERJAYA' && (c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings))));
+  } else if (filter === 'BELUM_RESPON') {
+    baseCandidates = candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && !isOfferExpired(c, settings));
+  } else if (filter === 'DALAM_PERTIMBANGAN') {
+    baseCandidates = candidates.filter(c => c.statusTawaran === 'DALAM_PERTIMBANGAN' || (!c.statusTawaran && c.statusTemuduga === 'LAYAK'));
   } else if (filter === 'LENGKAP_DINILAI') {
     baseCandidates = candidates.filter(c => getTahfizScore(c) !== null && getAkademikScore(c) !== null);
   } else if (filter === 'BELUM_LENGKAP') {
@@ -1687,9 +1703,12 @@ function PentadbirView() {
                  <option value="LENGKAP_DINILAI">Lengkap Dinilai ({candidates.filter(c => getTahfizScore(c) !== null && getAkademikScore(c) !== null).length})</option>
                  <option value="BELUM_LENGKAP">Belum Lengkap Dinilai ({candidates.filter(c => getTahfizScore(c) === null || getAkademikScore(c) === null).length})</option>
                  <option value="BERJAYA">Ditawarkan ({candidates.filter(c => c.statusTawaran === 'BERJAYA').length})</option>
+                 <option value="DALAM_PERTIMBANGAN">Dalam Proses Penilaian ({candidates.filter(c => c.statusTawaran === 'DALAM_PERTIMBANGAN' || (!c.statusTawaran && c.statusTemuduga === 'LAYAK')).length})</option>
                  <option value="GAGAL">Tidak Berjaya ({candidates.filter(c => c.statusTawaran === 'GAGAL').length})</option>
                  <option value="TERIMA">Tawaran Diterima ({candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length})</option>
                  <option value="TOLAK">Tolak Tawaran ({candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length})</option>
+                 <option value="TERBATAL">Tawaran Terbatal ({candidates.filter(c => c.statusTawaran === 'BERJAYA' && (c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings)))).length})</option>
+                 <option value="BELUM_RESPON">Belum Respons ({candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && !isOfferExpired(c, settings)).length})</option>
                  <option value="MENUNGGU">Menunggu Saringan ({candidates.filter(c => c.statusTemuduga === 'MENUNGGU' || !c.statusTemuduga).length})</option>
                </select>
              </div>
@@ -2015,14 +2034,26 @@ function PentadbirView() {
                              <option value="GAGAL">Tidak Ditawarkan</option>
                            </select>
                          </div>
-                         {/* Maklum Balas Penerimaan Murid (Jika ada) */}
-                         {c.statusTawaran === 'BERJAYA' && c.maklumBalasTawaran && (
+                         {/* Maklum Balas Penerimaan Murid */}
+                         {c.statusTawaran === 'BERJAYA' && (
                            <div className="mt-0.5">
-                             <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-bold ${
-                               c.maklumBalasTawaran === 'TERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
-                             }`} title={`Maklum balas murid: ${c.maklumBalasTawaran === 'TERIMA' ? 'Terima Tawaran' : 'Tolak Tawaran'}`}>
-                               {c.maklumBalasTawaran === 'TERIMA' ? '✓ Diterima' : '✗ Ditolak'}
-                             </span>
+                             {c.maklumBalasTawaran === 'TERIMA' ? (
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="Calon telah menerima tawaran kemasukan">
+                                 ✓ Diterima
+                               </span>
+                             ) : c.maklumBalasTawaran === 'TOLAK' ? (
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-slate-100 text-slate-700 border border-slate-300" title="Calon telah menolak tawaran">
+                                 ✗ Ditolak
+                               </span>
+                             ) : c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings)) ? (
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-rose-100 text-rose-800 border border-rose-300" title="Tawaran terbatal secara automatik kerana gagal respon sebelum tarikh akhir">
+                                 ⚠ Terbatal
+                               </span>
+                             ) : (
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-medium bg-amber-50 text-amber-700 border border-amber-200" title="Menunggu pengesahan calon sebelum tarikh akhir">
+                                 ⏳ Belum Respon
+                               </span>
+                             )}
                            </div>
                          )}
                       </td>
@@ -2271,6 +2302,28 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
       const start = name === 'tarikhBukaTawaran' ? value : settings.tarikhBukaTawaran;
       const end = name === 'tarikhTutupTawaran' ? value : settings.tarikhTutupTawaran;
       updated.tawaranBuka = isDateActive(start, end);
+    } else if (name === 'tarikhAkhirTerimaTawaranDate') {
+      updated.tarikhAkhirTerimaTawaranDate = value;
+      if (value) {
+        updated.tarikhAkhirTerimaTawaran = formatIsoToMalayDate(value);
+      }
+    } else if (name === 'tarikhAkhirTerimaTawaran') {
+      updated.tarikhAkhirTerimaTawaran = value;
+      const parsedIso = parseMalayDateToIso(value);
+      if (parsedIso) {
+        updated.tarikhAkhirTerimaTawaranDate = parsedIso;
+      }
+    } else if (name === 'tarikhSemakPertimbanganDate') {
+      updated.tarikhSemakPertimbanganDate = value;
+      if (value) {
+        updated.tarikhSemakPertimbangan = formatIsoToMalayDate(value);
+      }
+    } else if (name === 'tarikhSemakPertimbangan') {
+      updated.tarikhSemakPertimbangan = value;
+      const parsedIso = parseMalayDateToIso(value);
+      if (parsedIso) {
+        updated.tarikhSemakPertimbanganDate = parsedIso;
+      }
     }
 
     updateSettings(updated);
@@ -2291,6 +2344,31 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
 
   const handleTextSettings = (name: string, value: string) => {
     updateSettings({ [name]: value });
+  };
+
+  const handleBatchCancelExpiredOffers = async () => {
+    const expiredCandidates = candidates.filter(
+      c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && isOfferExpired(c, settings)
+    );
+    if (expiredCandidates.length === 0) {
+      alert('Tiada calon tawaran yang telah tamat tempoh respon.');
+      return;
+    }
+    const confirmCancel = window.confirm(
+      `Sebanyak ${expiredCandidates.length} orang calon ditawarkan masih belum memberi sebarang maklum balas dan telah melepasi tarikh akhir (${settings.tarikhAkhirTerimaTawaran || settings.tarikhAkhirTerimaTawaranDate || 'tiada tarikh'}).\n\nAdakah anda pasti mahu mengemas kini status maklum balas mereka kepada 'TERBATAL' (Tawaran Terbatal Automatik)?`
+    );
+    if (!confirmCancel) return;
+    setIsSavingSettings(true);
+    try {
+      for (const c of expiredCandidates) {
+        await updateCandidate(c.ic, { maklumBalasTawaran: 'TERBATAL' });
+      }
+      alert(`Berjaya! Sebanyak ${expiredCandidates.length} orang calon kini dikemaskini status kepada 'TERBATAL' dalam sistem.`);
+    } catch (e: any) {
+      alert('Ralat membatalkan tawaran: ' + (e?.message || 'Sila cuba lagi'));
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   const handleSaveTemudugaSettings = async () => {
@@ -2322,11 +2400,15 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
     try {
       const partial: Partial<ApplicationSettings> = {
         borangTingkatan1Link: settings.borangTingkatan1Link || '',
+        linkGroupWhatsapp: settings.linkGroupWhatsapp || '',
         rujukanSuratTawaran: settings.rujukanSuratTawaran || '',
         tarikhSuratTawaran: settings.tarikhSuratTawaran || '',
         tarikhLaporDiri: settings.tarikhLaporDiri || '',
         masaLaporDiri: settings.masaLaporDiri || '',
         tarikhAkhirTerimaTawaran: settings.tarikhAkhirTerimaTawaran || '',
+        tarikhAkhirTerimaTawaranDate: settings.tarikhAkhirTerimaTawaranDate || '',
+        tarikhSemakPertimbangan: settings.tarikhSemakPertimbangan || '',
+        tarikhSemakPertimbanganDate: settings.tarikhSemakPertimbanganDate || '',
         namaPengarahTawaran: settings.namaPengarahTawaran || 'HAJI HASDAN BIN HASAN',
         jawatanPengarahTawaran1: settings.jawatanPengarahTawaran1 || 'Ketua Penolong Pengarah Kanan',
         jawatanPengarahTawaran2: settings.jawatanPengarahTawaran2 || 'Sektor Pendidikan Islam',
@@ -2335,7 +2417,7 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
       };
       await updateSettings(partial);
       await syncSettingsToServer(partial);
-      setSaveStatusMsg('Tetapan Surat Tawaran & Penandatangan berjaya disimpan!');
+      setSaveStatusMsg('Tetapan Surat Tawaran, Tarikh Akhir Respon & Group WhatsApp berjaya disimpan!');
       setTimeout(() => setSaveStatusMsg(''), 4000);
     } catch (e: any) {
       alert('Ralat menyimpan tetapan tawaran: ' + (e?.message || 'Sila cuba lagi'));
@@ -2823,8 +2905,23 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Pautan Borang Pendaftaran</label>
-                    <input type="text" name="borangTingkatan1Link" value={settings.borangTingkatan1Link || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="https://..." />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-500">Pautan Borang Pendaftaran (Google Drive / PDF)</label>
+                      {settings.borangTingkatan1Link && (
+                        <a 
+                          href={settings.borangTingkatan1Link.startsWith('http') ? settings.borangTingkatan1Link : `https://${settings.borangTingkatan1Link}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-[10.5px] text-blue-600 hover:underline font-bold flex items-center gap-0.5"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Uji Pautan
+                        </a>
+                      )}
+                    </div>
+                    <input type="text" name="borangTingkatan1Link" value={settings.borangTingkatan1Link || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="https://drive.google.com/..." />
+                    <span className="text-[10px] text-slate-400 mt-1 block leading-tight">
+                      * Butang &quot;MUAT TURUN / CETAK BORANG PENDAFTARAN&quot; di portal semakan akan terus membuka pautan ini.
+                    </span>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Rujukan Surat (Sistem akan tambah (xx) automatik)</label>
@@ -2843,14 +2940,6 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                     <input type="text" name="masaLaporDiri" value={settings.masaLaporDiri || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 8.30 PAGI" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Tarikh Akhir Terima Tawaran</label>
-                    <input type="text" name="tarikhAkhirTerimaTawaran" value={settings.tarikhAkhirTerimaTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="cth: 28 November 2026" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-amber-700 mb-1">Tarikh Semak Semula (Calon Dalam Proses Penilaian)</label>
-                    <input type="text" name="tarikhSemakPertimbangan" value={settings.tarikhSemakPertimbangan || ''} onChange={handleSettingsChange} className="w-full border border-amber-300 bg-amber-50/50 rounded-lg px-3 py-2 text-sm font-semibold text-amber-900" placeholder="cth: 30 Oktober 2026" />
-                  </div>
-                  <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Nama Ketua Penolong Pengarah Kanan (Penandatangan Surat Tawaran)</label>
                     <input type="text" name="namaPengarahTawaran" value={settings.namaPengarahTawaran || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold uppercase text-slate-800" placeholder="HAJI HASDAN BIN HASAN" />
                   </div>
@@ -2865,6 +2954,221 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Jawatan Baris 3</label>
                     <input type="text" name="jawatanPengarahTawaran3" value={settings.jawatanPengarahTawaran3 || ''} onChange={handleSettingsChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="b.p Pengarah Pendidikan Pahang" />
+                  </div>
+                </div>
+
+                {/* 1. Ketetapan Tarikh Akhir Penerimaan Tawaran & Polisi Pembatalan Automatik */}
+                <div className="bg-gradient-to-r from-amber-50/70 via-rose-50/40 to-amber-50/70 rounded-2xl p-5 border-2 border-amber-300/80 shadow-xs">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-xs">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-base">Tarikh Akhir Pengesahan Penerimaan Tawaran</h4>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          Calon wajib membuat pengesahan (Terima / Tolak) sebelum atau pada tarikh ini. <strong>Sekiranya gagal beri maklum balas, tawaran akan terbatal secara automatik</strong>.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold px-3 py-1 rounded-full border bg-white shadow-2xs">
+                        Tarikh Sistem: <strong className="text-emerald-700">{getTodayMalaysia()}</strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-amber-200">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                        Pilih Tarikh Akhir (Kalendar):
+                      </label>
+                      <input 
+                        type="date" 
+                        name="tarikhAkhirTerimaTawaranDate" 
+                        value={settings.tarikhAkhirTerimaTawaranDate || ''} 
+                        onChange={handleSettingsChange} 
+                        className="w-full border-2 border-amber-300 focus:border-amber-500 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 outline-none" 
+                      />
+                      <span className="text-[10.5px] text-slate-500 mt-1 block">
+                        * Memilih kalendar akan mengisi teks paparan Bahasa Melayu secara automatik
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-amber-600" />
+                        Teks Paparan Tarikh (Surat & Semakan Awam):
+                      </label>
+                      <input 
+                        type="text" 
+                        name="tarikhAkhirTerimaTawaran" 
+                        value={settings.tarikhAkhirTerimaTawaran || ''} 
+                        onChange={handleSettingsChange} 
+                        className="w-full border-2 border-slate-300 focus:border-amber-500 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 outline-none" 
+                        placeholder="cth: 28 November 2026" 
+                      />
+                      <span className="text-[10.5px] text-slate-500 mt-1 block">
+                        * Format Bahasa Melayu untuk dibaca pemohon pada surat dan portal
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Status & Ringkasan Calon Terbatal / Menunggu */}
+                  <div className="mt-4 pt-3 border-t border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 border border-rose-300">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                        Polisi Auto-Batal Aktif
+                      </span>
+                      <span className="text-xs text-slate-600">
+                        Belum Maklum Balas: <strong className="text-amber-800">{candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && !isOfferExpired(c, settings)).length}</strong> orang
+                      </span>
+                      <span className="text-xs text-slate-600">
+                        | Terbatal (Gagal Respon): <strong className="text-rose-700">{candidates.filter(c => c.statusTawaran === 'BERJAYA' && (c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings)))).length}</strong> orang
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleBatchCancelExpiredOffers}
+                      className="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
+                      title="Imbas calon melepasi tarikh akhir tanpa maklum balas dan kemas kini status kepada TERBATAL"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Imbas & Sahkan Status Terbatal
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Pautan Group WhatsApp Rasmi (Calon Menerima Tawaran) */}
+                <div className="bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-emerald-50/80 rounded-2xl p-5 border-2 border-emerald-300/80 shadow-xs">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-xs">
+                      <MessageCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-base">Pautan Group WhatsApp Rasmi (Calon Yang Menerima Tawaran)</h4>
+                      <p className="text-xs text-emerald-800 font-medium mt-0.5">
+                        Pautan ini <strong>hanya akan diberikan kepada calon yang telah membuat pengesahan MENERIMA TAWARAN</strong>. Calon yang gagal memberi respon, menolak tawaran atau terbatal tidak akan menerima pautan ini.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-emerald-200 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        URL / Link Group WhatsApp Rasmi Tingkatan 1:
+                      </label>
+                      <input 
+                        type="url" 
+                        name="linkGroupWhatsapp" 
+                        value={settings.linkGroupWhatsapp || ''} 
+                        onChange={handleSettingsChange} 
+                        className="w-full border-2 border-emerald-200 focus:border-emerald-500 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 outline-none" 
+                        placeholder="https://chat.whatsapp.com/XXXXX..." 
+                      />
+                    </div>
+
+                    <div className="flex items-end gap-2 shrink-0 pt-2 sm:pt-5">
+                      {settings.linkGroupWhatsapp ? (
+                        <a
+                          href={settings.linkGroupWhatsapp}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          Uji Pautan WhatsApp
+                          <ExternalLink className="w-3 h-3 opacity-80" />
+                        </a>
+                      ) : (
+                        <span className="text-xs text-amber-700 font-bold bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 whitespace-nowrap">
+                          Pautan Belum Ditetapkan
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Ketetapan Tarikh Semakan Semula Keputusan (Calon Dalam Proses Penilaian) */}
+                <div className="bg-gradient-to-r from-amber-50/80 via-orange-50/50 to-amber-50/80 rounded-2xl p-5 border-2 border-amber-300/80 shadow-xs">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-xs">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-base">Tarikh Calon Dalam Proses Penilaian Untuk Semak Keputusan Sekali Lagi</h4>
+                        <p className="text-xs text-amber-900 font-medium mt-0.5">
+                          Ketetapan tarikh untuk calon berstatus <strong>"Dalam Proses Penilaian"</strong> melayari semula sistem bagi menyemak keputusan tawaran seterusnya.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
+                      <Users className="w-3.5 h-3.5 text-amber-700" />
+                      {candidates.filter(c => c.statusTawaran === 'DALAM_PERTIMBANGAN' || (!c.statusTawaran && c.statusTemuduga === 'LAYAK')).length} Calon Dalam Proses Penilaian
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-xl border border-amber-200">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                        Pilih Tarikh Semakan Semula (Kalendar):
+                      </label>
+                      <input 
+                        type="date" 
+                        name="tarikhSemakPertimbanganDate" 
+                        value={settings.tarikhSemakPertimbanganDate || ''} 
+                        onChange={handleSettingsChange} 
+                        className="w-full border-2 border-amber-300 focus:border-amber-500 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 outline-none" 
+                      />
+                      <span className="text-[10.5px] text-slate-500 mt-1 block">
+                        * Memilih kalendar akan mengemaskini teks paparan Bahasa Melayu secara automatik
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-amber-600" />
+                        Teks Paparan Tarikh (Dalam Portal Semakan):
+                      </label>
+                      <input 
+                        type="text" 
+                        name="tarikhSemakPertimbangan" 
+                        value={settings.tarikhSemakPertimbangan || ''} 
+                        onChange={handleSettingsChange} 
+                        className="w-full border-2 border-slate-300 focus:border-amber-500 rounded-lg px-3 py-2 text-sm font-bold text-slate-800 outline-none" 
+                        placeholder="cth: 30 Oktober 2026" 
+                      />
+                      <span className="text-[10.5px] text-slate-500 mt-1 block">
+                        * Format tarikh Bahasa Melayu yang dipaparkan kepada pemohon
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Pratonton Paparan Calon */}
+                  <div className="mt-4 pt-3 border-t border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-950">
+                    <div className="flex items-start gap-2">
+                      <span className="font-extrabold shrink-0 bg-amber-200/90 px-2 py-0.5 rounded text-[11px] text-amber-950">Pratonton Mesej Calon:</span>
+                      <span className="italic text-slate-700">
+                        "Sila layari semula sistem ini dan semak status tawaran anda pada tarikh <strong>{settings.tarikhSemakPertimbangan || '30 Oktober 2026'}</strong> bagi mengetahui sebarang pengemaskinian status tawaran rasmi anda."
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSaveTawaranSettings}
+                      disabled={isSavingSettings}
+                      className="bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 text-xs shrink-0 self-end sm:self-center cursor-pointer"
+                      title="Simpan tarikh semakan semula ini ke pangkalan data"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      {isSavingSettings ? 'Menyimpan...' : 'Simpan Tarikh Ini'}
+                    </button>
                   </div>
                 </div>
 
@@ -3431,28 +3735,38 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
            </div>
            <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Analisa Penerimaan Tawaran</h3>
          </div>
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center">
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-center">
               <div className="text-slate-500 font-bold mb-2 uppercase tracking-wide text-xs">Jumlah Ditawarkan</div>
-              <div className="text-4xl font-extrabold text-blue-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA').length}</div>
+              <div className="text-3xl font-extrabold text-blue-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA').length}</div>
             </div>
-            <div className="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm text-center">
+            <div className="bg-white rounded-2xl p-5 border border-emerald-200 shadow-sm text-center">
               <div className="text-emerald-600 font-bold mb-2 uppercase tracking-wide text-xs">Tawaran Diterima</div>
-              <div className="text-4xl font-extrabold text-emerald-600">{candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length}</div>
-              <div className="text-xs text-slate-500 mt-2 font-medium">
+              <div className="text-3xl font-extrabold text-emerald-600">{candidates.filter(c => c.maklumBalasTawaran === 'TERIMA').length}</div>
+              <div className="text-[11px] text-slate-500 mt-1.5 font-medium">
                 (L: {candidates.filter(c => c.maklumBalasTawaran === 'TERIMA' && c.jantina?.toUpperCase() === 'LELAKI').length} / P: {candidates.filter(c => c.maklumBalasTawaran === 'TERIMA' && c.jantina?.toUpperCase() === 'PEREMPUAN').length})
               </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 border border-red-200 shadow-sm text-center">
-              <div className="text-red-600 font-bold mb-2 uppercase tracking-wide text-xs">Tawaran Ditolak</div>
-              <div className="text-4xl font-extrabold text-red-600">{candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length}</div>
-              <div className="text-xs text-slate-500 mt-2 font-medium">
+            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-center">
+              <div className="text-slate-600 font-bold mb-2 uppercase tracking-wide text-xs">Tawaran Ditolak</div>
+              <div className="text-3xl font-extrabold text-slate-700">{candidates.filter(c => c.maklumBalasTawaran === 'TOLAK').length}</div>
+              <div className="text-[11px] text-slate-500 mt-1.5 font-medium">
                 (L: {candidates.filter(c => c.maklumBalasTawaran === 'TOLAK' && c.jantina?.toUpperCase() === 'LELAKI').length} / P: {candidates.filter(c => c.maklumBalasTawaran === 'TOLAK' && c.jantina?.toUpperCase() === 'PEREMPUAN').length})
               </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 border border-amber-200 shadow-sm text-center">
-              <div className="text-amber-600 font-bold mb-2 uppercase tracking-wide text-xs">Belum Maklum Balas</div>
-              <div className="text-4xl font-extrabold text-amber-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran).length}</div>
+            <div className="bg-white rounded-2xl p-5 border border-rose-200 bg-rose-50/20 shadow-sm text-center">
+              <div className="text-rose-600 font-bold mb-2 uppercase tracking-wide text-xs">Terbatal (Gagal Respon)</div>
+              <div className="text-3xl font-extrabold text-rose-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA' && (c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings)))).length}</div>
+              <div className="text-[11px] text-rose-700/80 mt-1.5 font-semibold">
+                (L: {candidates.filter(c => c.statusTawaran === 'BERJAYA' && (c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings))) && c.jantina?.toUpperCase() === 'LELAKI').length} / P: {candidates.filter(c => c.statusTawaran === 'BERJAYA' && (c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings))) && c.jantina?.toUpperCase() === 'PEREMPUAN').length})
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-5 border border-amber-200 bg-amber-50/20 shadow-sm text-center">
+              <div className="text-amber-600 font-bold mb-2 uppercase tracking-wide text-xs">Menunggu Maklum Balas</div>
+              <div className="text-3xl font-extrabold text-amber-600">{candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && !isOfferExpired(c, settings)).length}</div>
+              <div className="text-[11px] text-amber-700/80 mt-1.5 font-semibold">
+                (L: {candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && !isOfferExpired(c, settings) && c.jantina?.toUpperCase() === 'LELAKI').length} / P: {candidates.filter(c => c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && !isOfferExpired(c, settings) && c.jantina?.toUpperCase() === 'PEREMPUAN').length})
+              </div>
             </div>
          </div>
        </div>

@@ -27,7 +27,10 @@ export interface ApplicationSettings {
   tarikhTemuduga?: string;
   tarikhLaporDiri?: string;
   tarikhAkhirTerimaTawaran?: string;
+  tarikhAkhirTerimaTawaranDate?: string;
+  linkGroupWhatsapp?: string;
   tarikhSemakPertimbangan?: string;
+  tarikhSemakPertimbanganDate?: string;
   tarikhSuratPanggilan?: string;
   hariTemuduga?: string;
   masaTemuduga?: string;
@@ -157,7 +160,7 @@ export interface Candidate {
     catatan?: string;
   };
   statusTawaran: 'BERJAYA' | 'GAGAL' | 'DALAM_PERTIMBANGAN';
-  maklumBalasTawaran?: 'TERIMA' | 'TOLAK';
+  maklumBalasTawaran?: 'TERIMA' | 'TOLAK' | 'TERBATAL';
 }
 
 export interface Infographic {

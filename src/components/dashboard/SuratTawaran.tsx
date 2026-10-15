@@ -149,7 +149,7 @@ export default function SuratTawaran({ candidate }: { candidate: Candidate }) {
             <tr>
               <td className="w-6 align-top pr-1 text-[12px] font-normal leading-snug">2.</td>
               <td className="align-top leading-snug text-[12px]">
-                Tawaran ini adalah <strong>MUKTAMAD</strong> dan <strong>TERBATAL</strong> sekiranya tidak melapor diri pada tarikh dan masa yang telah ditetapkan di atas melainkan pihak tuan dapat menghubungi pihak sekolah untuk memaklumkan kegagalan hadir pada tarikh tersebut. Pertukaran ke SABK yang lain <strong>TIDAK DIBENARKAN</strong>.
+                Tawaran ini adalah <strong>MUKTAMAD</strong> dan <strong>TERBATAL</strong> sekiranya tidak membuat pengesahan penerimaan sebelum atau pada <strong>{settings.tarikhAkhirTerimaTawaran || '28 November 2026'}</strong> atau tidak melapor diri pada tarikh dan masa yang telah ditetapkan di atas melainkan pihak tuan dapat menghubungi pihak sekolah untuk memaklumkan kegagalan hadir pada tarikh tersebut. Pertukaran ke SABK yang lain <strong>TIDAK DIBENARKAN</strong>.
               </td>
             </tr>
           </tbody>

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Candidate } from '../../types';
 import { useAppContext } from '../../store';
 import { DEFAULT_TANDATANGAN_PENGETUA } from '../../lib/imageUtils';
-import { Printer, X, Download, FileText, CheckCircle2 } from 'lucide-react';
+import { Printer, X, Download, FileText, CheckCircle2, ExternalLink } from 'lucide-react';
 
 interface Props {
   candidate: Candidate;
@@ -54,6 +54,19 @@ export default function BorangPendaftaranPDF({ candidate, onClose }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
+          {settings.borangTingkatan1Link && (
+            <a
+              href={settings.borangTingkatan1Link.startsWith('http') ? settings.borangTingkatan1Link : `https://${settings.borangTingkatan1Link}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md transition-all hover:scale-105"
+              title="Buka pautan fail borang pendaftaran asal"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Buka Pautan PDF Luar</span>
+            </a>
+          )}
+
           <button
             onClick={handlePrint}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-900/30 transition-all hover:scale-105 active:scale-95"

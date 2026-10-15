@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppContext } from '../../store';
-import { Search, Printer, Calendar, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Search, Printer, Calendar, XCircle, CheckCircle2, Loader2, Clock } from 'lucide-react';
 import { Candidate } from '../../types';
 import SuratPanggilan from './SuratPanggilan';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
@@ -195,13 +195,43 @@ export default function SemakTemuduga() {
                </div>
             </div>
           ) : (
-            <div className="bg-white rounded-[2rem] shadow-xl shadow-emerald-100/50 border border-emerald-100 p-12 text-center relative overflow-hidden no-print">
-               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
-               <h2 className="text-2xl font-extrabold text-slate-900 mb-4 tracking-tight">Dalam Proses Penilaian</h2>
-               <p className="text-slate-600 leading-relaxed max-w-lg mx-auto font-medium text-lg">
-                 Status kelayakan anda masih dalam proses penilaian oleh pihak pengurusan. Sila semak semula nanti.
+            <div className="bg-white rounded-[2rem] shadow-xl shadow-amber-100/50 border-2 border-amber-200/80 p-8 md:p-12 text-center relative overflow-hidden no-print">
+               <div className="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600"></div>
+               
+               <div className="inline-flex items-center justify-center p-4 bg-amber-100 rounded-full mb-6">
+                 <Clock className="w-12 h-12 text-amber-600 animate-pulse" />
+               </div>
+
+               <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-extrabold uppercase tracking-wider mb-4">
+                 Status: Dalam Proses Penilaian
+               </div>
+
+               <h2 className="text-3xl font-extrabold text-slate-900 mb-4 tracking-tight">
+                 Permohonan Dalam Proses Penilaian
+               </h2>
+               
+               <p className="text-slate-700 leading-relaxed max-w-xl mx-auto mb-6 text-lg font-medium">
+                 Status kelayakan temuduga dan permohonan kemasukan ke Tingkatan 1 SMA Kota Gelanggi 3 anda kini masih berada dalam status <strong className="text-amber-700">"Dalam Proses Penilaian"</strong> oleh pihak jawatankuasa.
                </p>
-               <div className="mt-10 pt-8 border-t border-slate-100 text-sm text-slate-400 font-medium">
+
+               <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300/80 rounded-2xl p-6 md:p-8 max-w-xl mx-auto mb-6 shadow-sm">
+                 <div className="flex items-center justify-center gap-2 text-amber-800 font-extrabold text-sm uppercase tracking-wide mb-2">
+                   <Calendar className="w-5 h-5 text-amber-600" />
+                   Tarikh Semakan Semula Keputusan
+                 </div>
+                 <div className="text-2xl md:text-3xl font-black text-amber-900 tracking-tight my-2">
+                   {settings.tarikhSemakPertimbangan || '30 OKTOBER 2026'}
+                 </div>
+                 <p className="text-slate-600 text-sm md:text-base font-medium mt-3 leading-relaxed">
+                   Sila layari semula sistem ini dan <strong>semak keputusan anda pada tarikh {settings.tarikhSemakPertimbangan || '30 Oktober 2026'}</strong> bagi mengetahui sebarang pengemaskinian status rasmi anda.
+                 </p>
+               </div>
+
+               <p className="text-slate-500 text-sm max-w-lg mx-auto">
+                 Pihak pengurusan sedang menyelaraskan senarai kelayakan calon. Sila simpan maklumat permohonan anda dan semak semula pada tarikh yang ditetapkan di atas.
+               </p>
+
+               <div className="mt-8 pt-6 border-t border-slate-100 text-sm text-slate-400 font-medium">
                  {result.name} ({result.ic})
                </div>
             </div>
