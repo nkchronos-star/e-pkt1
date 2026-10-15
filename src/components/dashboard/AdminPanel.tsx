@@ -365,6 +365,7 @@ function TahfizView() {
   const [markah, setMarkah] = useState<Record<string, number>>({});
   const [catatan, setCatatan] = useState('');
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
+  const lastLoadedIcRef = useRef<string>('');
 
   const items = settings.tahfizItems || [];
   
@@ -422,7 +423,7 @@ function TahfizView() {
     // Kunci calon untuk penilai semasa agar orang lain tidak nilai serentak
     if (ic) {
       const nextC = candidates.find(c => c.ic === ic);
-      if (nextC && !isCandidateEvaluated(nextC)) {
+      if (nextC && !isCandidateEvaluated(nextC) && nextC.sedangDinilaiTahfiz?.dinilaiOleh !== currentUser?.name) {
         updateCandidate(ic, {
           sedangDinilaiTahfiz: {
             dinilaiOleh: currentUser?.name || 'Penilai',
@@ -445,15 +446,51 @@ function TahfizView() {
     };
   }, [selectedCandidate]);
 
+  // Hanya muatkan markah dan ulasan apabila penilai menukar calon yang dipilih (selectedCandidate)
+  // JANGAN sesekali reset semula semasa calon yang sama sedang ditaip walaupun data latar belakang Firestore dikemas kini serentak
   useEffect(() => {
-    if (currentC && currentC.markahTahfiz) {
-      setMarkah(currentC.markahTahfiz);
-      setCatatan(currentC.markahTahfiz?.catatan || '');
-    } else {
+    if (selectedCandidate && selectedCandidate !== lastLoadedIcRef.current) {
+      lastLoadedIcRef.current = selectedCandidate;
+      const targetC = candidates.find(c => c.ic === selectedCandidate);
+      if (targetC && targetC.markahTahfiz) {
+        setMarkah(targetC.markahTahfiz);
+        setCatatan(targetC.markahTahfiz?.catatan || '');
+      } else {
+        // Semak jika ada draf tempatan dalam sessionStorage
+        let restored = false;
+        try {
+          const savedDraft = sessionStorage.getItem(`draft_tahfiz_${selectedCandidate}`);
+          if (savedDraft) {
+            const parsed = JSON.parse(savedDraft);
+            setMarkah(parsed.markah || {});
+            setCatatan(parsed.catatan || '');
+            restored = true;
+          }
+        } catch {
+          // ignore
+        }
+        if (!restored) {
+          setMarkah({});
+          setCatatan('');
+        }
+      }
+    } else if (!selectedCandidate) {
+      lastLoadedIcRef.current = '';
       setMarkah({});
       setCatatan('');
     }
-  }, [currentC]);
+  }, [selectedCandidate]);
+
+  // Simpan draf ulasan dan markah secara berterusan dalam sessionStorage agar selamat daripada sebarang gangguan
+  useEffect(() => {
+    if (selectedCandidate) {
+      try {
+        sessionStorage.setItem(`draft_tahfiz_${selectedCandidate}`, JSON.stringify({ markah, catatan }));
+      } catch {
+        // ignore
+      }
+    }
+  }, [selectedCandidate, markah, catatan]);
 
   const handleMarkahChange = (e: React.ChangeEvent<HTMLInputElement>, itemId: string, maxWeight: number, itemName: string) => {
     if (isFormDisabled) return;
@@ -495,11 +532,17 @@ function TahfizView() {
         jumlah,
         dinilaiOleh: currentUser?.name,
         tarikhDinilai: currentC.markahTahfiz?.tarikhDinilai || new Date().toISOString(),
-        catatan
+        catatan: catatan.trim()
       },
       sedangDinilaiTahfiz: null // Lepaskan kunci setelah selesai disimpan
     });
+    try {
+      sessionStorage.removeItem(`draft_tahfiz_${currentC.ic}`);
+    } catch {
+      // ignore
+    }
     alert(`Penilaian Tahfiz bagi calon ${currentC.name} berjaya disimpan!`);
+    lastLoadedIcRef.current = '';
     setSelectedCandidate('');
     setMarkah({});
     setCatatan('');
@@ -650,7 +693,12 @@ function TahfizView() {
                   </div>
                   
                   <div className="pt-2">
-                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Ulasan / Catatan Penilai</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">Ulasan / Catatan Penilai</label>
+                      <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" /> Draf ulasan kekal selamat
+                      </span>
+                    </div>
                     <textarea 
                       rows={3} 
                       disabled={isFormDisabled}
