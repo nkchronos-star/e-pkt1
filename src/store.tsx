@@ -211,8 +211,11 @@ const defaultSettings: ApplicationSettings = {
 
 const defaultUsers: User[] = [
   { id: 'admin1', username: 'admin', password: '@cft2001', name: 'Super Admin', role: 'SUPER_ADMIN' },
-  { id: 'tahfiz1', username: 'tahfiz1', password: '123', name: 'Ustaz/Ustazah', role: 'TAHFIZ' },
-  { id: 'akademik1', username: 'akademik1', password: '123', name: 'Cikgu Akademik', role: 'AKADEMIK' }
+  { id: 'tahfiz1', username: 'tahfiz1', password: '123', name: 'Panel Tahfiz 1', role: 'TAHFIZ' },
+  { id: 'tahfiz2', username: 'tahfiz2', password: '123', name: 'Panel Tahfiz 2', role: 'TAHFIZ' },
+  { id: 'tahfiz3', username: 'tahfiz3', password: '123', name: 'Panel Tahfiz 3', role: 'TAHFIZ' },
+  { id: 'akademik1', username: 'akademik1', password: '123', name: 'Panel Akademik 1', role: 'AKADEMIK' },
+  { id: 'akademik2', username: 'akademik2', password: '123', name: 'Panel Akademik 2', role: 'AKADEMIK' }
 ];
 
 const SETTINGS_STORAGE_KEY = 'smag3_settings_cache_v2';

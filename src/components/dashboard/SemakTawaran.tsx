@@ -275,40 +275,39 @@ export default function SemakTawaran() {
                            </div>
                          </div>
 
-                         {/* 3. Pautan Group WhatsApp Rasmi Calon Menerima Tawaran */}
-                         <div className="mt-6 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-200/90 rounded-2xl p-4 sm:p-5 text-left shadow-xs no-print">
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                              <div className="flex items-start gap-3.5">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                                  <MessageCircle className="w-5 h-5 text-white" />
+                         {/* 3. Pautan Group WhatsApp Rasmi Calon Menerima Tawaran (Saiz Profesional & Kemas) */}
+                         <div className="mt-5 bg-white border border-emerald-200/90 rounded-xl p-3 sm:p-4 text-left shadow-xs no-print">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                  <MessageCircle className="w-4 h-4 text-white" />
                                 </div>
-                                <div>
-                                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <span className="bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border border-emerald-200">
-                                      Langkah Seterusnya
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+                                      Group WhatsApp Rasmi Kemasukan Tingkatan 1
+                                    </h4>
+                                    <span className="bg-emerald-100 text-emerald-800 font-semibold text-[10px] px-2 py-0.5 rounded-full border border-emerald-200">
+                                      Tawaran Diterima
                                     </span>
-                                    <span className="text-slate-500 text-xs font-semibold">Tawaran Diterima</span>
                                   </div>
-                                  <h4 className="text-base font-bold text-slate-900 tracking-tight">
-                                    Sertai Group WhatsApp Rasmi Kemasukan Tingkatan 1
-                                  </h4>
-                                  <p className="text-slate-600 text-xs mt-0.5 max-w-xl leading-relaxed">
-                                    Ibu bapa / penjaga diminta menyertai group rasmi ini bagi mendapatkan taklimat pendaftaran, maklumat yuran, persediaan asrama, dan urusan lapor diri.
+                                  <p className="text-slate-500 text-[11px] sm:text-xs mt-0.5 leading-tight">
+                                    Sertai untuk taklimat pendaftaran, maklumat yuran dan urusan asrama.
                                   </p>
                                 </div>
                               </div>
 
-                              <div className="w-full md:w-auto shrink-0 flex items-center gap-2 pt-1 md:pt-0">
+                              <div className="w-full sm:w-auto shrink-0 flex items-center gap-2 pt-1 sm:pt-0">
                                 {settings.linkGroupWhatsapp ? (
                                   <>
                                     <a 
                                       href={settings.linkGroupWhatsapp}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all text-xs tracking-wide hover:shadow active:scale-95 whitespace-nowrap"
+                                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg shadow-xs transition-all text-xs tracking-wide hover:shadow active:scale-95 whitespace-nowrap"
                                     >
-                                      <MessageCircle className="w-4 h-4" />
-                                      <span>Sertai Group WhatsApp</span>
+                                      <MessageCircle className="w-3.5 h-3.5" />
+                                      <span>Sertai WhatsApp</span>
                                       <ExternalLink className="w-3 h-3 opacity-80" />
                                     </a>
                                     <button
@@ -320,7 +319,7 @@ export default function SemakTawaran() {
                                           setTimeout(() => setCopiedWa(false), 2500);
                                         }
                                       }}
-                                      className="inline-flex items-center justify-center gap-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-3 py-2.5 rounded-xl border border-slate-200 shadow-2xs transition-all text-xs whitespace-nowrap cursor-pointer"
+                                      className="inline-flex items-center justify-center gap-1 bg-white hover:bg-slate-50 text-slate-700 font-medium px-2.5 py-1.5 sm:py-2 rounded-lg border border-slate-200 shadow-2xs transition-all text-xs whitespace-nowrap cursor-pointer active:scale-95"
                                       title="Salin pautan group WhatsApp"
                                     >
                                       {copiedWa ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
@@ -328,8 +327,8 @@ export default function SemakTawaran() {
                                     </button>
                                   </>
                                 ) : (
-                                  <span className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3.5 py-2 rounded-xl font-medium">
-                                    Pautan WhatsApp rasmi akan diaktifkan oleh pihak sekolah tidak lama lagi.
+                                  <span className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg font-medium">
+                                    Pautan WhatsApp akan diaktifkan segera.
                                   </span>
                                 )}
                               </div>

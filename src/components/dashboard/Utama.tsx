@@ -1,5 +1,6 @@
 import { CheckCircle, ExternalLink } from 'lucide-react';
 import { useAppContext } from '../../store';
+import PWAInstallPrompt from '../pwa/PWAInstallPrompt';
 
 interface UtamaProps {
   onNavigate: (view: any) => void;
@@ -9,6 +10,7 @@ export default function Utama({ onNavigate }: UtamaProps) {
   const { settings } = useAppContext();
   return (
     <div className="animate-in fade-in duration-500 space-y-8">
+
       {/* Top Section: Pengenalan */}
       <div className="bg-white rounded-xl shadow-sm border border-emerald-100 border-t-[6px] border-t-emerald-700 p-6 md:p-8">
         <h2 className="text-2xl font-bold text-slate-800 mb-6">Pengenalan</h2>
@@ -68,6 +70,9 @@ export default function Utama({ onNavigate }: UtamaProps) {
           </div>
         </div>
       </div>
+
+      {/* Paparan Aplikasi Mesra Peranti (Telefon, Tablet, Laptop - Untuk Calon & Penilai) */}
+      <PWAInstallPrompt variant="card" />
 
       {/* Subjects Section */}
       <h2 className="text-2xl font-bold text-slate-800 mt-12 mb-6">Mata Pelajaran Ditawarkan</h2>

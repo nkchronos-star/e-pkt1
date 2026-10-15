@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppContext, isDateActive, getTodayMalaysia, isOfferExpired, formatIsoToMalayDate, parseMalayDateToIso } from '../../store';
-import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye, BookOpen, MessageCircle, ExternalLink, Calendar, AlertTriangle, Clock } from 'lucide-react';
+import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye, BookOpen, MessageCircle, ExternalLink, Calendar, AlertTriangle, Clock, Smartphone, Plus, Minus, School, Sparkles } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
@@ -446,33 +446,43 @@ function TahfizView() {
     };
   }, [selectedCandidate]);
 
-  // Hanya muatkan markah dan ulasan apabila penilai menukar calon yang dipilih (selectedCandidate)
-  // JANGAN sesekali reset semula semasa calon yang sama sedang ditaip walaupun data latar belakang Firestore dikemas kini serentak
+  // Cadangan ulasan pantas mesra telefon untuk kemudahan penilai temuduga
+  const quickPhrases = [
+    '🌟 Bacaan fasih, lancar & bertajwid mantap',
+    '📖 Hafazan baik & makhraj huruf tepat',
+    '✨ Berkeyakinan tinggi & berpotensi cemerlang',
+    '⚠️ Perlu bimbingan makhraj & hukum tajwid',
+    '👍 Sahsiah diri & adab temuduga terpuji',
+    '🎙️ Mempunyai suara jelas & alunan baik'
+  ];
+
+  // Muatkan markah dan draf ulasan calon secara selamat
   useEffect(() => {
     if (selectedCandidate && selectedCandidate !== lastLoadedIcRef.current) {
       lastLoadedIcRef.current = selectedCandidate;
       const targetC = candidates.find(c => c.ic === selectedCandidate);
+      
+      // Semak jika ada draf tempatan dalam localStorage / sessionStorage
+      let localDraft: { markah?: Record<string, number>; catatan?: string } | null = null;
+      try {
+        const raw = localStorage.getItem(`eqabul_draft_tahfiz_${selectedCandidate}`) || 
+                    sessionStorage.getItem(`draft_tahfiz_${selectedCandidate}`);
+        if (raw) {
+          localDraft = JSON.parse(raw);
+        }
+      } catch {
+        // ignore
+      }
+
       if (targetC && targetC.markahTahfiz) {
-        setMarkah(targetC.markahTahfiz);
-        setCatatan(targetC.markahTahfiz?.catatan || '');
+        setMarkah(localDraft?.markah || targetC.markahTahfiz);
+        setCatatan(localDraft?.catatan !== undefined ? localDraft.catatan : (targetC.markahTahfiz?.catatan || ''));
+      } else if (localDraft) {
+        setMarkah(localDraft.markah || {});
+        setCatatan(localDraft.catatan || '');
       } else {
-        // Semak jika ada draf tempatan dalam sessionStorage
-        let restored = false;
-        try {
-          const savedDraft = sessionStorage.getItem(`draft_tahfiz_${selectedCandidate}`);
-          if (savedDraft) {
-            const parsed = JSON.parse(savedDraft);
-            setMarkah(parsed.markah || {});
-            setCatatan(parsed.catatan || '');
-            restored = true;
-          }
-        } catch {
-          // ignore
-        }
-        if (!restored) {
-          setMarkah({});
-          setCatatan('');
-        }
+        setMarkah({});
+        setCatatan('');
       }
     } else if (!selectedCandidate) {
       lastLoadedIcRef.current = '';
@@ -481,16 +491,64 @@ function TahfizView() {
     }
   }, [selectedCandidate]);
 
-  // Simpan draf ulasan dan markah secara berterusan dalam sessionStorage agar selamat daripada sebarang gangguan
+  // Simpan draf ulasan dan markah secara berterusan dalam localStorage & sessionStorage agar selamat dari sebarang gangguan telefon
   useEffect(() => {
     if (selectedCandidate) {
       try {
-        sessionStorage.setItem(`draft_tahfiz_${selectedCandidate}`, JSON.stringify({ markah, catatan }));
+        const payload = JSON.stringify({ markah, catatan });
+        localStorage.setItem(`eqabul_draft_tahfiz_${selectedCandidate}`, payload);
+        sessionStorage.setItem(`draft_tahfiz_${selectedCandidate}`, payload);
       } catch {
         // ignore
       }
     }
   }, [selectedCandidate, markah, catatan]);
+
+  const handleAppendPhrase = (phrase: string) => {
+    if (isFormDisabled) return;
+    setCatatan(prev => {
+      const cleanPrev = prev.trim();
+      const updated = cleanPrev ? `${cleanPrev}. ${phrase}` : phrase;
+      if (selectedCandidate) {
+        try {
+          const payload = JSON.stringify({ markah, catatan: updated });
+          localStorage.setItem(`eqabul_draft_tahfiz_${selectedCandidate}`, payload);
+          sessionStorage.setItem(`draft_tahfiz_${selectedCandidate}`, payload);
+        } catch {}
+      }
+      return updated;
+    });
+  };
+
+  const adjustMarkah = (itemId: string, delta: number, maxWeight: number) => {
+    if (isFormDisabled) return;
+    const currentVal = markah[itemId] ?? 0;
+    let nextVal = currentVal + delta;
+    if (nextVal > maxWeight) nextVal = maxWeight;
+    if (nextVal < 0) nextVal = 0;
+    const updated = { ...markah, [itemId]: nextVal };
+    setMarkah(updated);
+    if (selectedCandidate) {
+      try {
+        const payload = JSON.stringify({ markah: updated, catatan });
+        localStorage.setItem(`eqabul_draft_tahfiz_${selectedCandidate}`, payload);
+        sessionStorage.setItem(`draft_tahfiz_${selectedCandidate}`, payload);
+      } catch {}
+    }
+  };
+
+  const setPresetMarkah = (itemId: string, val: number) => {
+    if (isFormDisabled) return;
+    const updated = { ...markah, [itemId]: val };
+    setMarkah(updated);
+    if (selectedCandidate) {
+      try {
+        const payload = JSON.stringify({ markah: updated, catatan });
+        localStorage.setItem(`eqabul_draft_tahfiz_${selectedCandidate}`, payload);
+        sessionStorage.setItem(`draft_tahfiz_${selectedCandidate}`, payload);
+      } catch {}
+    }
+  };
 
   const handleMarkahChange = (e: React.ChangeEvent<HTMLInputElement>, itemId: string, maxWeight: number, itemName: string) => {
     if (isFormDisabled) return;
@@ -537,6 +595,7 @@ function TahfizView() {
       sedangDinilaiTahfiz: null // Lepaskan kunci setelah selesai disimpan
     });
     try {
+      localStorage.removeItem(`eqabul_draft_tahfiz_${currentC.ic}`);
       sessionStorage.removeItem(`draft_tahfiz_${currentC.ic}`);
     } catch {
       // ignore
@@ -561,26 +620,28 @@ function TahfizView() {
              <FileSignature className="w-7 h-7 text-emerald-700" />
            </div>
            <div>
-             <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Penilaian Temuduga (Tahfiz)</h3>
-             <p className="text-sm font-medium text-slate-500">Pilih calon dan masukkan markah serta ulasan</p>
+             <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Penilaian Temuduga (Tahfiz)</h3>
+             <p className="text-xs sm:text-sm font-medium text-slate-500">Pilih calon dan masukkan markah serta ulasan secara pantas</p>
            </div>
          </div>
-         <span className="font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">{new Date().toLocaleDateString('ms-MY')}</span>
+         <span className="font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 self-start sm:self-auto text-xs sm:text-sm">
+           {new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' })}
+         </span>
        </div>
 
-       <div className="flex gap-4 mb-8 border-b border-slate-200 pb-2 overflow-x-auto">
-         <button onClick={() => setActiveTab('NILAI')} className={`px-6 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap ${activeTab === 'NILAI' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>1. Menilai Calon</button>
-         <button onClick={() => setActiveTab('SENARAI')} className={`px-6 py-3 rounded-t-xl font-bold transition-all whitespace-nowrap ${activeTab === 'SENARAI' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>2. Senarai Calon Dinilai</button>
+       <div className="flex gap-2 sm:gap-4 mb-6 border-b border-slate-200 pb-2 overflow-x-auto">
+         <button onClick={() => setActiveTab('NILAI')} className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'NILAI' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>1. Menilai Calon</button>
+         <button onClick={() => setActiveTab('SENARAI')} className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'SENARAI' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>2. Senarai Calon Dinilai</button>
        </div>
 
        {activeTab === 'NILAI' && (
-         <div className="max-w-4xl animate-in fade-in">
+         <div className="max-w-4xl animate-in fade-in space-y-6">
            {/* Searchable Dropdown Pemilihan Calon */}
-           <div className="mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200/60 shadow-xs">
-             <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+           <div className="bg-white p-4 sm:p-6 rounded-2xl border-2 border-emerald-100 shadow-sm">
+             <label className="block text-xs sm:text-sm font-black text-slate-700 mb-2 uppercase tracking-wide flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                <span>Pilih Calon Penilaian</span>
-               <span className="text-xs font-semibold text-slate-400 normal-case">
-                 Taip nama atau No. KP untuk carian pantas
+               <span className="text-[11px] font-semibold text-emerald-600 normal-case">
+                 Taip nama atau No. Kad Pengenalan
                </span>
              </label>
 
@@ -593,7 +654,7 @@ function TahfizView() {
              />
 
              {pendingCandidates.length === 0 && (
-               <div className="mt-3 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-3 rounded-xl flex items-center gap-2 text-sm font-bold">
+               <div className="mt-3 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-3 rounded-xl flex items-center gap-2 text-xs sm:text-sm font-bold">
                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                  <span>Semua calon yang layak telah selesai dinilai!</span>
                </div>
@@ -601,15 +662,15 @@ function TahfizView() {
            </div>
 
            {currentC && (
-             <div className="bg-emerald-50/50 rounded-[2rem] p-8 border-2 border-emerald-100 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-emerald-100/30">
+             <div className="bg-emerald-50/60 rounded-3xl p-4 sm:p-8 border-2 border-emerald-200/80 animate-in fade-in slide-in-from-top-4 shadow-xl shadow-emerald-100/40">
                
                {/* Amaran Jika Calon Sudah Dinilai (Tak Boleh Isi Kali Kedua) */}
                {isBlockedAlreadyEvaluated && (
-                 <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 mb-6 flex items-start gap-3 shadow-xs">
+                 <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 sm:p-5 mb-5 flex items-start gap-3 shadow-xs">
                    <AlertCircle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
                    <div>
-                     <h4 className="font-extrabold text-amber-900 text-base">Calon Ini Telah Selesai Dinilai</h4>
-                     <p className="text-sm font-medium text-amber-800 mt-1 leading-relaxed">
+                     <h4 className="font-extrabold text-amber-900 text-sm sm:text-base">Calon Ini Telah Selesai Dinilai</h4>
+                     <p className="text-xs sm:text-sm font-medium text-amber-800 mt-1 leading-relaxed">
                        Penilaian telah direkodkan oleh <strong>{currentC.markahTahfiz?.dinilaiOleh || 'Penilai'}</strong> pada {new Date(currentC.markahTahfiz?.tarikhDinilai || '').toLocaleDateString('ms-MY')} dengan jumlah markah <strong>{currentC.markahTahfiz?.jumlah}</strong>.
                        <br/>
                        Calon tidak dibenarkan dinilai kali kedua bagi mengelakkan pertindihan data.
@@ -620,116 +681,332 @@ function TahfizView() {
 
                {/* Amaran Jika Calon Sedang Dinilai oleh Guru Lain Secara Serentak */}
                {isBeingEvaluatedByOther && (
-                 <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-5 mb-6 flex items-start gap-3 shadow-xs">
+                 <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 sm:p-5 mb-5 flex items-start gap-3 shadow-xs">
                    <Lock className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
                    <div>
-                     <h4 className="font-extrabold text-red-900 text-base">Sedang Dinilai oleh Penilai Lain</h4>
-                     <p className="text-sm font-medium text-red-800 mt-1 leading-relaxed">
+                     <h4 className="font-extrabold text-red-900 text-sm sm:text-base">Sedang Dinilai oleh Penilai Lain</h4>
+                     <p className="text-xs sm:text-sm font-medium text-red-800 mt-1 leading-relaxed">
                        Calon ini sedang dinilai oleh <strong>{currentC.sedangDinilaiTahfiz?.dinilaiOleh}</strong>. Anda tidak dibenarkan mengisi markah untuk calon yang sama secara serentak bagi mengelakkan konflik markah.
                      </p>
                    </div>
                  </div>
                )}
 
-               <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/50 flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
-                 <div 
-                   onClick={() => setDetailCandidate(currentC)}
-                   className="w-24 h-32 rounded-xl border-2 border-slate-200 overflow-hidden shadow-sm flex items-center justify-center bg-slate-100 cursor-pointer hover:ring-2 hover:ring-emerald-500 hover:scale-105 transition-all group relative shrink-0"
-                   title="Klik untuk lihat maklumat calon"
-                 >
-                   {currentC.gambarUrl ? (
-                     <img src={currentC.gambarUrl} alt={currentC.name} className="w-full h-full object-cover group-hover:brightness-95 transition" />
-                   ) : (
-                     <div className="flex flex-col items-center justify-center text-slate-400 p-2">
-                       <Users className="w-8 h-8 mb-1" />
-                       <span className="text-[10px] font-bold uppercase">Tiada Gambar</span>
+               {/* KAD MAKLUMAT CALON MESRA TELEFON DENGAN BUTANG LIHAT PROFIL LENGKAP */}
+               <div className="mb-6 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-emerald-100 flex flex-col gap-4">
+                 <div className="flex items-start gap-4">
+                   {/* Foto Calon - Tap untuk Buka Maklumat Penuh */}
+                   <div 
+                     onClick={() => setDetailCandidate(currentC)}
+                     className="w-20 h-26 sm:w-24 sm:h-32 rounded-xl border-2 border-slate-200 overflow-hidden shadow-sm flex items-center justify-center bg-slate-100 cursor-pointer hover:ring-2 hover:ring-emerald-500 hover:scale-105 active:scale-95 transition-all group relative shrink-0"
+                     title="Ketik untuk lihat profil lengkap calon"
+                   >
+                     {currentC.gambarUrl ? (
+                       <img src={currentC.gambarUrl} alt={currentC.name} className="w-full h-full object-cover group-hover:brightness-95 transition" />
+                     ) : (
+                       <div className="flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                         <Users className="w-7 h-7 mb-1" />
+                         <span className="text-[9px] font-bold uppercase">Tiada Gambar</span>
+                       </div>
+                     )}
+                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white p-1 text-center">
+                       <Eye className="w-5 h-5 drop-shadow mb-0.5" />
+                       <span className="text-[9px] font-bold">Ketik Lihat</span>
                      </div>
-                   )}
-                   <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                     <Eye className="w-6 h-6 text-white drop-shadow" />
                    </div>
-                 </div>
-                 <div className="flex-1">
-                   <span className="text-sm font-bold text-slate-500 uppercase tracking-widest block mb-1">Maklumat Calon:</span>
-                   <span className="font-extrabold text-2xl text-slate-900 block mb-2">{currentC.name}</span>
-                   <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                     <span className="font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 inline-flex items-center gap-2">IC: {currentC.ic}</span>
-                     <span className="font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 inline-flex items-center gap-2">Jantina: {currentC.jantina || '-'}</span>
-                     {isAlreadyEvaluated && (
-                       <span className="font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 inline-flex items-center gap-1.5">
-                         <Check className="w-4 h-4 text-emerald-700" />
-                         Markah Semasa: {currentC.markahTahfiz?.jumlah}
+
+                   {/* Maklumat Utama Calon */}
+                   <div className="flex-1 min-w-0">
+                     <div className="flex items-center gap-2 flex-wrap mb-1">
+                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                         Calon Temuduga
                        </span>
+                       {currentC.jantina && (
+                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${currentC.jantina === 'Lelaki' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-pink-50 text-pink-700 border border-pink-200'}`}>
+                           {currentC.jantina}
+                         </span>
+                       )}
+                     </div>
+
+                     <h4 className="font-black text-lg sm:text-2xl text-slate-900 leading-tight truncate" title={currentC.name}>
+                       {currentC.name}
+                     </h4>
+
+                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1.5 text-xs">
+                       <span className="font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                         IC: {currentC.ic}
+                       </span>
+                       {currentC.namaSekolahRendah && (
+                         <span className="font-semibold text-slate-600 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1 truncate max-w-[200px]" title={currentC.namaSekolahRendah}>
+                           <School className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                           <span className="truncate">{currentC.namaSekolahRendah}</span>
+                         </span>
+                       )}
+                     </div>
+
+                     {/* Ringkasan Pantas UPKK jika ada */}
+                     {currentC.upkk && (
+                       <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[11px] font-semibold text-slate-600">
+                         <span className="text-slate-400 font-bold">UPKK:</span>
+                         <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold border border-amber-200">
+                           Al-Quran: {currentC.upkk.alquran || '-'}
+                         </span>
+                         {currentC.upkk.bahasaarab && (
+                           <span className="bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded-md font-bold border border-emerald-200">
+                             B. Arab: {currentC.upkk.bahasaarab}
+                           </span>
+                         )}
+                         {currentC.upkk.jawikhat && (
+                           <span className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded-md font-bold border border-blue-200">
+                             Jawi: {currentC.upkk.jawikhat}
+                           </span>
+                         )}
+                       </div>
                      )}
                    </div>
                  </div>
+
+                 {/* Butang Pintas Membuka Modal Maklumat Penuh Calon (Profil, UPKK, Dokumen) */}
+                 <button
+                   type="button"
+                   onClick={() => setDetailCandidate(currentC)}
+                   className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md hover:brightness-105 active:scale-[0.98] transition"
+                 >
+                   <BookOpen className="w-4 h-4" />
+                   <span>Lihat Maklumat Lengkap Calon (Profil, UPKK, PBD & Dokumen Sijil)</span>
+                 </button>
                </div>
                
                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {items.map((item) => (
-                        <div key={item.id}>
-                          <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">{item.name} ({item.weight} markah)</label>
-                          <input 
-                            type="number" 
-                            max={item.weight} 
-                            min="0" 
-                            required 
-                            disabled={isFormDisabled}
-                            value={markah[item.id] !== undefined ? markah[item.id] : ''} 
-                            onChange={e => handleMarkahChange(e, item.id, item.weight, item.name)} 
-                            className={`w-full p-4 rounded-xl border-2 font-bold text-lg text-slate-800 transition-all ${
-                              isFormDisabled 
-                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                                : 'bg-white border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20'
-                            }`} 
-                          />
-                        </div>
-                    ))}
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">Jumlah Keseluruhan</label>
-                      <input type="text" readOnly value={items.reduce((acc, item) => acc + (markah[item.id] || 0), 0)} className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-100/80 font-extrabold text-xl text-slate-900" />
+                  {/* SENARAI KOMPONEN MARKAH DENGAN KAWALAN STEPPER MESRA SKRIN SENTUH */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+                        Borang Pemarkahan Tahfiz
+                      </span>
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-full">
+                        Skala: Jumlah / {items.reduce((acc, i) => acc + (i.weight || 0), 0)}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {items.map((item) => {
+                        const currentVal = markah[item.id] !== undefined ? markah[item.id] : 0;
+                        const pct = Math.min(100, Math.round((currentVal / (item.weight || 1)) * 100));
+                        return (
+                          <div 
+                            key={item.id} 
+                            className="bg-white p-4 rounded-2xl border-2 border-emerald-100/80 shadow-xs space-y-3"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="block text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wide">
+                                {item.name}
+                              </label>
+                              <span className="text-xs font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">
+                                Max: {item.weight}m
+                              </span>
+                            </div>
+
+                            {/* Kawalan Nombor Stepper Sentuhan Jari Mesra Telefon */}
+                            <div className="flex items-center gap-2">
+                              {/* Butang Tolak (-) */}
+                              <button
+                                type="button"
+                                disabled={isFormDisabled || currentVal <= 0}
+                                onClick={() => adjustMarkah(item.id, -1, item.weight)}
+                                className="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xl flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition active:scale-90"
+                                aria-label="Kurangkan 1 markah"
+                              >
+                                <Minus className="w-5 h-5" />
+                              </button>
+
+                              {/* Input Nombor Terus (Dengan inputMode numeric untuk telefon) */}
+                              <input 
+                                type="number" 
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                max={item.weight} 
+                                min="0" 
+                                required 
+                                disabled={isFormDisabled}
+                                value={markah[item.id] !== undefined ? markah[item.id] : ''} 
+                                onChange={e => handleMarkahChange(e, item.id, item.weight, item.name)} 
+                                className={`flex-1 min-w-0 h-12 rounded-xl border-2 text-center font-black text-2xl text-slate-900 transition-all ${
+                                  isFormDisabled 
+                                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                    : 'bg-white border-emerald-300 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20'
+                                }`} 
+                              />
+
+                              {/* Butang Tambah (+) */}
+                              <button
+                                type="button"
+                                disabled={isFormDisabled || currentVal >= item.weight}
+                                onClick={() => adjustMarkah(item.id, 1, item.weight)}
+                                className="w-12 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xl flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition active:scale-90 shadow-sm"
+                                aria-label="Tambah 1 markah"
+                              >
+                                <Plus className="w-5 h-5" />
+                              </button>
+                            </div>
+
+                            {/* Bar Visual Peratus Markah */}
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                              <div 
+                                className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full transition-all duration-300"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+
+                            {/* Butang Pratetap Cepat (Preset Chips untuk Telefon) */}
+                            <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                              <button
+                                type="button"
+                                disabled={isFormDisabled}
+                                onClick={() => setPresetMarkah(item.id, item.weight)}
+                                className="text-[10px] font-bold px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 rounded-md transition active:scale-95"
+                              >
+                                Penuh ({item.weight})
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isFormDisabled}
+                                onClick={() => setPresetMarkah(item.id, Math.round(item.weight * 0.8))}
+                                className="text-[10px] font-bold px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition active:scale-95"
+                              >
+                                80% ({Math.round(item.weight * 0.8)})
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isFormDisabled}
+                                onClick={() => setPresetMarkah(item.id, Math.round(item.weight * 0.5))}
+                                className="text-[10px] font-bold px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition active:scale-95"
+                              >
+                                50% ({Math.round(item.weight * 0.5)})
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isFormDisabled}
+                                onClick={() => setPresetMarkah(item.id, 0)}
+                                className="text-[10px] font-bold px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-md transition active:scale-95"
+                              >
+                                0
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Bar Jumlah Keseluruhan Markah */}
+                    <div className="bg-gradient-to-r from-[#043d2a] via-[#084e36] to-[#043d2a] text-white p-4 sm:p-5 rounded-2xl shadow-lg border border-emerald-400/40 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-200 block">
+                          Jumlah Markah Tahfiz
+                        </span>
+                        <span className="text-xs text-amber-300 font-semibold">
+                          Skala Penuh: {items.reduce((acc, item) => acc + (item.weight || 0), 0)} Markah
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-3xl sm:text-4xl font-black text-amber-300">
+                          {items.reduce((acc, item) => acc + (markah[item.id] || 0), 0)}
+                        </span>
+                        <span className="text-sm font-bold text-emerald-200">
+                          {' '}/ {items.reduce((acc, item) => acc + (item.weight || 0), 0)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="pt-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide">Ulasan / Catatan Penilai</label>
-                      <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5" /> Draf ulasan kekal selamat
+                  {/* BAHAGIAN ULASAN / CATATAN DENGAN CADANGAN PANTAS & DRAF SELAMAT */}
+                  <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-emerald-100/80 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <label className="block text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wide">
+                        Ulasan / Catatan Penilai
+                      </label>
+                      <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 self-start sm:self-auto">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Draf ulasan kekal selamat tersimpan
                       </span>
                     </div>
-                    <textarea 
-                      rows={3} 
-                      disabled={isFormDisabled}
-                      value={catatan} 
-                      onChange={e => setCatatan(e.target.value)} 
-                      placeholder="Masukkan ulasan untuk calon ini (pilihan)"
-                      className={`w-full p-4 rounded-xl border-2 font-medium text-slate-700 transition-all ${
-                        isFormDisabled 
-                          ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'bg-white border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20'
-                      }`}
-                    />
+
+                    {/* Cadangan Frasa Ulasan Pantas (Ketik terus masuk teks tanpa perlu taip panjang di telefon) */}
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-500" />
+                        Cadangan Ulasan Pantas (Ketik untuk tambah):
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {quickPhrases.map((phrase, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            disabled={isFormDisabled}
+                            onClick={() => handleAppendPhrase(phrase)}
+                            className="text-left text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200/80 transition active:scale-95 disabled:opacity-50"
+                          >
+                            {phrase}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <textarea 
+                        rows={3} 
+                        disabled={isFormDisabled}
+                        value={catatan} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setCatatan(val);
+                          if (selectedCandidate) {
+                            try {
+                              const payload = JSON.stringify({ markah, catatan: val });
+                              localStorage.setItem(`eqabul_draft_tahfiz_${selectedCandidate}`, payload);
+                              sessionStorage.setItem(`draft_tahfiz_${selectedCandidate}`, payload);
+                            } catch {}
+                          }
+                        }} 
+                        placeholder="Masukkan ulasan atau ketik cadangan pantas di atas..."
+                        className={`w-full p-3 sm:p-4 rounded-xl border-2 text-sm sm:text-base font-medium text-slate-800 transition-all ${
+                          isFormDisabled 
+                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                            : 'bg-white border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20'
+                        }`}
+                      />
+                    </div>
+
+                    {/* Status Keselamatan Draf (Menjamin Ulasan Tidak Hilang) */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 px-1 pt-1">
+                      <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Draf ulasan & markah tersimpan automatik di peranti</span>
+                      </div>
+                      <span className="text-slate-400 font-mono">{catatan.length} aksara</span>
+                    </div>
                   </div>
 
-                  <div className="pt-6 flex justify-end">
+                  {/* BUTANG SIMPAN BESAR & MESRA SKRIN SENTUH */}
+                  <div className="pt-2">
                     <button 
                       type="submit" 
                       disabled={isFormDisabled}
-                      className={`text-white px-8 py-4 rounded-xl font-bold shadow-lg transition-all duration-300 text-lg w-full sm:w-auto ${
+                      className={`w-full py-4 px-6 rounded-2xl font-black text-base sm:text-lg shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${
                         isFormDisabled
-                          ? 'bg-slate-400 cursor-not-allowed shadow-none'
-                          : 'hover:scale-[1.02] active:scale-[0.98] bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                          ? 'bg-slate-400 text-white cursor-not-allowed shadow-none'
+                          : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:brightness-105 active:scale-[0.98] text-white shadow-emerald-700/30'
                       }`}
                     >
-                      {isBlockedAlreadyEvaluated 
-                        ? 'Telah Selesai Dinilai - Tidak Boleh Diisi Semula' 
-                        : isBeingEvaluatedByOther 
-                        ? 'Sedang Dinilai oleh Penilai Lain' 
-                        : isEditingSameDay 
-                        ? 'Kemaskini Maklumat Penilaian' 
-                        : 'Simpan Maklumat Penilaian'}
+                      <Check className="w-5 h-5" />
+                      <span>
+                        {isBlockedAlreadyEvaluated 
+                          ? 'Telah Selesai Dinilai - Tidak Boleh Diisi Semula' 
+                          : isBeingEvaluatedByOther 
+                          ? 'Sedang Dinilai oleh Penilai Lain' 
+                          : isEditingSameDay 
+                          ? 'Kemaskini Maklumat Penilaian' 
+                          : 'Simpan Maklumat Penilaian'}
+                      </span>
                     </button>
                   </div>
                </form>
@@ -873,9 +1150,20 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
      return init;
   });
 
+  const draftKey = `eqabul_draft_akademik_${candidate.ic}`;
+
   const [isLocked, setIsLocked] = useState<boolean>(isAlreadyEvaluated);
   const [isSaved, setIsSaved] = useState<boolean>(isAlreadyEvaluated);
-  const [catatan, setCatatan] = useState<string>(candidate.markahAkademik?.catatan || '');
+  const [catatan, setCatatan] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem(`eqabul_draft_akademik_${candidate.ic}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.catatan !== undefined) return parsed.catatan;
+      }
+    } catch {}
+    return candidate.markahAkademik?.catatan || '';
+  });
 
   const handleSave = () => {
     const jumlah = akademikItems.reduce((acc: number, item: any) => acc + (markah[item.id] || 0), 0);
@@ -888,6 +1176,9 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
         tarikhDinilai: new Date().toISOString()
       }
     });
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {}
     setIsSaved(true);
     setIsLocked(true);
   };
@@ -948,7 +1239,13 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
           <input 
             type="text" 
             value={catatan} 
-            onChange={e => setCatatan(e.target.value)} 
+            onChange={e => {
+              const val = e.target.value;
+              setCatatan(val);
+              try {
+                localStorage.setItem(draftKey, JSON.stringify({ markah, catatan: val }));
+              } catch {}
+            }} 
             placeholder="Catatan penilai..." 
             className="w-full border border-blue-200 rounded-lg p-1.5 text-xs text-slate-800 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-400 outline-none"
           />
@@ -991,9 +1288,226 @@ function AkademikRow({ candidate, updateCandidate, currentUser, akademikItems, i
   );
 }
 
+function AkademikMobileCard({ candidate, updateCandidate, currentUser, akademikItems, index, onOpenDetail }: any) {
+  const isAlreadyEvaluated = Boolean(
+    candidate.markahAkademik && 
+    (candidate.markahAkademik.jumlah !== undefined || candidate.markahAkademik.dinilaiOleh) &&
+    (candidate.markahAkademik.jumlah > 0 || candidate.markahAkademik.dinilaiOleh)
+  );
+
+  const [markah, setMarkah] = useState<Record<string, number>>(() => {
+     const init: Record<string, number> = {};
+     akademikItems.forEach((i: any) => {
+        let val = candidate.markahAkademik?.[i.id];
+        if (val === undefined && (i.id === 'sains' || i.name?.toLowerCase().includes('sains'))) {
+          val = candidate.markahAkademik?.sains ?? candidate.markahAkademik?.a_1791595296044;
+        }
+        val = val ?? 0;
+        if (typeof val === 'number' && i.weight && val > i.weight) {
+          val = i.weight;
+        }
+        init[i.id] = val;
+     });
+     return init;
+  });
+
+  const draftKey = `eqabul_draft_akademik_${candidate.ic}`;
+
+  const [isLocked, setIsLocked] = useState<boolean>(isAlreadyEvaluated);
+  const [catatan, setCatatan] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem(`eqabul_draft_akademik_${candidate.ic}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.catatan !== undefined) return parsed.catatan;
+      }
+    } catch {}
+    return candidate.markahAkademik?.catatan || '';
+  });
+
+  const adjustMarkah = (field: string, delta: number, maxWeight: number) => {
+    if (isLocked) return;
+    const cur = markah[field] ?? 0;
+    let next = cur + delta;
+    if (next > maxWeight) next = maxWeight;
+    if (next < 0) next = 0;
+    setMarkah(prev => ({ ...prev, [field]: next }));
+  };
+
+  const handleSave = () => {
+    const jumlah = akademikItems.reduce((acc: number, item: any) => acc + (markah[item.id] || 0), 0);
+    updateCandidate(candidate.ic, {
+      markahAkademik: {
+        ...markah,
+        jumlah,
+        catatan: catatan.trim(),
+        dinilaiOleh: currentUser?.name || 'Penyelaras Akademik',
+        tarikhDinilai: new Date().toISOString()
+      }
+    });
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {}
+    setIsLocked(true);
+  };
+
+  const total = akademikItems.reduce((acc: number, item: any) => acc + (markah[item.id] || 0), 0);
+  const maxTotal = akademikItems.reduce((acc: number, item: any) => acc + (item.weight || 0), 0);
+
+  return (
+    <div className={`p-4 rounded-2xl border-2 transition-all space-y-3 ${
+      isLocked 
+        ? 'bg-slate-50/70 border-slate-200' 
+        : 'bg-white border-blue-200 shadow-sm'
+    }`}>
+      {/* Header Kad Calon */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 font-extrabold text-xs flex items-center justify-center shrink-0">
+            {index + 1}
+          </span>
+          <div className="min-w-0">
+            <h4 className="font-extrabold text-sm sm:text-base text-slate-900 leading-tight truncate">
+              {candidate.name}
+            </h4>
+            <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 flex-wrap">
+              <span className="font-mono font-bold">{candidate.ic}</span>
+              {candidate.jantina && (
+                <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-semibold">
+                  {candidate.jantina}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Butang Lihat Maklumat Calon */}
+        <button
+          type="button"
+          onClick={() => onOpenDetail(candidate)}
+          className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 shrink-0"
+          title="Lihat maklumat calon"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>Profil</span>
+        </button>
+      </div>
+
+      {/* Input Subjek Akademik Berstepper Sentuh */}
+      <div className="grid grid-cols-2 gap-2.5 pt-1">
+        {akademikItems.map((item: any) => {
+          const val = markah[item.id] ?? 0;
+          return (
+            <div key={item.id} className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-700 uppercase">{item.name}</span>
+                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">/{item.weight}m</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={isLocked || val <= 0}
+                  onClick={() => adjustMarkah(item.id, -1, item.weight)}
+                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold flex items-center justify-center shrink-0 disabled:opacity-40 transition active:scale-90"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  disabled={isLocked}
+                  value={markah[item.id] !== undefined ? markah[item.id] : ''}
+                  onChange={e => {
+                    if (isLocked) return;
+                    let v = parseInt(e.target.value);
+                    if (isNaN(v)) {
+                      const copy = { ...markah };
+                      delete copy[item.id];
+                      setMarkah(copy);
+                      return;
+                    }
+                    if (v > item.weight) v = item.weight;
+                    if (v < 0) v = 0;
+                    setMarkah(prev => ({ ...prev, [item.id]: v }));
+                  }}
+                  className="flex-1 min-w-0 h-9 rounded-lg border text-center font-black text-lg bg-white text-slate-900 border-blue-200 focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  disabled={isLocked || val >= item.weight}
+                  onClick={() => adjustMarkah(item.id, 1, item.weight)}
+                  className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 disabled:opacity-40 transition active:scale-90"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Jumlah & Ulasan */}
+      <div className="flex items-center justify-between bg-blue-50/60 p-2.5 rounded-xl border border-blue-100">
+        <span className="text-xs font-bold text-blue-900">Jumlah Markah Akademik:</span>
+        <span className="text-lg font-black text-blue-700">{total} / {maxTotal}</span>
+      </div>
+
+      <div className="space-y-1">
+        <input
+          type="text"
+          disabled={isLocked}
+          value={catatan}
+          onChange={e => {
+            const val = e.target.value;
+            setCatatan(val);
+            try {
+              localStorage.setItem(draftKey, JSON.stringify({ markah, catatan: val }));
+            } catch {}
+          }}
+          placeholder="Catatan penilai akademik..."
+          className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-blue-500"
+        />
+      </div>
+
+      {/* Tindakan Simpan / Terkunci */}
+      <div className="pt-1">
+        {isLocked ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Selesai Dinilai
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Adakah anda pasti mahu membuka kunci untuk mengemas kini markah ${candidate.name}?`)) {
+                  setIsLocked(false);
+                }
+              }}
+              className="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1 transition"
+            >
+              <Unlock className="w-3.5 h-3.5" /> Buka Kunci
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSave}
+            className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black bg-blue-600 hover:bg-blue-700 text-white shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+          >
+            <Check className="w-4 h-4" />
+            <span>Simpan & Kunci Markah</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AkademikView() {
   const { candidates, updateCandidate, currentUser, settings } = useAppContext();
   const [searchQuery, setSearchQuery] = useState('');
+  const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
   const akademikItems = settings.akademikItems || [];
   
   // Show candidates who are LAYAK temuduga
@@ -1018,11 +1532,13 @@ function AkademikView() {
              <CheckSquare className="w-7 h-7 text-blue-700" />
            </div>
            <div>
-              <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">Penilaian Ujian Akademik</h3>
-              <p className="text-sm font-medium text-slate-500">Secara pukal (Semua calon yang layak ke peringkat temuduga)</p>
+              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Penilaian Ujian Akademik</h3>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Pemarkahan akademik bagi semua calon layak temuduga</p>
            </div>
          </div>
-         <span className="font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">{new Date().toLocaleDateString('ms-MY')}</span>
+         <span className="font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 self-start sm:self-auto text-xs sm:text-sm">
+           {new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' })}
+         </span>
        </div>
 
        {/* Bar Carian Nama / IC & Bilangan Calon */}
@@ -1054,7 +1570,33 @@ function AkademikView() {
          </div>
        </div>
 
-       <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-10">
+       {/* 1. PAPARAN KAD TELEFON (MESRA PENGGUNA PHONE) */}
+       <div className="block md:hidden space-y-4 mb-10">
+         {eligibleCandidates.length === 0 ? (
+           <div className="bg-slate-50 p-8 rounded-2xl text-center border border-slate-200 text-slate-500 font-medium">
+             Tiada calon yang layak temuduga buat masa ini.
+           </div>
+         ) : filteredCandidates.length === 0 ? (
+           <div className="bg-slate-50 p-8 rounded-2xl text-center border border-slate-200 text-slate-500 font-medium">
+             Tiada calon sepadan dengan carian "{searchQuery}"
+           </div>
+         ) : (
+           filteredCandidates.map((c, idx) => (
+             <AkademikMobileCard
+               key={c.id || c.ic}
+               candidate={c}
+               updateCandidate={updateCandidate}
+               currentUser={currentUser}
+               akademikItems={akademikItems}
+               index={idx}
+               onOpenDetail={setDetailCandidate}
+             />
+           ))
+         )}
+       </div>
+
+       {/* 2. PAPARAN JADUAL KOMPUTER / TABLET (DESKTOP VIEW) */}
+       <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-10">
           <div className="overflow-x-auto">
              <table className="w-full text-left border-collapse min-w-full">
                 <thead className="bg-slate-50 border-b-2 border-slate-200">
@@ -1083,7 +1625,7 @@ function AkademikView() {
                             <div className="text-slate-700 font-bold mb-1">Tiada calon sepadan dengan carian "{searchQuery}"</div>
                             <button 
                               type="button" 
-                              onClick={() => setSearchQuery('')}
+                              onClick={() => setSearchQuery('')} 
                               className="mt-2 text-xs font-bold text-blue-600 hover:text-blue-800 underline"
                             >
                               Set Semula Carian
@@ -1099,6 +1641,13 @@ function AkademikView() {
              </table>
           </div>
        </div>
+
+       {detailCandidate && (
+         <CandidateDetailModal 
+            candidate={detailCandidate} 
+            onClose={() => setDetailCandidate(null)} 
+         />
+       )}
     </div>
   );
 }
