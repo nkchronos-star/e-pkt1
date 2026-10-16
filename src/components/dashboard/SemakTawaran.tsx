@@ -187,7 +187,7 @@ export default function SemakTawaran() {
                      </div>
                      <h2 className="text-3xl font-extrabold text-slate-900 mb-6 tracking-tight">Tahniah!</h2>
                      <p className="text-slate-600 leading-relaxed mb-6 text-lg font-medium">
-                       Tahniah Permohonan kemasukan ke tingakatan 1 SMA Kota Gelanggi 3 2027 adalah berjaya.
+                       Permohonan kemasukan ke tingkatan 1 SMA Kota Gelanggi 3 sesi {settings.sesiKemasukan || '2027'} adalah berjaya.
                      </p>
                      <p className="text-slate-500 mb-10 text-lg">
                        Pihak sekolah mengucapkan setinggi-tinggi tahniah atas kejayaan ini. Sehubungan itu, pihak tuan/puan diminta untuk membuat tindakan lanjut. Segala kerjasama dan perhatian tuan/puan amat dihargai.

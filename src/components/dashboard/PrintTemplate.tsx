@@ -145,7 +145,7 @@ export default function PrintTemplate({ candidate }: { candidate: Partial<Candid
                    <div>Jawi & Khat: <span className="font-bold">{candidate.upkk?.jawikhat || '-'}</span></div>
                    <div>Bahasa Arab: <span className="font-bold">{candidate.upkk?.bahasaarab || '-'}</span></div>
                    <div>Ibadah: <span className="font-bold">{candidate.upkk?.ibadah || '-'}</span></div>
-                   <div>Penghayatan Islam: <span className="font-bold">{candidate.upkk?.penghayatancarahidupislam || '-'}</span></div>
+                   <div>Penghayatan Cara Hidup Islam (PCHI): <span className="font-bold">{candidate.upkk?.penghayatancarahidupislam || '-'}</span></div>
                    <div>Amali Solat: <span className="font-bold">{candidate.upkk?.amalisolat || '-'}</span></div>
                </div>
            </div>

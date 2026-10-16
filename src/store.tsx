@@ -602,11 +602,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       await setDoc(doc(db, 'candidates', safeId), cleanData);
 
-      // Instant local update so candidate is immediately available
-      setState(prev => {
-        const nextList = [cleanData, ...prev.candidates.filter(c => c.ic !== cleanData.ic && c.id !== cleanData.id)];
-        return { ...prev, candidates: nextList };
-      });
+      // Kawalan Keselamatan: Hanya simpan senarai calon dalam memori global jika pentadbir log masuk
+      if (state.currentUser) {
+        setState(prev => {
+          const nextList = [cleanData, ...prev.candidates.filter(c => c.ic !== cleanData.ic && c.id !== cleanData.id)];
+          return { ...prev, candidates: nextList };
+        });
+      } else {
+        // Pelawat awam: Pastikan tiada data calon lain kekal dalam storan cache pelayar
+        purgeSensitiveDataFromBrowser();
+      }
     } catch (e) {
       console.error("Error saving candidate:", e);
       throw e;

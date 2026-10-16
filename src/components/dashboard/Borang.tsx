@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useAppContext, getTodayMalaysia } from '../../store';
-import { FileText, Save, Send, AlertCircle, Calendar, CheckCircle, X, LogIn, Loader2, Lock, Clock } from 'lucide-react';
+import { FileText, Save, Send, AlertCircle, Calendar, CheckCircle, X, LogIn, Loader2, Lock, Clock, BookOpen, ArrowRight, ShieldCheck, Trash2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import { compressImageFile } from '../../lib/imageUtils';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import Panduan from './Panduan';
 
+interface BorangProps {
+  onNavigate?: (view: any) => void;
+}
 
-export default function Borang() {
+export default function Borang({ onNavigate }: BorangProps) {
   const { settings, saveCandidate, candidates } = useAppContext();
   const isBuka = settings.borangBuka;
+
+  // Status Calon Telah Membaca Panduan Permohonan Sebelum Isi Borang
+  const [hasReadPanduan, setHasReadPanduan] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('borang_panduan_read') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // Form State
   const [formData, setFormData] = useState<Partial<Candidate>>(() => {
@@ -329,10 +342,28 @@ export default function Borang() {
   };
 
 
+  const [isClearedDraft, setIsClearedDraft] = useState(false);
+
   const handleSaveDraft = async () => {
     localStorage.setItem('borang_draft', JSON.stringify(formData));
     setIsSavingDraft(true);
-    setTimeout(() => setIsSavingDraft(false), 1000);
+    setTimeout(() => setIsSavingDraft(false), 1200);
+  };
+
+  const handleClearDraft = () => {
+    if (window.confirm('Adakah anda pasti ingin memadamkan draf permohonan ini? Semua maklumat belum dihantar yang tersimpan di pelayar ini akan dikosongkan demi keselamatan anda.')) {
+      try {
+        localStorage.removeItem('borang_draft');
+      } catch {}
+      setFormData({
+        jantina: '',
+        pbd: { bm: '', bi: '', matematik: '', sains: '' },
+        pbdD6: { bm: '', bi: '', matematik: '', sains: '' },
+        upkk: { alquran: '', akidah: '', sirah: '', adab: '', jawikhat: '', bahasaarab: '', ibadah: '', penghayatancarahidupislam: '', amalisolat: '' }
+      });
+      setIsClearedDraft(true);
+      setTimeout(() => setIsClearedDraft(false), 2500);
+    }
   };
 
   const formatTarikh = (tarikhStr: string) => {
@@ -516,7 +547,7 @@ export default function Borang() {
                          <li>Jawi & Khat: {formData.upkk?.jawikhat}</li>
                          <li>Bahasa Arab: {formData.upkk?.bahasaarab}</li>
                          <li>Ibadah: {formData.upkk?.ibadah}</li>
-                         <li>Penghayatan Islam: {formData.upkk?.penghayatancarahidupislam}</li>
+                         <li>Penghayatan Cara Hidup Islam (PCHI): {formData.upkk?.penghayatancarahidupislam}</li>
                          <li>Amali Solat: {formData.upkk?.amalisolat}</li>
                      </ul>
                  </div>
@@ -531,13 +562,65 @@ export default function Borang() {
     );
   }
 
+  // JIKA CALON BELUM MEMBACA PANDUAN: CALON WAJIB BACA PANDUAN TERLEBIH DAHULU
+  if (!hasReadPanduan) {
+    return (
+      <Panduan 
+        isGateMode={true} 
+        onProceed={() => {
+          setHasReadPanduan(true);
+          try {
+            sessionStorage.setItem('borang_panduan_read', 'true');
+          } catch {}
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }} 
+      />
+    );
+  }
+
   return (
-    <div className="animate-in fade-in py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+    <div className="animate-in fade-in py-8 sm:py-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+      
+      {/* Banner Pengesahan Panduan Telah Dibaca & Butang Rujuk Semula */}
+      <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-4 sm:p-4.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8 shadow-xs">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <CheckCircle className="w-5 h-5 text-white" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs sm:text-sm font-bold text-emerald-950">
+                Panduan Permohonan Telah Dibaca & Disahkan
+              </span>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-300">
+                ✓ Selesai
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-emerald-700 leading-tight mt-0.5">
+              Sila lengkapkan semua maklumat permohonan di bawah. Data draf anda disimpan secara automatik.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setHasReadPanduan(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="text-xs font-bold text-emerald-800 hover:text-emerald-950 bg-white hover:bg-emerald-100/60 border border-emerald-300 px-3.5 py-2 rounded-xl transition shadow-2xs shrink-0 flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap self-stretch sm:self-auto justify-center"
+          title="Buka semula panduan permohonan tanpa kehilangan draf yang sedang diisi"
+        >
+          <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
+          <span>Rujuk Semula Panduan</span>
+        </button>
+      </div>
+
       <div className="mb-10 text-center">
         <div className="inline-flex items-center justify-center p-3 bg-amber-100 rounded-2xl mb-4">
            <FileText className="w-8 h-8 text-amber-600" />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight uppercase">Permohonan Kemasukan Tingkatan 1<br/><span className="text-emerald-700">SMA Kota Gelanggi</span></h1>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight uppercase">Permohonan Kemasukan Tingkatan 1<br/><span className="text-emerald-700">SMA Kota Gelanggi 3</span></h1>
         <p className="text-slate-500 text-lg">Sila isi semua maklumat di bawah dengan tepat. Sistem akan menyimpan draf secara automatik.</p>
       </div>
 
@@ -931,7 +1014,7 @@ export default function Borang() {
                     {id: 'jawikhat', label: 'Jawi dan Khat'},
                     {id: 'bahasaarab', label: 'Bahasa Arab'},
                     {id: 'ibadah', label: 'Ibadah'},
-                    {id: 'penghayatancarahidupislam', label: 'Penghayatan Cara Hidup Islam'},
+                    {id: 'penghayatancarahidupislam', label: 'Penghayatan Cara Hidup Islam (PCHI)'},
                     {id: 'amalisolat', label: 'Amali Solat'},
                  ].map((sub) => (
                     <div key={sub.id} className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -980,6 +1063,27 @@ export default function Borang() {
                   </div>
                </div>
              )}
+
+             {/* Kotak Jaminan Perlindungan Data & Privasi (PDPA) */}
+             <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-emerald-50/90 border border-emerald-200 flex items-start gap-3.5 shadow-2xs">
+               <div className="p-2.5 bg-emerald-600 text-white rounded-xl shrink-0 mt-0.5 shadow-xs">
+                 <ShieldCheck className="w-5 h-5" />
+               </div>
+               <div className="text-xs text-emerald-950 space-y-1">
+                 <p className="font-extrabold text-sm text-emerald-900 flex items-center gap-1.5">
+                   <span>Jaminan Perlindungan Data & Kerahsiaan Calon</span>
+                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 font-black uppercase">
+                     Dilindungi SSL 256-Bit
+                   </span>
+                 </p>
+                 <p className="leading-relaxed text-emerald-800 font-medium">
+                   Semua maklumat calon (No. Kad Pengenalan, rekod akademik UPKK/PBD, maklumat peribadi ibu bapa & pendapatan) dilindungi mengikut prinsip Akta Perlindungan Data Peribadi (PDPA) dan Dasar Privasi Sekolah.
+                 </p>
+                 <p className="leading-relaxed text-emerald-700 text-[11px]">
+                   🔒 Data anda disulitkan secara terus ke pelayan awan pangkalan data rasmi sekolah dan <strong>tidak didedahkan kepada pihak ketiga atau pelawat awam lain</strong>.
+                 </p>
+               </div>
+             </div>
            </div>
            </div>
         </div>
@@ -1005,29 +1109,54 @@ export default function Borang() {
            )}
 
            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                disabled={isSavingDraft}
-                className="w-full sm:w-auto px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition"
-              >
-                {isSavingDraft ? 'Menyimpan Draf...' : 'Simpan Draf'}
-              </button>
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={isSavingDraft}
+                  className="flex-1 sm:flex-initial px-5 py-3.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  title="Simpan draf permohonan pada pelayar ini untuk disambung nanti"
+                >
+                  <Save className="w-4 h-4 text-slate-600" />
+                  {isSavingDraft ? 'Menyimpan Draf...' : 'Simpan Draf'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleClearDraft}
+                  className="px-4 py-3.5 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 font-bold rounded-xl text-sm transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  title="Padam draf jika anda menggunakan komputer awam atau kafe siber demi keselamatan peribadi"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-600" />
+                  <span className="hidden md:inline">Padam Draf</span>
+                </button>
+              </div>
+
+              {isClearedDraft && (
+                <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg animate-in fade-in">
+                  ✓ Draf permohonan telah dipadam dari peranti ini.
+                </span>
+              )}
 
               <button 
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98] shadow-emerald-600/30 shadow-xl'} text-white px-10 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 text-lg w-full sm:w-auto`}
+                className={`${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 hover:scale-[1.02] active:scale-[0.98] shadow-emerald-600/30 shadow-xl cursor-pointer'} text-white px-10 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 text-lg w-full sm:w-auto`}
               >
                  {isSubmitting ? (
                    <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                  ) : (
                    <Send className="w-6 h-6" />
                  )}
-                 {isSubmitting ? 'Menghantar...' : 'Hantar Permohonan'}
+                 {isSubmitting ? 'Menghantar Secara Selamat...' : 'Hantar Permohonan'}
               </button>
            </div>
+
+           {/* Peringatan Mesra Komputer Awam */}
+           <p className="text-[11px] text-slate-500 text-center sm:text-right pt-1">
+             💡 <em>Menggunakan komputer awam / kafe siber?</em> Sebaik sahaja selesai menghantar atau mencetak, sila tutup tab atau klik <strong>Padam Draf</strong> untuk menghapuskan sebarang sisa rekod.
+           </p>
         </div>
       </form>
     </div>

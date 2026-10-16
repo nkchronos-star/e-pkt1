@@ -3,6 +3,7 @@ import { useAppContext, isDateActive, getTodayMalaysia, isOfferExpired, formatIs
 import { LogOut, Printer, Users, FileSignature, CheckSquare, Settings, Lock, Unlock, CheckCircle, XCircle, Trash2, Edit, BarChart2, Link as LinkIcon, FileText, Download, Search, UserPlus, Upload, PenTool, Check, RotateCcw, Camera, AlertCircle, Award, TrendingUp, Trophy, ArrowUpDown, X, Eye, BookOpen, MessageCircle, ExternalLink, Calendar, AlertTriangle, Clock, Smartphone, Plus, Minus, School, Sparkles } from 'lucide-react';
 import BorangCetakPDF from './BorangCetakPDF';
 import BorangPukalCetakPDF from './BorangPukalCetakPDF';
+import SenaraiKeputusanCetakPDF from './SenaraiKeputusanCetakPDF';
 import EditCandidateModal from './EditCandidateModal';
 import AddCandidateModal from './AddCandidateModal';
 import CandidateDetailModal from './CandidateDetailModal';
@@ -153,11 +154,16 @@ function ChangePasswordModal({ user, onClose }: { user: User; onClose: () => voi
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword.trim()) {
       setErrorMsg('Sila masukkan kata laluan baru.');
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setErrorMsg('Kata laluan mesti sekurang-kurangnya 6 aksara demi keselamatan.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -168,8 +174,10 @@ function ChangePasswordModal({ user, onClose }: { user: User; onClose: () => voi
     setErrorMsg('');
     try {
       await updateUser(user.id, { password: newPassword.trim() });
-      alert(`Kata laluan untuk ${user.username} berjaya dikemaskini!`);
-      onClose();
+      setSuccessMsg(`Kata laluan untuk ${user.username} berjaya dikemaskini!`);
+      setTimeout(() => {
+        onClose();
+      }, 1200);
     } catch (err: any) {
       setErrorMsg('Ralat menukar kata laluan: ' + (err?.message || 'Sila cuba lagi'));
     } finally {
@@ -190,63 +198,77 @@ function ChangePasswordModal({ user, onClose }: { user: User; onClose: () => voi
               <p className="text-xs text-slate-500 font-medium">Akaun: <span className="font-bold text-slate-700">{user.name} ({user.username})</span></p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg cursor-pointer">
             <XCircle className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Kata Laluan Baru</label>
-            <input 
-              type="text" 
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              placeholder="Masukkan kata laluan baru..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium text-slate-800 bg-slate-50 focus:bg-white"
-              required
-            />
+        {successMsg ? (
+          <div className="py-8 text-center space-y-3">
+            <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+            <p className="text-base font-bold text-slate-800">{successMsg}</p>
+            <p className="text-xs text-slate-500">Menutup tetingkap...</p>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Sahkan Kata Laluan Baru</label>
-            <input 
-              type="text" 
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="Ulang kata laluan baru..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium text-slate-800 bg-slate-50 focus:bg-white"
-              required
-            />
-          </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Kata Laluan Baru (Min 6 aksara)</label>
+              <input 
+                type="password" 
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Masukkan kata laluan baru..."
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium text-slate-800 bg-slate-50 focus:bg-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Sahkan Kata Laluan Baru</label>
+              <input 
+                type="password" 
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Ulang kata laluan baru..."
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium text-slate-800 bg-slate-50 focus:bg-white"
+                required
+              />
+            </div>
 
-          {errorMsg && (
-            <p className="text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-lg border border-red-200">
-              {errorMsg}
-            </p>
-          )}
+            {errorMsg && (
+              <p className="text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-lg border border-red-200">
+                {errorMsg}
+              </p>
+            )}
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 mt-6">
-            <button 
-              type="button" 
-              onClick={onClose}
-              disabled={loading}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors"
-            >
-              Batal
-            </button>
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-md shadow-emerald-600/20 disabled:opacity-50 transition-all"
-            >
-              {loading ? 'Menyimpan...' : 'Simpan Kata Laluan'}
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 mt-6">
+              <button 
+                type="button" 
+                onClick={onClose}
+                disabled={loading}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-md shadow-emerald-600/20 disabled:opacity-50 transition-all cursor-pointer"
+              >
+                {loading ? 'Menyimpan...' : 'Simpan Kata Laluan'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
 }
+
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_SEC = 60;
+const SESSION_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minit
 
 export default function AdminPanel() {
   const { currentUser, login, logout } = useAppContext();
@@ -256,74 +278,193 @@ export default function AdminPanel() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [passwordModalUser, setPasswordModalUser] = useState<User | null>(null);
 
+  // Kawalan Keselamatan: Perlindungan Brute-force (Had Percubaan & Kunci Sementara)
+  const [failedAttempts, setFailedAttempts] = useState<number>(() => {
+    try {
+      return parseInt(sessionStorage.getItem('eq_login_attempts') || '0', 10);
+    } catch {
+      return 0;
+    }
+  });
+
+  const [lockoutRemaining, setLockoutRemaining] = useState<number>(() => {
+    try {
+      const lockUntil = parseInt(sessionStorage.getItem('eq_login_lock_until') || '0', 10);
+      const diff = Math.ceil((lockUntil - Date.now()) / 1000);
+      return diff > 0 ? diff : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // Pemasa Kira Detik Kunci Keselamatan
+  useEffect(() => {
+    if (lockoutRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutRemaining(prev => {
+        if (prev <= 1) {
+          try {
+            sessionStorage.removeItem('eq_login_lock_until');
+            sessionStorage.setItem('eq_login_attempts', '0');
+          } catch {}
+          setFailedAttempts(0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutRemaining]);
+
+  // Kawalan Keselamatan: Log Keluar Automatik Selepas 30 Minit Tiada Aktiviti (Session Timeout)
+  useEffect(() => {
+    if (!currentUser) return;
+    let timer: any;
+
+    const resetInactivity = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        logout();
+        setError('Sesi tamat secara automatik demi keselamatan kerana tiada aktiviti selama 30 minit.');
+      }, SESSION_INACTIVITY_TIMEOUT_MS);
+    };
+
+    resetInactivity();
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, resetInactivity, { passive: true }));
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, resetInactivity));
+    };
+  }, [currentUser, logout]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockoutRemaining > 0) {
+      setError(`Sistem dikunci sementara demi keselamatan. Sila tunggu ${lockoutRemaining} saat.`);
+      return;
+    }
+
+    const cleanU = username.trim();
+    const cleanP = password.trim();
+
+    if (!cleanU || !cleanP) {
+      setError('Sila lengkapkan ID Pengguna dan Kata Laluan.');
+      return;
+    }
+
     setIsLoggingIn(true);
     setError('');
     try {
-      const success = await login(username, password);
-      if (!success) {
-        setError('ID Pengguna atau Kata Laluan tidak sah');
+      const success = await login(cleanU, cleanP);
+      if (success) {
+        // Reset rekod percubaan gagal
+        setFailedAttempts(0);
+        try {
+          sessionStorage.removeItem('eq_login_attempts');
+          sessionStorage.removeItem('eq_login_lock_until');
+        } catch {}
+      } else {
+        const nextAttempts = failedAttempts + 1;
+        setFailedAttempts(nextAttempts);
+        try {
+          sessionStorage.setItem('eq_login_attempts', String(nextAttempts));
+        } catch {}
+
+        if (nextAttempts >= MAX_LOGIN_ATTEMPTS) {
+          const lockUntil = Date.now() + LOCKOUT_DURATION_SEC * 1000;
+          try {
+            sessionStorage.setItem('eq_login_lock_until', String(lockUntil));
+          } catch {}
+          setLockoutRemaining(LOCKOUT_DURATION_SEC);
+          setError(`Akses disekat sementara demi keselamatan! Anda telah melebihi ${MAX_LOGIN_ATTEMPTS} kali percubaan. Sila tunggu ${LOCKOUT_DURATION_SEC} saat sebelum mencuba lagi.`);
+        } else {
+          setError(`ID Pengguna atau Kata Laluan tidak sah. (Baki percubaan keselamatan: ${MAX_LOGIN_ATTEMPTS - nextAttempts})`);
+        }
       }
     } catch (err: any) {
-      setError('Ralat semasa log masuk: ' + (err?.message || 'Sila cuba lagi'));
+      setError('Ralat keselamatan semasa pengesahan log masuk. Sila cuba lagi.');
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-    if (!currentUser) {
+  if (!currentUser) {
+    const isLocked = lockoutRemaining > 0;
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
         <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-slate-200 p-8 sm:p-12 max-w-md w-full animate-in zoom-in-95 duration-300">
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border border-emerald-200/60">
+          <div className={`w-20 h-20 ${isLocked ? 'bg-red-100 text-red-600 border-red-300' : 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 border-emerald-200/60'} rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner border transition-all`}>
              <Lock className="w-10 h-10" />
           </div>
           <h2 className="text-3xl font-extrabold text-center text-slate-900 mb-3 tracking-tight">Log Masuk Admin</h2>
-          <p className="text-center text-slate-500 mb-10 text-lg font-medium">Sila masukkan ID Pengguna untuk mengakses sistem.</p>
+          <p className="text-center text-slate-500 mb-8 text-sm sm:text-base font-medium">Sila masukkan ID Pengguna & Kata Laluan rasmi.</p>
           
-          <form onSubmit={handleLogin} className="space-y-6">
+          {isLocked && (
+            <div className="mb-6 p-4 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-center animate-pulse">
+              <p className="font-black text-sm">🔒 Akses Dikunci Sementara</p>
+              <p className="text-xs mt-1 font-semibold">
+                Demi keselamatan sistem, percubaan log masuk disekat selama <strong className="text-red-700 text-base">{lockoutRemaining}s</strong>
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">ID Pengguna</label>
+              <label className="block text-xs font-black text-slate-700 mb-1.5 tracking-wider uppercase">ID Pengguna</label>
               <input 
                 type="text" 
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                disabled={isLoggingIn}
-                className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-60"
-                placeholder="admin"
+                disabled={isLoggingIn || isLocked}
+                className="w-full px-4 py-3.5 text-base border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-50 disabled:bg-slate-100"
+                placeholder="cth: admin"
+                autoComplete="username"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 tracking-wide uppercase">Kata Laluan</label>
+              <label className="block text-xs font-black text-slate-700 mb-1.5 tracking-wider uppercase">Kata Laluan</label>
               <input 
                 type="password" 
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                disabled={isLoggingIn}
-                className="w-full px-5 py-4 text-lg border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-60"
+                disabled={isLoggingIn || isLocked}
+                className="w-full px-4 py-3.5 text-base border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-50 disabled:bg-slate-100"
                 placeholder="Kata Laluan"
+                autoComplete="current-password"
                 required
               />
             </div>
-            {error && <p className="text-red-600 text-sm font-bold text-center bg-red-50 py-2.5 px-3 rounded-lg border border-red-200">{error}</p>}
+            {error && (
+              <p className="text-red-600 text-xs sm:text-sm font-bold text-center bg-red-50 py-2.5 px-3 rounded-xl border border-red-200">
+                {error}
+              </p>
+            )}
             <button 
               type="submit" 
-              disabled={isLoggingIn}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white py-4 rounded-xl font-bold transition-all duration-300 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] text-lg mt-2 flex items-center justify-center gap-2"
+              disabled={isLoggingIn || isLocked}
+              className={`w-full ${isLocked ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-emerald-600/30 hover:scale-[1.01] active:scale-[0.99] cursor-pointer'} text-white py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg text-base mt-2 flex items-center justify-center gap-2`}
             >
               {isLoggingIn ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Mengesahkan...
+                  Mengesahkan Keselamatan...
                 </>
+              ) : isLocked ? (
+                `Sila Tunggu (${lockoutRemaining}s)`
               ) : (
                 'Log Masuk'
               )}
             </button>
           </form>
-                  
+
+          {/* Tag Keselamatan Sistem */}
+          <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5 text-slate-400 text-xs">
+            <Lock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Sistem Dilindungi Protokol Keselamatan & Anti-Pencerobohan</span>
+          </div>
         </div>
       </div>
     );
@@ -1786,20 +1927,44 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
 }
 
 export function downloadCSV(data: any[], filename: string) {
-  const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-    + data.map(row => row.map((cell: any) => `"${String(cell || '').replace(/"/g, '""')}"`).join(",")).join("\n");
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", filename);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    const csvContent = "\uFEFF" + data.map(row => 
+      row.map((cell: any) => {
+        const val = cell === null || cell === undefined ? '' : String(cell);
+        return `"${val.replace(/"/g, '""')}"`;
+      }).join(",")
+    ).join("\r\n");
+
+    const safeFilename = filename.endsWith('.csv') ? filename : `${filename}.csv`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Sokongan untuk IE / Edge lama jika ada
+    if ((navigator as any).msSaveBlob) {
+      (navigator as any).msSaveBlob(blob, safeFilename);
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", safeFilename);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 500);
+  } catch (err) {
+    console.error("Gagal muat turun CSV:", err);
+  }
 }
 
 function PentadbirView() {
   const [printCandidate, setPrintCandidate] = useState<Candidate | null>(null);
   const [printPukalBorang, setPrintPukalBorang] = useState<boolean>(false);
+  const [showPrintSenarai, setShowPrintSenarai] = useState<boolean>(false);
+  const [isCsvSuccess, setIsCsvSuccess] = useState<boolean>(false);
   const [editCandidate, setEditCandidate] = useState<Candidate | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
@@ -2081,10 +2246,26 @@ function PentadbirView() {
 
     const labelJantina = genderFilter === 'LELAKI' ? 'Lelaki' : genderFilter === 'PEREMPUAN' ? 'Perempuan' : 'Semua';
     downloadCSV([headers, ...rows], `Keputusan_Ranking_${labelJantina}_${filter}.csv`);
+    setIsCsvSuccess(true);
+    setTimeout(() => setIsCsvSuccess(false), 3000);
   };
 
   if (printCandidate) return <BorangCetakPDF candidate={printCandidate} onClose={() => setPrintCandidate(null)} />;
   if (printPukalBorang) return <BorangPukalCetakPDF candidates={baseCandidates} onClose={() => setPrintPukalBorang(false)} />;
+  if (showPrintSenarai) {
+    return (
+      <SenaraiKeputusanCetakPDF
+        items={sortedItems}
+        genderFilter={genderFilter}
+        statusFilter={filter}
+        settings={settings}
+        tahfizMax={tahfizMax}
+        akademikMax={akademikMax}
+        jumlahMax={jumlahMax}
+        onClose={() => setShowPrintSenarai(false)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -2104,20 +2285,31 @@ function PentadbirView() {
 
          <div className="flex items-center gap-3">
            <button 
-             onClick={() => window.print()}
-             className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl font-bold transition-all shadow-xs text-sm"
-             title="Cetak senarai keputusan ini"
+             type="button"
+             onClick={() => setShowPrintSenarai(true)}
+             className="flex items-center gap-2 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-300 px-4 py-2.5 rounded-xl font-bold transition-all shadow-xs text-sm cursor-pointer"
+             title="Cetak senarai keputusan ini atau simpan PDF rasmi"
            >
-             <Printer className="w-4 h-4 text-slate-500" />
+             <Printer className="w-4 h-4 text-emerald-600" />
              Cetak Senarai
            </button>
            <button 
+             type="button"
              onClick={handleDownloadExcel}
-             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-sm"
-             title="Muat turun data dalam format CSV/Excel"
+             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 active:bg-slate-950 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm text-sm cursor-pointer"
+             title="Muat turun data keputusan dalam format fail CSV / Excel"
            >
-             <Download className="w-4 h-4" />
-             Muat Turun CSV
+             {isCsvSuccess ? (
+               <>
+                 <CheckCircle className="w-4 h-4 text-emerald-400" />
+                 <span>Dimuat Turun!</span>
+               </>
+             ) : (
+               <>
+                 <Download className="w-4 h-4" />
+                 <span>Muat Turun CSV</span>
+               </>
+             )}
            </button>
          </div>
        </div>
@@ -3239,7 +3431,7 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between gap-4">
                    <div>
                      <div className="flex justify-between items-center mb-2">
-                       <span className="font-bold text-slate-800">Borang Permohonan</span>
+                       <span className="font-bold text-slate-800">Permohonan</span>
                        <label className="relative inline-flex items-center cursor-pointer">
                          <input type="checkbox" name="borangBuka" checked={settings.borangBuka} onChange={handleSettingsChange} className="sr-only peer" />
                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>

@@ -591,7 +591,7 @@ export default function CandidateDetailModal({
                     { label: 'Jawi & Khat', val: candidate.upkk?.jawikhat },
                     { label: 'Bahasa Arab', val: candidate.upkk?.bahasaarab },
                     { label: 'Ibadah', val: candidate.upkk?.ibadah },
-                    { label: 'PCHI', val: candidate.upkk?.penghayatancarahidupislam },
+                    { label: 'PCHI (Penghayatan Islam)', val: candidate.upkk?.penghayatancarahidupislam },
                     { label: 'Amali Solat', val: candidate.upkk?.amalisolat },
                   ].map((sub, i) => (
                     <div key={i} className="bg-white p-3 rounded-xl border border-slate-200 text-center shadow-2xs">

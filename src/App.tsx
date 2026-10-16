@@ -37,8 +37,7 @@ function AppContent() {
 
   const navItems = [
     { id: 'utama', label: 'Utama', icon: Home },
-    { id: 'panduan', label: 'Panduan', icon: BookOpen },
-    { id: 'borang', label: 'Borang Permohonan', icon: FileText },
+    { id: 'borang', label: 'Permohonan', icon: FileText },
     { id: 'temuduga', label: 'Semak Temuduga', icon: CheckCircle },
     { id: 'tawaran', label: 'Semak Tawaran', icon: GraduationCap },
     { id: 'admin', label: 'Admin', icon: Settings },
@@ -285,16 +284,16 @@ function AppContent() {
       {/* Main Content - Saiz Selaras Tepat Dengan Header & Footer (max-w-[1400px] & px-3 sm:px-5 lg:px-6) */}
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6 print:p-0 print:m-0 print:max-w-none">
         {activeView === 'utama' && <Utama onNavigate={setActiveView} />}
-        {activeView === 'panduan' && <Panduan />}
-        {activeView === 'borang' && <Borang />}
+        {activeView === 'panduan' && <Panduan onNavigate={setActiveView} />}
+        {activeView === 'borang' && <Borang onNavigate={setActiveView} />}
         {activeView === 'temuduga' && <SemakTemuduga />}
         {activeView === 'tawaran' && <SemakTawaran />}
         {activeView === 'admin' && <AdminPanel />}
       </main>
 
-      {/* Footer Nipis & Elegan Mengikut Permintaan Pengguna */}
-      <footer className="mt-auto py-3 pb-4 px-3 sm:px-5 lg:px-6 print:hidden">
-        <div className="max-w-[1400px] mx-auto bg-[#073b2a] text-white rounded-xl sm:rounded-2xl shadow-md border border-emerald-600/30 py-3 sm:py-3.5 px-4 sm:px-6 text-center space-y-1.5">
+      {/* Footer Bersaiz Selaras & Padu Sepadan Tepat Dengan Header */}
+      <footer className="mt-auto w-full bg-gradient-to-r from-[#042f21] via-[#074732] to-[#042f21] border-t-2 border-amber-400/90 shadow-2xl print:hidden text-white">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-3 sm:py-3.5 text-center space-y-1.5">
           {/* Baris 1: Logo & e-Qabul + Cogan Kata + Inovasi Sekolah */}
           <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-xs sm:text-sm">
             <div className="inline-flex items-center gap-1.5 shrink-0">
