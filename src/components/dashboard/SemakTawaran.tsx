@@ -135,32 +135,32 @@ export default function SemakTawaran() {
   };
 
   return (
-    <div className="animate-in fade-in duration-500 py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-      <div className="text-center mb-12 no-print">
-        <div className="inline-flex items-center justify-center p-3 bg-emerald-100 rounded-2xl mb-4">
-           <Search className="w-8 h-8 text-emerald-700" />
+    <div className="animate-in fade-in duration-500 py-6 sm:py-10 md:py-12 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+      <div className="text-center mb-6 sm:mb-12 no-print">
+        <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-emerald-100 rounded-2xl mb-3 sm:mb-4">
+           <Search className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-700" />
         </div>
-        <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Semakan Tawaran</h1>
-        <p className="text-slate-500 max-w-xl mx-auto text-lg">Sila masukkan No. Kad Pengenalan pemohon (tanpa sengkang) untuk menyemak status tawaran kemasukan.</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 mb-2 sm:mb-4 tracking-tight">Semakan Tawaran</h1>
+        <p className="text-slate-500 max-w-xl mx-auto text-sm sm:text-base md:text-lg">Sila masukkan No. Kad Pengenalan pemohon (tanpa sengkang) untuk menyemak status tawaran kemasukan.</p>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 p-6 md:p-10 mb-12 border border-slate-100 no-print">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto relative">
+      <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-xl sm:shadow-2xl shadow-slate-200/50 p-4 sm:p-8 md:p-10 mb-8 sm:mb-12 border border-slate-100 no-print">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-2xl mx-auto relative">
           <input 
             type="text" 
             placeholder="Contoh: 140101061234"
             maxLength={12}
             value={icInput}
             onChange={(e) => setIcInput(e.target.value)}
-            className="flex-1 px-8 py-5 rounded-full border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 text-lg font-bold text-slate-800 placeholder-slate-400 transition-all outline-none"
+            className="flex-1 px-5 py-3.5 sm:px-8 sm:py-5 rounded-xl sm:rounded-full border-2 border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 text-base sm:text-lg font-bold text-slate-800 placeholder-slate-400 transition-all outline-none"
             required
           />
           <button 
             type="submit"
             disabled={loading}
-            className="bg-emerald-600 text-white px-10 py-5 rounded-full font-extrabold hover:bg-emerald-700 shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="bg-emerald-600 text-white px-6 py-3.5 sm:px-10 sm:py-5 rounded-xl sm:rounded-full font-extrabold hover:bg-emerald-700 shadow-lg sm:shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-sm sm:text-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
           >
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : null}
+            {loading ? <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" /> : null}
             {loading ? 'Menyemak...' : 'Semak Status'}
           </button>
         </form>

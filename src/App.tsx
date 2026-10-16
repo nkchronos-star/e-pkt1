@@ -62,97 +62,97 @@ function AppContent() {
         ref={headerRef}
         className="sticky top-0 z-50 w-full bg-gradient-to-r from-[#084e36] via-[#0d6e4d] to-[#084e36] text-white shadow-xl border-b border-emerald-500/40 backdrop-blur-md print:hidden"
       >
-        {/* Bahagian Atas Header: Susunan Harmoni 2 Logo, Tipografi Rasmi Lengkap & Kad Sesi */}
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-2.5 sm:py-3.5 flex justify-between items-center gap-3 lg:gap-6">
+        {/* Bahagian Atas Header: Susunan Harmoni 2 Logo, Tipografi Rasmi Lengkap & Kad Sesi (Auto-Resize Telefon Pintar) */}
+        <div className="max-w-[1400px] mx-auto px-2.5 sm:px-5 lg:px-6 py-2 sm:py-3.5 flex justify-between items-center gap-2 sm:gap-4 lg:gap-6">
               
               {/* Sisi Kiri: Gandingan Harmoni Dua Logo & Blok Tipografi Padu */}
-              <div className="flex items-center gap-3 sm:gap-4 md:gap-5 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3.5 md:gap-5 min-w-0 flex-1">
                 
-                {/* Kluster Dua Logo Bersebelahan (Logo Sekolah & Logo e-QABUL) */}
-                <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 select-none">
+                {/* Kluster Dua Logo Bersebelahan (Logo Sekolah & Logo e-QABUL) - Skala Auto Fleksibel */}
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 select-none">
                   {/* 1. Logo Rasmi SMA Kota Gelanggi 3 */}
                   <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full blur-sm opacity-50 group-hover:opacity-85 transition"></div>
-                    <div className="relative bg-white p-1 rounded-full w-12 h-12 sm:w-14 sm:h-14 md:w-15 md:h-15 flex items-center justify-center shrink-0 shadow-lg ring-2 ring-amber-400">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full blur-xs opacity-50 group-hover:opacity-85 transition"></div>
+                    <div className="relative bg-white p-0.5 sm:p-1 rounded-full w-9 h-9 min-[400px]:w-11 min-[400px]:h-11 sm:w-13 sm:h-13 md:w-15 md:h-15 flex items-center justify-center shrink-0 shadow-md ring-1.5 sm:ring-2 ring-amber-400">
                       <img 
                         src="https://i.postimg.cc/mrcDcHn3/logo-sma-cantik.png" 
                         alt="Logo Rasmi SMA Kota Gelanggi 3" 
-                        className="h-10 sm:h-11 md:h-13 w-auto object-contain drop-shadow-sm" 
+                        className="h-7 min-[400px]:h-8 sm:h-10 md:h-12 w-auto object-contain drop-shadow-xs" 
                       />
                     </div>
                   </div>
 
                   {/* 2. Logo e-QABUL (Image 2) */}
                   <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/80 to-emerald-400/80 rounded-full blur-sm opacity-50 group-hover:opacity-85 transition"></div>
-                    <div className="relative bg-white p-1 rounded-full shadow-lg ring-2 ring-amber-400 flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-15 md:h-15 shrink-0">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-400/80 to-emerald-400/80 rounded-full blur-xs opacity-50 group-hover:opacity-85 transition"></div>
+                    <div className="relative bg-white p-0.5 sm:p-1 rounded-full shadow-md ring-1.5 sm:ring-2 ring-amber-400 flex items-center justify-center w-9 h-9 min-[400px]:w-11 min-[400px]:h-11 sm:w-13 sm:h-13 md:w-15 md:h-15 shrink-0">
                       {settings.logoEqabulUrl ? (
                         <img 
                           src={settings.logoEqabulUrl} 
                           alt="Logo e-QABUL Asal" 
-                          className="w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 object-contain"
+                          className="w-7 h-7 min-[400px]:w-8 min-[400px]:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain"
                         />
                       ) : (
-                        <EQabulEmblem className="w-10 h-10 sm:w-11 sm:h-11 md:w-13 md:h-13 drop-shadow-sm" />
+                        <EQabulEmblem className="w-7 h-7 min-[400px]:w-8 min-[400px]:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 drop-shadow-xs" />
                       )}
                     </div>
                   </div>
                 </div>
 
                 {/* Garisan Pemisah Halus Emas */}
-                <div className="hidden sm:block h-12 md:h-14 w-[1px] bg-gradient-to-b from-transparent via-amber-400/60 to-transparent shrink-0"></div>
+                <div className="hidden sm:block h-10 md:h-14 w-[1px] bg-gradient-to-b from-transparent via-amber-400/60 to-transparent shrink-0"></div>
 
-                {/* BLOK TIPOGRAFI PADU & BERMARTABAT (Lengkap, Tersusun & Tidak Kosong) */}
-                <div className="flex flex-col justify-center min-w-0 select-none">
+                {/* BLOK TIPOGRAFI PADU & BERMARTABAT (Auto-Resize Sempurna Untuk Telefon Mudah Alih) */}
+                <div className="flex flex-col justify-center min-w-0 select-none overflow-hidden">
                   
                   {/* Baris 1: Nama Penuh Institusi & Lencana Rasmi */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <span className="font-extrabold text-xs sm:text-sm md:text-[15px] uppercase tracking-wider text-emerald-100 drop-shadow-sm leading-tight">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-wrap min-w-0">
+                    <span className="font-extrabold text-[10px] min-[380px]:text-[11px] sm:text-xs md:text-sm lg:text-[15px] uppercase tracking-wide sm:tracking-wider text-emerald-100 drop-shadow-sm leading-tight truncate sm:whitespace-normal">
                       Sekolah Menengah Agama Kota Gelanggi 3
                     </span>
                     <span className="hidden sm:inline-block text-amber-400 font-bold text-xs">•</span>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-amber-300">
+                    <span className="hidden min-[480px]:inline-flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-xs font-bold text-amber-300 shrink-0">
                       <span className="hidden md:inline">Jerantut, Pahang</span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-400/40 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-amber-300 shadow-xs">
+                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-400/40 text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-wider text-amber-300 shadow-xs">
                         KBT Tahfiz
                       </span>
                     </span>
                   </div>
 
                   {/* Baris 2: Tajuk Utama Sistem (e-QABUL : SISTEM KEMASUKAN TINGKATAN 1) */}
-                  <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap mt-0.5">
-                    <div className="flex items-baseline font-black tracking-tight text-2xl sm:text-3xl md:text-4xl text-white drop-shadow-md leading-none">
+                  <div className="flex items-baseline gap-1.5 sm:gap-2.5 md:gap-3 flex-wrap mt-0.5 min-w-0">
+                    <div className="flex items-baseline font-black tracking-tight text-xl min-[360px]:text-2xl sm:text-3xl md:text-4xl text-white drop-shadow-md leading-none shrink-0">
                       <span className="text-emerald-300 font-black italic mr-0.5">e-</span>
                       <span className="text-white">Q</span>
                       <span className="text-white">ABUL</span>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-amber-400 font-bold text-base sm:text-lg hidden sm:inline">|</span>
-                      <span className="font-black text-xs sm:text-sm md:text-base uppercase tracking-wide text-amber-300 drop-shadow-sm">
+                    <div className="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden">
+                      <span className="text-amber-400 font-bold text-xs sm:text-base md:text-lg hidden min-[360px]:inline">|</span>
+                      <span className="font-black text-[9px] min-[360px]:text-[10.5px] sm:text-xs md:text-sm lg:text-base uppercase tracking-tight sm:tracking-wide text-amber-300 drop-shadow-sm leading-tight truncate sm:whitespace-normal">
                         Sistem Kemasukan Murid Tingkatan 1
                       </span>
                     </div>
                   </div>
 
                   {/* Baris 3: Penerangan Fungsi & Cogan Kata */}
-                  <div className="flex items-center gap-2 text-[10px] sm:text-xs text-emerald-100/90 mt-0.5 flex-wrap">
-                    <span className="font-medium text-emerald-200/90 hidden md:inline">
-                      Portal Rasmi Pengambilan Murid & Semakan Tawaran
+                  <div className="flex items-center gap-1.5 text-[8.5px] min-[360px]:text-[9.5px] sm:text-[11px] md:text-xs text-emerald-100/90 mt-0.5 leading-tight overflow-hidden">
+                    <span className="font-semibold italic text-amber-200 drop-shadow-xs truncate">
+                      "Satu Gerbang, Segala Urusan Kemasukan"
                     </span>
                     <span className="hidden md:inline text-amber-400 font-bold">•</span>
-                    <span className="font-semibold italic text-amber-200 drop-shadow-xs">
-                      "Satu Gerbang, Segala Urusan Kemasukan"
+                    <span className="font-medium text-emerald-200/90 hidden md:inline">
+                      Portal Rasmi Pengambilan Murid & Semakan Tawaran
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Sisi Kanan: Kad Ringkasan Sesi Kemasukan & Status Admin / Log Keluar */}
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 {currentUser ? (
-                  <div className="flex items-center gap-2 sm:gap-3 bg-emerald-950/85 border border-amber-400/50 px-2.5 sm:px-3.5 py-1.5 rounded-2xl shadow-lg backdrop-blur-md">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-300 text-emerald-950 font-black flex items-center justify-center text-xs sm:text-sm shadow-sm shrink-0">
+                  <div className="flex items-center gap-1.5 sm:gap-3 bg-emerald-950/85 border border-amber-400/50 px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl shadow-lg backdrop-blur-md">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-400 to-amber-300 text-emerald-950 font-black flex items-center justify-center text-[11px] sm:text-sm shadow-sm shrink-0">
                       {currentUser.name.charAt(0)}
                     </div>
                     <div className="text-left hidden sm:block">
@@ -166,7 +166,7 @@ function AppContent() {
                     <button 
                       type="button"
                       onClick={() => { logout(); setActiveView('utama'); }}
-                      className="flex items-center gap-1.5 bg-rose-600/90 hover:bg-rose-600 text-white border border-rose-400/50 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs hover:scale-[1.02] active:scale-95"
+                      className="flex items-center gap-1 sm:gap-1.5 bg-rose-600/90 hover:bg-rose-600 text-white border border-rose-400/50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition shadow-xs hover:scale-[1.02] active:scale-95"
                       title="Log Keluar dari Sistem"
                     >
                       <LogOut className="w-3.5 h-3.5" />
@@ -196,11 +196,11 @@ function AppContent() {
                 )}
 
                 <button 
-                  className="md:hidden p-2 text-emerald-100 hover:text-white hover:bg-white/10 rounded-xl transition-colors shrink-0"
+                  className="md:hidden p-1.5 sm:p-2 text-emerald-100 hover:text-white hover:bg-white/10 rounded-xl transition-colors shrink-0 active:scale-95"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   aria-label="Menu"
                 >
-                  {mobileMenuOpen ? <X className="w-6 h-6 text-amber-300" /> : <Menu className="w-6 h-6" />}
+                  {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </button>
               </div>
             </div>
@@ -291,42 +291,42 @@ function AppContent() {
         {activeView === 'admin' && <AdminPanel />}
       </main>
 
-      {/* Footer Bersaiz Selaras & Padu Sepadan Tepat Dengan Header */}
+      {/* Footer Bersaiz Selaras & Padu Sepadan Tepat Dengan Header (Auto-Resize Telefon Mudah Alih) */}
       <footer className="mt-auto w-full bg-gradient-to-r from-[#042f21] via-[#074732] to-[#042f21] border-t-2 border-amber-400/90 shadow-2xl print:hidden text-white">
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-3 sm:py-3.5 text-center space-y-1.5">
+        <div className="max-w-[1400px] mx-auto px-2.5 sm:px-5 lg:px-6 py-2.5 sm:py-3.5 text-center space-y-1 sm:space-y-1.5">
           {/* Baris 1: Logo & e-Qabul + Cogan Kata + Inovasi Sekolah */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-xs sm:text-sm">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-3 flex-wrap text-[11px] sm:text-xs md:text-sm">
             <div className="inline-flex items-center gap-1.5 shrink-0">
-              <div className="w-6 h-6 rounded-full bg-white/95 p-0.5 shadow-sm flex items-center justify-center ring-1 ring-amber-400/80 shrink-0">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/95 p-0.5 shadow-xs flex items-center justify-center ring-1 ring-amber-400/80 shrink-0">
                 {settings.logoEqabulUrl ? (
-                  <img src={settings.logoEqabulUrl} alt="e-Qabul" className="w-5 h-5 object-contain" />
+                  <img src={settings.logoEqabulUrl} alt="e-Qabul" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
                 ) : (
-                  <EQabulEmblem className="w-5 h-5" />
+                  <EQabulEmblem className="w-4 h-4 sm:w-5 sm:h-5" />
                 )}
               </div>
-              <span className="font-black text-sm sm:text-base tracking-tight select-none">
+              <span className="font-black text-xs sm:text-base tracking-tight select-none">
                 <span className="text-emerald-300 italic">e-</span>
                 <span className="text-amber-300">Qabul</span>
               </span>
             </div>
 
             <span className="text-amber-400/60 font-bold">•</span>
-            <span className="text-white font-bold">
+            <span className="text-white font-bold text-[10.5px] sm:text-xs md:text-sm">
               Satu Gerbang, Segala Urusan Kemasukan
             </span>
             <span className="hidden md:inline text-emerald-500/80 font-bold">|</span>
-            <span className="hidden sm:inline text-emerald-200/90 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+            <span className="hidden sm:inline text-emerald-200/90 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">
               INOVASI SMA KOTA GELANGGI 3 (Unit ICT & HEM)
             </span>
           </div>
 
           {/* Baris 2: Peringatan Tanggungjawab Pengguna (Dikekalkan) */}
-          <p className="text-[10px] sm:text-[11px] text-emerald-200/80 italic leading-snug max-w-4xl mx-auto">
+          <p className="text-[9px] min-[360px]:text-[10px] sm:text-[11px] text-emerald-200/80 italic leading-snug max-w-4xl mx-auto px-2">
             Pengguna Web bertanggungjawab untuk merahsiakan pengenalan identiti. Pihak sekolah tidak bertanggungjawab atas kecuaian pencerobohan identiti.
           </p>
 
           {/* Baris 3: Hak Cipta Ringkas */}
-          <p className="text-[9px] sm:text-[10px] text-emerald-400/80 pt-0.5">
+          <p className="text-[8.5px] sm:text-[10px] text-emerald-400/80 pt-0.5">
             &copy; {new Date().getFullYear()} e-Qabul SMAG3 &bull; Hak Cipta Terpelihara
           </p>
         </div>

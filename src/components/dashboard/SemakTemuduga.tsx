@@ -99,24 +99,24 @@ export default function SemakTemuduga() {
   }
 
   return (
-    <div className="animate-in fade-in py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto print:p-0 print:m-0 print:max-w-none print:py-0">
-      <div className="text-center mb-10 no-print print:hidden">
-        <div className="inline-flex items-center justify-center p-3 bg-emerald-100 rounded-2xl mb-4">
-           <Search className="w-8 h-8 text-emerald-600" />
+    <div className="animate-in fade-in py-6 sm:py-10 md:py-12 px-3 sm:px-6 lg:px-8 max-w-5xl mx-auto print:p-0 print:m-0 print:max-w-none print:py-0">
+      <div className="text-center mb-6 sm:mb-10 no-print print:hidden">
+        <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-emerald-100 rounded-2xl mb-3 sm:mb-4">
+           <Search className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600" />
         </div>
-        <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Semakan Kelayakan Temuduga</h1>
-        <p className="text-slate-500 text-lg">Sila masukkan Nombor Kad Pengenalan pemohon tanpa sempang (-) untuk menyemak kelayakan.</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 mb-2 sm:mb-4 tracking-tight">Semakan Kelayakan Temuduga</h1>
+        <p className="text-slate-500 text-sm sm:text-base md:text-lg max-w-xl mx-auto">Sila masukkan Nombor Kad Pengenalan pemohon tanpa sempang (-) untuk menyemak kelayakan.</p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 mb-8 no-print print:hidden">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 md:p-10 mb-6 sm:mb-8 no-print print:hidden">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-grow">
             <label htmlFor="ic" className="sr-only">No. Kad Pengenalan</label>
             <input 
               type="text" 
               id="ic"
               placeholder="Contoh: 140101061234"
-              className="w-full text-lg border-2 border-slate-200 rounded-xl px-5 py-4 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all duration-300 font-medium text-slate-700 placeholder-slate-400 bg-slate-50 focus:bg-white"
+              className="w-full text-base sm:text-lg border-2 border-slate-200 rounded-xl px-4 py-3 sm:px-5 sm:py-4 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all duration-300 font-medium text-slate-700 placeholder-slate-400 bg-slate-50 focus:bg-white"
               value={ic}
               onChange={(e) => setIc(e.target.value)}
               required
@@ -125,7 +125,7 @@ export default function SemakTemuduga() {
           <button 
             type="submit"
             disabled={loading}
-            className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+            className="bg-emerald-600 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl font-bold hover:bg-emerald-700 transition-all duration-300 shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 whitespace-nowrap hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />} Semak
           </button>
