@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Candidate, ApplicationSettings, User, Infographic } from './types';
+import { Candidate, ApplicationSettings, User, Infographic, PengenalanItem, VideoKorporatItem, InfoSmag3Item, SubjekKategoriItem, PanduanLangkahItem, PanduanItem } from './types';
 import { db } from './lib/firebase';
-import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, deleteField, onSnapshot, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { DEFAULT_TANDATANGAN_PENGETUA, DEFAULT_TANDATANGAN_PENGARAH } from './lib/imageUtils';
+import { normalizeCandidateDaerahNegeri, lookupPoskodMalaysia } from './lib/poskodMalaysia';
 
 export const getTodayMalaysia = (): string => {
   try {
@@ -106,6 +107,276 @@ export const isOfferExpired = (
   return today > deadlineIso;
 };
 
+export const DEFAULT_TAHFIZ_ITEMS = [
+  {
+    id: 'hafazan',
+    name: 'Hafazan',
+    weight: 70,
+    soalanPanduan: 'Ujian menghafaz potongan ayat pilihan dalam masa 10–15 minit (Kelancaran, Ingatan, Tajwid & Fasohah)',
+    rubrics: [
+      {
+        id: 'haf_mumtaz',
+        label: 'Mumtaz (Cemerlang)',
+        minScore: 60,
+        maxScore: 70,
+        criteria: 'Hafazan sangat lancar tanpa sangkut, ingatan kukuh, makhraj dan hukum tajwid sangat tepat.'
+      },
+      {
+        id: 'haf_jayyid_jiddan',
+        label: 'Jayyid Jiddan (Kepujian)',
+        minScore: 45,
+        maxScore: 59,
+        criteria: 'Hafazan lancar dengan 1–2 teguran kecil sahaja, sebutan huruf jelas dan tajwid terjaga.'
+      },
+      {
+        id: 'haf_jayyid',
+        label: 'Jayyid (Baik / Sederhana)',
+        minScore: 30,
+        maxScore: 44,
+        criteria: 'Hafazan sederhana, terdapat beberapa sangkutan (3–4 kali dibantu) dan penguasaan tajwid asas.'
+      },
+      {
+        id: 'haf_maqbul',
+        label: 'Maqbul (Lemah)',
+        minScore: 1,
+        maxScore: 29,
+        criteria: 'Hafazan kurang lancar, kerap terlupa potongan ayat dan memerlukan banyak bimbingan penilai.'
+      }
+    ]
+  },
+  {
+    id: 'tilawah',
+    name: 'Tilawah',
+    weight: 25,
+    soalanPanduan: 'Bacaan mushaf ayat pilihan (Hukum Nun/Mim Mati, Mad, Makhraj Huruf, Dengung & Kelancaran)',
+    rubrics: [
+      {
+        id: 'til_mumtaz',
+        label: 'Mumtaz (Cemerlang)',
+        minScore: 21,
+        maxScore: 25,
+        criteria: 'Bacaan bertajwid sempurna, makhraj tepat, suara jelas serta alunan bacaan teratur.'
+      },
+      {
+        id: 'til_jayyid_jiddan',
+        label: 'Jayyid Jiddan (Kepujian)',
+        minScore: 15,
+        maxScore: 20,
+        criteria: 'Bacaan lancar dan menjaga hukum tajwid utama dengan sedikit ralat kecil.'
+      },
+      {
+        id: 'til_jayyid',
+        label: 'Jayyid (Baik / Sederhana)',
+        minScore: 8,
+        maxScore: 14,
+        criteria: 'Bacaan agak merangkak atau terdapat kesalahan hukum tajwid asas (dengung / panjang pendek).'
+      },
+      {
+        id: 'til_maqbul',
+        label: 'Maqbul (Lemah)',
+        minScore: 1,
+        maxScore: 7,
+        criteria: 'Bacaan lemah, kurang mengenal tanda bacaan atau kerap tersalah huruf/baris.'
+      }
+    ]
+  },
+  {
+    id: 'sahsiah',
+    name: 'Sahsiah',
+    weight: 5,
+    soalanPanduan: 'Penampilan diri, adab bersama Al-Quran, komunikasi, minat & kesungguhan mengikuti KBT Tahfiz',
+    rubrics: [
+      {
+        id: 'sah_cemerlang',
+        label: 'Cemerlang',
+        minScore: 5,
+        maxScore: 5,
+        criteria: 'Beradab tinggi, penampilan kemas, menjawab dengan yakin & sangat berminat masuk kelas Tahfiz.'
+      },
+      {
+        id: 'sah_baik',
+        label: 'Baik',
+        minScore: 3,
+        maxScore: 4,
+        criteria: 'Beradab sopan, komunikasi sederhana dan menunjukkan minat yang baik.'
+      },
+      {
+        id: 'sah_sederhana',
+        label: 'Sederhana / Perlu Bimbingan',
+        minScore: 1,
+        maxScore: 2,
+        criteria: 'Kurang keyakinan diri atau kurang persediaan semasa sesi temuduga.'
+      }
+    ]
+  }
+];
+
+export const ensureTahfizRubrics = (items?: ApplicationSettings['tahfizItems']) => {
+  const source = items && items.length > 0 ? items : DEFAULT_TAHFIZ_ITEMS;
+  return source.map((item) => {
+    if (item.rubrics && item.rubrics.length > 0) return item;
+    const def = DEFAULT_TAHFIZ_ITEMS.find(
+      d => d.id === item.id || d.name.toLowerCase() === item.name?.toLowerCase()
+    );
+    if (def) {
+      return {
+        ...item,
+        soalanPanduan: item.soalanPanduan || def.soalanPanduan,
+        rubrics: def.rubrics
+      };
+    }
+    const w = Number(item.weight || 10);
+    return {
+      ...item,
+      soalanPanduan: item.soalanPanduan || `Penilaian komponen ${item.name}`,
+      rubrics: [
+        {
+          id: `${item.id}_cemerlang`,
+          label: 'Cemerlang',
+          minScore: Math.max(1, Math.round(w * 0.8)),
+          maxScore: w,
+          criteria: `Penguasaan ${item.name} pada tahap sangat cemerlang dan tepat.`
+        },
+        {
+          id: `${item.id}_baik`,
+          label: 'Baik / Kepujian',
+          minScore: Math.max(1, Math.round(w * 0.5)),
+          maxScore: Math.max(1, Math.round(w * 0.8) - 1),
+          criteria: `Penguasaan ${item.name} pada tahap baik dan memuaskan.`
+        },
+        {
+          id: `${item.id}_sederhana`,
+          label: 'Lemah / Perlu Bimbingan',
+          minScore: 1,
+          maxScore: Math.max(1, Math.round(w * 0.5) - 1),
+          criteria: `Penguasaan ${item.name} masih lemah dan memerlukan bimbingan.`
+        }
+      ]
+    };
+  });
+};
+
+export const DEFAULT_PENGENALAN_ITEMS: PengenalanItem[] = [
+  {
+    id: 'peng_1',
+    type: 'PARAGRAPH',
+    text: 'Matlamat utama pelaksanaan Kurikulum Bersepadu Tahfiz (KBT) di SMAG3 adalah untuk melahirkan golongan profesional, teknokrat dan usahawan hafiz yang mengamalkan ajaran Islam (mutadayyin) dan memiliki pelbagai kemahiran ilmu selaras dengan Falsafah Pendidikan Negara.'
+  },
+  {
+    id: 'peng_2',
+    type: 'LIST_ITEM',
+    text: 'Menghafaz 30 juzuk Al-Quran.'
+  },
+  {
+    id: 'peng_3',
+    type: 'LIST_ITEM',
+    text: 'Profesional dengan asas keagamaan mantap berlandaskan Al-Quran dan Al-Sunnah.'
+  },
+  {
+    id: 'peng_4',
+    type: 'LIST_ITEM',
+    text: 'Memaksimumkan keupayaan berfikir aras tinggi, kreatif dan inovatif.'
+  },
+  {
+    id: 'peng_5',
+    type: 'LIST_ITEM',
+    text: 'Hubungan baik dengan Allah, manusia dan alam sekitar.'
+  }
+];
+
+export const DEFAULT_VIDEO_KORPORAT_ITEMS: VideoKorporatItem[] = [
+  {
+    id: 'vid_1',
+    title: 'Video Korporat',
+    embedUrl: 'https://www.youtube.com/embed/JT6Py5iXp1g?si=VRrKskCawUxW1W1B'
+  }
+];
+
+export const DEFAULT_INFO_SMAG3_ITEMS: InfoSmag3Item[] = [
+  {
+    id: 'info_smag3_1',
+    title: 'Info SMAG3',
+    imageUrl: 'https://i.postimg.cc/yNK9VCKH/infografik.png',
+    linkUrl: 'https://tinyurl.com/y5h7jxxx',
+    facebookUrl: 'https://www.facebook.com/SMAKG03/'
+  }
+];
+
+export const DEFAULT_SUBJEK_MENENGAH_BAWAH: SubjekKategoriItem[] = [
+  {
+    id: 'mb_teras',
+    kategori: 'Teras',
+    subjek: ['Bahasa Melayu', 'Sains', 'Bahasa Inggeris', 'Sejarah', 'Bahasa Arab', 'Pendidikan Islam', 'Matematik']
+  },
+  {
+    id: 'mb_wajib',
+    kategori: 'Wajib',
+    subjek: ['Pend. Jasmani & Kesihatan', 'Geografi', 'Reka Bentuk Teknologi', 'Pendidikan Seni Visual']
+  },
+  {
+    id: 'mb_tahfiz',
+    kategori: 'Tahfiz',
+    subjek: ['Hifz Al-Quran', 'Maharat Al-Quran']
+  }
+];
+
+export const DEFAULT_SUBJEK_MENENGAH_ATAS: SubjekKategoriItem[] = [
+  {
+    id: 'ma_teras',
+    kategori: 'Teras',
+    subjek: ['Bahasa Melayu', 'Sains', 'Bahasa Inggeris', 'Sejarah', 'Bahasa Arab', 'Matematik']
+  },
+  {
+    id: 'ma_wajib',
+    kategori: 'Wajib',
+    subjek: ['Pend. Jasmani & Kesihatan', 'Perniagaan', 'Pendidikan Islam']
+  },
+  {
+    id: 'ma_tahfiz',
+    kategori: 'Tahfiz',
+    subjek: ['Hifz Al-Quran', 'Maharat Al-Quran']
+  }
+];
+
+export const DEFAULT_PANDUAN_SYARAT_ITEMS: PanduanItem[] = [
+  { id: 'syarat_1', text: 'Warganegara Malaysia yang beragama Islam.' },
+  { id: 'syarat_2', text: 'Berumur 13 tahun pada tahun kemasukan.' },
+  { id: 'syarat_3', text: 'Tamat Darjah 6 di Sekolah Kementerian Pendidikan Malaysia (KPM) atau institusi setaraf dengannya.' },
+  { id: 'syarat_4', text: 'Memperoleh sekurang-kurangnya Tahap Penguasaan 4 (TP4) bagi semua mata pelajaran dalam Pentaksiran Bilik Darjah (PBD).' },
+  { id: 'syarat_5', text: 'Memperoleh sekurang-kurangnya 5A dalam Ujian Penilaian Kelas Kafa (UPKK) atau setaraf dengannya.' },
+  { id: 'syarat_6', text: 'Boleh menulis dan membaca tulisan Jawi dengan baik.' },
+  { id: 'syarat_7', text: 'Lancar bacaan Al-Quran dan mempunyai minat yang tinggi untuk menghafaz Al-Quran (Kurikulum Bersepadu Tahfiz - KBT).' },
+  { id: 'syarat_8', text: 'Memiliki tubuh badan yang sihat, tiada masalah disiplin berat, dan mempunyai sahsiah terpuji.' }
+];
+
+export const DEFAULT_PANDUAN_LANGKAH_ITEMS: PanduanLangkahItem[] = [
+  {
+    id: 'langkah_1',
+    title: 'Langkah 1: Mengisi Borang Permohonan Atas Talian',
+    description: 'Ibu bapa atau penjaga perlu mengisi borang permohonan secara atas talian. Pastikan semua maklumat peribadi calon, maklumat ibu bapa/penjaga, dan maklumat akademik (PBD & UPKK) diisi dengan lengkap dan tepat.'
+  },
+  {
+    id: 'langkah_2',
+    title: 'Langkah 2: Semakan Panggilan Temuduga',
+    description: 'Pihak sekolah akan membuat saringan awal terhadap permohonan yang diterima. Calon boleh membuat semakan status panggilan temuduga melalui menu "Semak Temuduga" dengan memasukkan No. Kad Pengenalan. Calon yang layak wajib mencetak Surat Panggilan Temuduga rasmi.'
+  },
+  {
+    id: 'langkah_3',
+    title: 'Langkah 3: Menghadiri Sesi Temuduga (Tahfiz & Akademik)',
+    description: 'Calon hadir ke SMA Kota Gelanggi 3 bersama ibu bapa/penjaga pada tarikh, masa, dan tempat yang telah ditetapkan. Calon akan dinilai dari aspek hafazan & tilawah Al-Quran (Tahfiz) serta ujian kefahaman asas (Akademik & Sahsiah).'
+  },
+  {
+    id: 'langkah_4',
+    title: 'Langkah 4: Semakan Tawaran & Pengesahan Penerimaan',
+    description: 'Keputusan tawaran kemasukan akan diumumkan melalui portal di menu "Semak Tawaran". Calon yang berjaya ditawarkan perlu mengesahkan penerimaan tawaran (Terima / Tolak), mencetak Surat Tawaran, memuat turun Borang Pendaftaran (12 Halaman), dan menyertai Group WhatsApp rasmi sekolah.'
+  }
+];
+
+export const DEFAULT_PANDUAN_DOKUMEN_ITEMS: PanduanItem[] = [
+  { id: 'dok_1', text: 'Gambar Pasport Pemohon (format JPG / PNG yang jelas berlatar belakang biru atau putih).' },
+  { id: 'dok_2', text: 'Salinan maklumat keputusan PBD Darjah 6 dan Slip Keputusan UPKK untuk rujukan semasa mengisi gred.' }
+];
+
 export const applyAutoDates = (s: ApplicationSettings): ApplicationSettings => {
   const res = { ...s };
   const today = getTodayMalaysia();
@@ -131,6 +402,45 @@ export const applyAutoDates = (s: ApplicationSettings): ApplicationSettings => {
     res.tawaranBuka = false;
   }
 
+  // Portal Ujian Akademik Calon: Jika tarikh mula/tutup ditetapkan, auto buka/tutup mengikut tarikh
+  if (s.tarikhTutupUjianAkademik && today > s.tarikhTutupUjianAkademik) {
+    res.ujianAkademikBuka = false;
+  } else if (s.tarikhBukaUjianAkademik && today < s.tarikhBukaUjianAkademik) {
+    res.ujianAkademikBuka = false;
+  } else if (s.tarikhBukaUjianAkademik && isDateActive(s.tarikhBukaUjianAkademik, s.tarikhTutupUjianAkademik)) {
+    res.ujianAkademikBuka = true;
+  }
+
+  res.tahfizItems = ensureTahfizRubrics(s.tahfizItems);
+
+  // Pastikan 3 bahagian akademik (Matematik, Sains, Psikometrik) tersedia secara lalai
+  if (!res.akademikItems || res.akademikItems.length === 0) {
+    res.akademikItems = [
+      { id: 'matematik', name: 'Matematik', weight: 20 },
+      { id: 'sains', name: 'Sains', weight: 20 },
+      { id: 'psikometrik', name: 'Psikometrik', weight: 20 }
+    ];
+  } else if (
+    res.akademikItems.length === 2 &&
+    res.akademikItems.some(i => i.id === 'matematik' || i.name?.toLowerCase().includes('mat')) &&
+    res.akademikItems.some(i => i.id === 'sains' || i.name?.toLowerCase().includes('sains')) &&
+    !res.akademikItems.some(i => i.id === 'psikometrik' || i.name?.toLowerCase().includes('psiko'))
+  ) {
+    res.akademikItems = [
+      ...res.akademikItems,
+      { id: 'psikometrik', name: 'Psikometrik', weight: 20 }
+    ];
+  }
+
+  if (!res.pengenalanItems) res.pengenalanItems = DEFAULT_PENGENALAN_ITEMS;
+  if (!res.videoKorporatItems) res.videoKorporatItems = DEFAULT_VIDEO_KORPORAT_ITEMS;
+  if (!res.infoSmag3Items) res.infoSmag3Items = DEFAULT_INFO_SMAG3_ITEMS;
+  if (!res.subjekMenengahBawah) res.subjekMenengahBawah = DEFAULT_SUBJEK_MENENGAH_BAWAH;
+  if (!res.subjekMenengahAtas) res.subjekMenengahAtas = DEFAULT_SUBJEK_MENENGAH_ATAS;
+  if (!res.panduanSyaratItems) res.panduanSyaratItems = DEFAULT_PANDUAN_SYARAT_ITEMS;
+  if (!res.panduanLangkahItems) res.panduanLangkahItems = DEFAULT_PANDUAN_LANGKAH_ITEMS;
+  if (!res.panduanDokumenItems) res.panduanDokumenItems = DEFAULT_PANDUAN_DOKUMEN_ITEMS;
+
   return res;
 };
 
@@ -149,6 +459,7 @@ interface AppContextType extends AppState {
   syncSettingsToServer: (customPartial?: Partial<ApplicationSettings>) => Promise<void>;
   saveCandidate: (candidate: Candidate) => Promise<void>;
   updateCandidate: (ic: string, data: Partial<Candidate>) => Promise<void>;
+  resetCandidateExamMark: (ic: string) => Promise<void>;
   deleteCandidate: (ic: string) => Promise<void>;
   login: (username: string, password?: string) => Promise<boolean>;
   logout: () => void;
@@ -174,6 +485,7 @@ const defaultSettings: ApplicationSettings = {
   tarikhAkhirTerimaTawaran: '28 November 2026',
   tarikhAkhirTerimaTawaranDate: '2026-11-28',
   linkGroupWhatsapp: '',
+  linkGroupWhatsappTemuduga: '',
   tarikhSemakPertimbangan: '30 Oktober 2026',
   tarikhSemakPertimbanganDate: '2026-10-30',
   tarikhSuratPanggilan: '28 September 2026',
@@ -198,15 +510,18 @@ const defaultSettings: ApplicationSettings = {
   jawatanPengarahTawaran1: 'Ketua Penolong Pengarah Kanan',
   jawatanPengarahTawaran2: 'Sektor Pendidikan Islam',
   jawatanPengarahTawaran3: 'b.p Pengarah Pendidikan Pahang',
-  tahfizItems: [
-    { id: 'hafazan', name: 'Hafazan', weight: 70 },
-    { id: 'tilawah', name: 'Tilawah', weight: 25 },
-    { id: 'sahsiah', name: 'Sahsiah', weight: 5 }
-  ],
+  tahfizItems: DEFAULT_TAHFIZ_ITEMS,
   akademikItems: [
     { id: 'matematik', name: 'Matematik', weight: 20 },
-    { id: 'sains', name: 'Sains', weight: 20 }
-  ]
+    { id: 'sains', name: 'Sains', weight: 20 },
+    { id: 'psikometrik', name: 'Psikometrik', weight: 20 }
+  ],
+  ujianAkademikBuka: true,
+  tarikhBukaUjianAkademik: '',
+  tarikhTutupUjianAkademik: '',
+  masaUjianAkademikMinit: 30,
+  pinUjianAkademik: '',
+  soalanAkademik: []
 };
 
 const defaultUsers: User[] = [
@@ -371,6 +686,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // 1. Dengar data awam sahaja (Settings & Infografik) untuk semua pelawat
   useEffect(() => {
+    try {
+      if (!localStorage.getItem('smag3_reset_140110060181_v1')) {
+        localStorage.removeItem('eqabul_exam_draft_140110060181');
+        localStorage.removeItem('eqabul_draft_akademik_140110060181');
+        localStorage.setItem('smag3_reset_140110060181_v1', '1');
+      }
+    } catch {}
+
     // 1. Settings
     const unsubSettings = onSnapshot(doc(db, 'config', 'main'), (docSnap) => {
       if (docSnap.exists()) {
@@ -502,14 +825,63 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // 2.2 Calon-calon (Hanya dimuat turun oleh Pentadbir berdaftar)
     const unsubCandidates = onSnapshot(collection(db, 'candidates'), (snapshot) => {
       const candidatesList: Candidate[] = [];
+      const toStandardizeInFirestore: { docId: string; updates: Partial<Candidate> }[] = [];
+
       snapshot.forEach(docSnap => {
-        candidatesList.push({ id: docSnap.id, ...docSnap.data() } as Candidate);
+        const raw = { id: docSnap.id, ...docSnap.data() } as Candidate;
+        const norm = normalizeCandidateDaerahNegeri(raw);
+        const updates: Partial<Candidate> = {};
+
+        if (norm.daerah !== 'TIADA MAKLUMAT') {
+          if ((raw.daerah || '').trim().toUpperCase() !== norm.daerah) {
+            raw.daerah = norm.daerah;
+            updates.daerah = norm.daerah;
+          }
+          if ((raw.negeri || '').trim().toUpperCase() !== norm.negeri) {
+            raw.negeri = norm.negeri;
+            updates.negeri = norm.negeri;
+          }
+        }
+        if (raw.poskodBapa) {
+          const locBapa = lookupPoskodMalaysia(raw.poskodBapa);
+          if (locBapa && ((raw.daerahBapa || '').trim().toUpperCase() !== locBapa.daerah || (raw.negeriBapa || '').trim().toUpperCase() !== locBapa.negeri)) {
+            raw.daerahBapa = locBapa.daerah;
+            raw.negeriBapa = locBapa.negeri;
+            updates.daerahBapa = locBapa.daerah;
+            updates.negeriBapa = locBapa.negeri;
+          }
+        }
+        if (raw.poskodIbu) {
+          const locIbu = lookupPoskodMalaysia(raw.poskodIbu);
+          if (locIbu && ((raw.daerahIbu || '').trim().toUpperCase() !== locIbu.daerah || (raw.negeriIbu || '').trim().toUpperCase() !== locIbu.negeri)) {
+            raw.daerahIbu = locIbu.daerah;
+            raw.negeriIbu = locIbu.negeri;
+            updates.daerahIbu = locIbu.daerah;
+            updates.negeriIbu = locIbu.negeri;
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          toStandardizeInFirestore.push({ docId: docSnap.id, updates });
+        }
+
+        candidatesList.push(raw);
       });
+
       setState(prev => ({ ...prev, candidates: candidatesList }));
       try {
         localStorage.setItem(CANDIDATES_STORAGE_KEY, JSON.stringify(candidatesList));
       } catch (e) {
         console.warn('Gagal menyimpan cache calon:', e);
+      }
+
+      // Automatik kemas kini rekod calon yang sudah daftar di Firestore supaya daerah & negeri seragam
+      if (toStandardizeInFirestore.length > 0) {
+        Promise.allSettled(
+          toStandardizeInFirestore.map(item =>
+            setDoc(doc(db, 'candidates', item.docId), item.updates, { merge: true })
+          )
+        ).catch(err => console.warn('Auto-standardize daerah/negeri:', err));
       }
     }, (error) => {
       console.error("Firestore candidates error:", error);
@@ -655,6 +1027,73 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const resetCandidateExamMark = async (ic: string) => {
+    try {
+      const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
+      const docRef = doc(db, 'candidates', safeId);
+      const snap = await getDoc(docRef);
+      const currentData = snap.exists() ? (snap.data() as Candidate) : null;
+      const currentAkd = currentData?.markahAkademik;
+
+      let restoredAkd: Candidate['markahAkademik'] | undefined = undefined;
+
+      if (currentAkd?.sandaranMarkahAsal && typeof currentAkd.sandaranMarkahAsal === 'object') {
+        restoredAkd = { ...currentAkd.sandaranMarkahAsal };
+        delete restoredAkd.sandaranMarkahAsal;
+        delete restoredAkd.autoGraded;
+        delete restoredAkd.jawapanCalon;
+        delete restoredAkd.butiranSkor;
+        await updateDoc(docRef, { markahAkademik: restoredAkd });
+      } else if (currentAkd?.a_1791595296044 !== undefined) {
+        const origSains = Number(currentAkd.a_1791595296044) || 11;
+        const origMath =
+          currentAkd.autoGraded ? 11 : Number(currentAkd.matematik) || 11;
+        restoredAkd = {
+          matematik: origMath,
+          sains: origSains,
+          a_1791595296044: origSains,
+          jumlah: origMath + origSains,
+          dinilaiOleh:
+            currentAkd.dinilaiOleh && !currentAkd.dinilaiOleh.includes('Auto')
+              ? currentAkd.dinilaiOleh
+              : 'Norafiza binti Hashim',
+          tarikhDinilai:
+            currentAkd.tarikhDinilai && !currentAkd.autoGraded
+              ? currentAkd.tarikhDinilai
+              : '2026-10-10T04:32:00.000Z'
+        };
+        await updateDoc(docRef, { markahAkademik: restoredAkd });
+      } else {
+        await updateDoc(docRef, { markahAkademik: deleteField() });
+        restoredAkd = undefined;
+      }
+
+      try {
+        localStorage.removeItem(`eqabul_exam_draft_${safeId}`);
+        localStorage.removeItem(`eqabul_draft_akademik_${safeId}`);
+      } catch {}
+
+      setState(prev => {
+        const nextList = prev.candidates.map(c => {
+          if (c.ic === ic || c.id === safeId) {
+            const copy = { ...c };
+            if (restoredAkd) {
+              copy.markahAkademik = restoredAkd;
+            } else {
+              delete copy.markahAkademik;
+            }
+            return copy;
+          }
+          return c;
+        });
+        return { ...prev, candidates: nextList };
+      });
+    } catch (e) {
+      console.error('Error resetting candidate academic exam mark:', e);
+      throw e;
+    }
+  };
+
   const deleteCandidate = async (ic: string) => {
     try {
       const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
@@ -786,6 +1225,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       syncSettingsToServer,
       saveCandidate,
       updateCandidate,
+      resetCandidateExamMark,
       deleteCandidate,
       login,
       logout,

@@ -4,6 +4,7 @@ import { X, Upload, Camera, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import { useAppContext } from '../../store';
 import { compressImageFile } from '../../lib/imageUtils';
+import { lookupPoskodMalaysia, normalizeCandidateDaerahNegeri } from '../../lib/poskodMalaysia';
 
 export default function EditCandidateModal({ 
   candidate, 
@@ -16,6 +17,7 @@ export default function EditCandidateModal({
 }) {
   const { updateCandidate } = useAppContext();
   
+  const normalizedInitial = normalizeCandidateDaerahNegeri(candidate);
   const [formData, setFormData] = useState({
     name: candidate.name || '',
     ic: candidate.ic || '',
@@ -26,9 +28,9 @@ export default function EditCandidateModal({
     namaSekolahRendah: candidate.namaSekolahRendah || '',
     alamat1: candidate.alamat1 || '',
     alamat2: candidate.alamat2 || '',
-    poskod: candidate.poskod || '',
-    daerah: candidate.daerah || '',
-    negeri: candidate.negeri || 'PAHANG',
+    poskod: (candidate.poskod || '').replace(/\D/g, '').substring(0, 5),
+    daerah: normalizedInitial.daerah !== 'TIADA MAKLUMAT' ? normalizedInitial.daerah : (candidate.daerah || ''),
+    negeri: normalizedInitial.negeri !== 'TIADA MAKLUMAT' ? normalizedInitial.negeri : (candidate.negeri || 'PAHANG'),
     namaBapa: candidate.namaBapa || '',
     telefonBapa: candidate.telefonBapa || '',
     namaIbu: candidate.namaIbu || '',
@@ -46,6 +48,17 @@ export default function EditCandidateModal({
     if (name === 'ic') {
       const digitsOnly = value.replace(/\D/g, '').substring(0, 12);
       setFormData(prev => ({ ...prev, ic: digitsOnly }));
+      return;
+    }
+    if (name === 'poskod') {
+      const cleanPoskod = value.replace(/\D/g, '').substring(0, 5);
+      const loc = cleanPoskod.length === 5 ? lookupPoskodMalaysia(cleanPoskod) : null;
+      setFormData(prev => ({
+        ...prev,
+        poskod: cleanPoskod,
+        daerah: loc ? loc.daerah : '',
+        negeri: loc ? loc.negeri : ''
+      }));
       return;
     }
     setFormData(prev => ({
@@ -327,10 +340,22 @@ export default function EditCandidateModal({
                 <input 
                   type="text" 
                   name="poskod" 
+                  inputMode="numeric"
+                  maxLength={5}
                   value={formData.poskod} 
                   onChange={handleChange} 
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white" 
+                  className={`w-full px-3.5 py-2.5 border rounded-xl text-sm font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 ${
+                    formData.poskod && (formData.poskod.length < 5 || (formData.poskod.length === 5 && !formData.daerah))
+                      ? 'bg-red-50 border-red-400 focus:ring-red-500'
+                      : 'bg-slate-50 border-slate-200 focus:ring-emerald-500 focus:bg-white'
+                  }`} 
                 />
+                {formData.poskod && formData.poskod.length > 0 && formData.poskod.length < 5 && (
+                  <p className="mt-1 text-xs font-bold text-amber-700">⚠️ Poskod tidak lengkap ({formData.poskod.length}/5 digit).</p>
+                )}
+                {formData.poskod && formData.poskod.length === 5 && !formData.daerah && (
+                  <p className="mt-1 text-xs font-bold text-red-600">⚠️ Poskod salah atau tidak ditemui.</p>
+                )}
               </div>
               
               <div>
@@ -339,36 +364,22 @@ export default function EditCandidateModal({
                   type="text" 
                   name="daerah" 
                   value={formData.daerah} 
-                  onChange={handleChange} 
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white" 
+                  readOnly
+                  tabIndex={-1}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm uppercase font-bold text-slate-700 cursor-not-allowed select-none" 
                 />
               </div>
               
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-1">Negeri</label>
-                <select 
+                <input 
+                  type="text" 
                   name="negeri" 
                   value={formData.negeri} 
-                  onChange={handleChange} 
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
-                >
-                  <option value="PAHANG">PAHANG</option>
-                  <option value="JOHOR">JOHOR</option>
-                  <option value="KEDAH">KEDAH</option>
-                  <option value="KELANTAN">KELANTAN</option>
-                  <option value="MELAKA">MELAKA</option>
-                  <option value="NEGERI SEMBILAN">NEGERI SEMBILAN</option>
-                  <option value="PERAK">PERAK</option>
-                  <option value="PERLIS">PERLIS</option>
-                  <option value="PULAU PINANG">PULAU PINANG</option>
-                  <option value="SABAH">SABAH</option>
-                  <option value="SARAWAK">SARAWAK</option>
-                  <option value="SELANGOR">SELANGOR</option>
-                  <option value="TERENGGANU">TERENGGANU</option>
-                  <option value="W.P. KUALA LUMPUR">W.P. KUALA LUMPUR</option>
-                  <option value="W.P. LABUAN">W.P. LABUAN</option>
-                  <option value="W.P. PUTRAJAYA">W.P. PUTRAJAYA</option>
-                </select>
+                  readOnly
+                  tabIndex={-1}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm uppercase font-bold text-slate-700 cursor-not-allowed select-none" 
+                />
               </div>
             </div>
           </div>

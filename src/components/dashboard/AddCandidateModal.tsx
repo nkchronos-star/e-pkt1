@@ -4,6 +4,7 @@ import { X, UserPlus, Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { Candidate } from '../../types';
 import { useAppContext } from '../../store';
 import { compressImageFile } from '../../lib/imageUtils';
+import { lookupPoskodMalaysia } from '../../lib/poskodMalaysia';
 
 export default function AddCandidateModal({ onClose, onAdded }: { onClose: () => void; onAdded?: () => void }) {
   const { saveCandidate, candidates } = useAppContext();
@@ -44,6 +45,17 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
       setFormData(prev => ({ ...prev, [name]: digitsOnly }));
       return;
     }
+    if (name === 'poskod') {
+      const cleanPoskod = value.replace(/\D/g, '').substring(0, 5);
+      const loc = cleanPoskod.length === 5 ? lookupPoskodMalaysia(cleanPoskod) : null;
+      setFormData(prev => ({
+        ...prev,
+        poskod: cleanPoskod,
+        daerah: loc ? loc.daerah : '',
+        negeri: loc ? loc.negeri : ''
+      }));
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       [name]: name === 'jantina' ? value : (typeof value === 'string' && name !== 'gambarUrl' ? value.toUpperCase() : value)
@@ -77,6 +89,11 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
 
     if (!formData.name?.trim()) {
       setErrorMsg('Sila masukkan nama penuh calon.');
+      return;
+    }
+
+    if (formData.poskod && (formData.poskod.length < 5 || !formData.daerah)) {
+      setErrorMsg('Poskod tidak lengkap atau tidak sah. Sila pastikan 5 digit poskod yang betul.');
       return;
     }
 
@@ -198,11 +215,33 @@ export default function AddCandidateModal({ onClose, onAdded }: { onClose: () =>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Poskod</label>
-                <input type="text" name="poskod" value={formData.poskod} onChange={handleChange} maxLength={5} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 font-medium" placeholder="Cth: 27000" />
+                <input
+                  type="text"
+                  name="poskod"
+                  inputMode="numeric"
+                  value={formData.poskod}
+                  onChange={handleChange}
+                  maxLength={5}
+                  className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 font-mono font-bold ${
+                    formData.poskod && (formData.poskod.length < 5 || (formData.poskod.length === 5 && !formData.daerah))
+                      ? 'bg-red-50 border-red-400 focus:ring-red-500'
+                      : 'bg-slate-50 border-slate-200 focus:bg-white focus:ring-emerald-500'
+                  }`}
+                />
+                {formData.poskod && formData.poskod.length > 0 && formData.poskod.length < 5 && (
+                  <p className="mt-1 text-xs font-bold text-amber-700">⚠️ Poskod tidak lengkap ({formData.poskod.length}/5 digit).</p>
+                )}
+                {formData.poskod && formData.poskod.length === 5 && !formData.daerah && (
+                  <p className="mt-1 text-xs font-bold text-red-600">⚠️ Poskod salah atau tidak ditemui.</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">Daerah</label>
-                <input type="text" name="daerah" value={formData.daerah} onChange={handleChange} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 uppercase font-medium" placeholder="Cth: JERANTUT" />
+                <input type="text" name="daerah" value={formData.daerah} readOnly tabIndex={-1} className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl uppercase font-bold text-slate-700 cursor-not-allowed select-none" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-600 mb-1">Negeri</label>
+                <input type="text" name="negeri" value={formData.negeri} readOnly tabIndex={-1} className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl uppercase font-bold text-slate-700 cursor-not-allowed select-none" />
               </div>
             </div>
           </div>

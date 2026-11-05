@@ -8,9 +8,10 @@ import Borang from './components/dashboard/Borang';
 import SemakTemuduga from './components/dashboard/SemakTemuduga';
 import SemakTawaran from './components/dashboard/SemakTawaran';
 import AdminPanel from './components/dashboard/AdminPanel';
+import { PortalUjianCalon } from './components/dashboard/UjianAkademik';
 import { EQabulEmblem } from './components/brand/EQabulBrand';
 
-type View = 'utama' | 'panduan' | 'borang' | 'temuduga' | 'tawaran' | 'admin';
+type View = 'utama' | 'panduan' | 'borang' | 'temuduga' | 'ujian' | 'tawaran' | 'admin';
 
 function AppContent() {
   const { settings, isInitialized, currentUser, logout } = useAppContext();
@@ -35,10 +36,17 @@ function AppContent() {
     };
   }, [mobileMenuOpen, currentUser, activeView]);
 
+  useEffect(() => {
+    if (activeView === 'ujian' && !settings?.ujianAkademikBuka) {
+      setActiveView('utama');
+    }
+  }, [activeView, settings?.ujianAkademikBuka]);
+
   const navItems = [
     { id: 'utama', label: 'Utama', icon: Home },
     { id: 'borang', label: 'Permohonan', icon: FileText },
     { id: 'temuduga', label: 'Semak Temuduga', icon: CheckCircle },
+    ...(settings?.ujianAkademikBuka ? [{ id: 'ujian', label: 'Ujian Akademik', icon: BookOpen }] : []),
     { id: 'tawaran', label: 'Semak Tawaran', icon: GraduationCap },
     { id: 'admin', label: 'Admin', icon: Settings },
   ];
@@ -282,11 +290,12 @@ function AppContent() {
           </header>
 
       {/* Main Content - Saiz Selaras Tepat Dengan Header & Footer (max-w-[1400px] & px-3 sm:px-5 lg:px-6) */}
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-6 print:p-0 print:m-0 print:max-w-none">
+      <main className={`flex-1 w-full max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6 ${activeView === 'admin' ? 'pt-1.5 pb-4 sm:pt-2 sm:pb-6' : 'py-4 sm:py-6'} print:p-0 print:m-0 print:max-w-none`}>
         {activeView === 'utama' && <Utama onNavigate={setActiveView} />}
         {activeView === 'panduan' && <Panduan onNavigate={setActiveView} />}
         {activeView === 'borang' && <Borang onNavigate={setActiveView} />}
         {activeView === 'temuduga' && <SemakTemuduga />}
+        {activeView === 'ujian' && <PortalUjianCalon />}
         {activeView === 'tawaran' && <SemakTawaran />}
         {activeView === 'admin' && <AdminPanel />}
       </main>

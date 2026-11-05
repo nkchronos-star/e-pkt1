@@ -8,10 +8,67 @@ export interface User {
   password?: string;
 }
 
+export interface TahfizRubricBand {
+  id: string;
+  label: string;
+  minScore: number;
+  maxScore: number;
+  criteria: string;
+}
+
 export interface AssessmentItem {
   id: string;
   name: string;
   weight: number;
+  soalanPanduan?: string;
+  rubrics?: TahfizRubricBand[];
+}
+
+export interface AcademicQuestion {
+  id: string;
+  subjectId: string;
+  questionText: string;
+  imageUrl?: string;
+  options: string[];
+  correctOptionIndex: number;
+  marks: number;
+}
+
+export interface PengenalanItem {
+  id: string;
+  type: 'PARAGRAPH' | 'LIST_ITEM';
+  text: string;
+}
+
+export interface VideoKorporatItem {
+  id: string;
+  title: string;
+  embedUrl: string;
+}
+
+export interface InfoSmag3Item {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkUrl?: string;
+  facebookUrl?: string;
+}
+
+export interface SubjekKategoriItem {
+  id: string;
+  kategori: string;
+  subjek: string[];
+}
+
+export interface PanduanLangkahItem {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface PanduanItem {
+  id: string;
+  text: string;
 }
 
 export interface ApplicationSettings {
@@ -29,6 +86,7 @@ export interface ApplicationSettings {
   tarikhAkhirTerimaTawaran?: string;
   tarikhAkhirTerimaTawaranDate?: string;
   linkGroupWhatsapp?: string;
+  linkGroupWhatsappTemuduga?: string;
   tarikhSemakPertimbangan?: string;
   tarikhSemakPertimbanganDate?: string;
   tarikhSuratPanggilan?: string;
@@ -44,6 +102,14 @@ export interface ApplicationSettings {
   utamaPanduanLink?: string;
   utamaContent?: string;
   panduanContent?: string;
+  pengenalanItems?: PengenalanItem[];
+  videoKorporatItems?: VideoKorporatItem[];
+  infoSmag3Items?: InfoSmag3Item[];
+  subjekMenengahBawah?: SubjekKategoriItem[];
+  subjekMenengahAtas?: SubjekKategoriItem[];
+  panduanSyaratItems?: PanduanItem[];
+  panduanLangkahItems?: PanduanLangkahItem[];
+  panduanDokumenItems?: PanduanItem[];
   logoEqabulUrl?: string;
   logoEqabulHorizontalUrl?: string;
   rujukanSuratTawaran?: string;
@@ -56,6 +122,12 @@ export interface ApplicationSettings {
   jawatanPengarahTawaran3?: string;
   tahfizItems?: AssessmentItem[];
   akademikItems?: AssessmentItem[];
+  ujianAkademikBuka?: boolean;
+  tarikhBukaUjianAkademik?: string;
+  tarikhTutupUjianAkademik?: string;
+  masaUjianAkademikMinit?: number;
+  pinUjianAkademik?: string;
+  soalanAkademik?: AcademicQuestion[];
 }
 
 export interface Candidate {
