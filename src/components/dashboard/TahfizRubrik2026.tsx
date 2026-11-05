@@ -468,8 +468,8 @@ export function BorangRubrikTahfizInteraktif({
   return (
     <div className="space-y-6">
       {/* HEADER BORANG PENILAIAN TEMUDUGA TAHFIZ TINGKATAN 1 */}
-      <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+      <div className="bg-white rounded-2xl border-2 border-slate-200 p-4 sm:p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md">
               Temuduga KBT Tingkatan 1 | Ambilan 2026
@@ -489,138 +489,6 @@ export function BorangRubrikTahfizInteraktif({
             <HelpCircle className="w-4 h-4 text-amber-300" />
             <span>Panduan Skor &amp; Rubrik Penilai</span>
           </button>
-        </div>
-
-        {/* MAKLUMAT SOKONGAN CALON (Direkod secara berasingan; tidak ditambah kepada 100 markah) */}
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <h5 className="font-extrabold text-xs sm:text-sm uppercase tracking-wider text-slate-800">
-              Maklumat Sokongan Calon
-            </h5>
-            <span className="text-[11px] text-slate-500 italic">
-              Direkod secara berasingan; tidak ditambah secara automatik kepada 100 markah ujian.
-            </span>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            <table className="w-full text-left text-xs sm:text-sm border-collapse">
-              <thead className="bg-[#1b365d] text-white font-bold">
-                <tr>
-                  <th className="py-2.5 px-3.5 border-r border-slate-600 w-1/3">Maklumat</th>
-                  <th className="py-2.5 px-3.5">Rekod</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                <tr>
-                  <td className="py-2.5 px-3.5 font-bold text-slate-700 bg-slate-50/80 border-r border-slate-200">
-                    Khatam tilawah al-Quran
-                  </td>
-                  <td className="py-2.5 px-3.5">
-                    <div className="flex flex-wrap items-center gap-3">
-                      {[
-                        { val: 'YA', label: 'Ya' },
-                        { val: 'TIDAK', label: 'Tidak' },
-                        { val: 'BELUM_DISAHKAN', label: 'Belum disahkan' },
-                      ].map((opt) => (
-                        <label
-                          key={opt.val}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-bold cursor-pointer transition ${
-                            rubrikData.khatamTilawah === opt.val
-                              ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="khatamTilawah"
-                            disabled={isFormDisabled}
-                            checked={rubrikData.khatamTilawah === opt.val}
-                            onChange={() =>
-                              setRubrikData((prev) => ({
-                                ...prev,
-                                khatamTilawah: opt.val as any,
-                              }))
-                            }
-                            className="sr-only"
-                          />
-                          <span>
-                            [{rubrikData.khatamTilawah === opt.val ? '✓' : ' '}] {opt.label}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3.5 font-bold text-slate-700 bg-slate-50/80 border-r border-slate-200">
-                    UASA Tahun 6 / PBD
-                  </td>
-                  <td className="py-2.5 px-3.5">
-                    <input
-                      type="text"
-                      disabled={isFormDisabled}
-                      value={rubrikData.catatanUasa}
-                      onChange={(e) =>
-                        setRubrikData((prev) => ({ ...prev, catatanUasa: e.target.value }))
-                      }
-                      placeholder="Keputusan / catatan UASA Tahun 6..."
-                      className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs sm:text-sm"
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3.5 font-bold text-slate-700 bg-slate-50/80 border-r border-slate-200">
-                    Ujian sekolah agama / PSRA
-                  </td>
-                  <td className="py-2.5 px-3.5">
-                    <input
-                      type="text"
-                      disabled={isFormDisabled}
-                      value={rubrikData.catatanPsra}
-                      onChange={(e) =>
-                        setRubrikData((prev) => ({ ...prev, catatanPsra: e.target.value }))
-                      }
-                      placeholder="Keputusan / catatan sekolah agama..."
-                      className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs sm:text-sm"
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3.5 font-bold text-slate-700 bg-slate-50/80 border-r border-slate-200">
-                    UPKK
-                  </td>
-                  <td className="py-2.5 px-3.5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-600 shrink-0">Al-Quran:</span>
-                        <input
-                          type="text"
-                          disabled={isFormDisabled}
-                          value={rubrikData.upkkAlquran}
-                          onChange={(e) =>
-                            setRubrikData((prev) => ({ ...prev, upkkAlquran: e.target.value }))
-                          }
-                          className="flex-1 bg-slate-50 focus:bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-600 shrink-0">Jawi:</span>
-                        <input
-                          type="text"
-                          disabled={isFormDisabled}
-                          value={rubrikData.upkkJawi}
-                          onChange={(e) =>
-                            setRubrikData((prev) => ({ ...prev, upkkJawi: e.target.value }))
-                          }
-                          className="flex-1 bg-slate-50 focus:bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800"
-                        />
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
 
@@ -664,38 +532,21 @@ export function BorangRubrikTahfizInteraktif({
           </div>
         </div>
 
-        {/* Surah / Julat Ayat & Set Ujian Hafazan */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-          <div className="sm:col-span-8">
-            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-              Surah / Julat Ayat Hafazan:
-            </label>
-            <input
-              type="text"
-              disabled={isFormDisabled}
-              value={rubrikData.surahHafazan}
-              onChange={(e) =>
-                setRubrikData((prev) => ({ ...prev, surahHafazan: e.target.value }))
-              }
-              placeholder="Contoh: Surah Al-Mulk (Ayat 1 - 15) / Petikan Hafazan KBT"
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800"
-            />
-          </div>
-          <div className="sm:col-span-4">
-            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-              Set Ujian:
-            </label>
-            <input
-              type="text"
-              disabled={isFormDisabled}
-              value={rubrikData.setUjianHafazan}
-              onChange={(e) =>
-                setRubrikData((prev) => ({ ...prev, setUjianHafazan: e.target.value }))
-              }
-              placeholder="Contoh: Set A / Set 1"
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800"
-            />
-          </div>
+        {/* Surah / Julat Ayat Hafazan */}
+        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+            Surah / Julat Ayat Hafazan:
+          </label>
+          <input
+            type="text"
+            disabled={isFormDisabled}
+            value={rubrikData.surahHafazan}
+            onChange={(e) =>
+              setRubrikData((prev) => ({ ...prev, surahHafazan: e.target.value }))
+            }
+            placeholder="Contoh: Surah Al-Mulk (Ayat 1 - 15) / Petikan Hafazan KBT"
+            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800"
+          />
         </div>
 
         {/* Nota Ringkas Panduan Skor Hafazan */}
@@ -930,38 +781,21 @@ export function BorangRubrikTahfizInteraktif({
           </span>
         </div>
 
-        {/* Surah / Julat Ayat & Set Ujian Tilawah */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-          <div className="sm:col-span-8">
-            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-              Surah / Julat Ayat Tilawah:
-            </label>
-            <input
-              type="text"
-              disabled={isFormDisabled}
-              value={rubrikData.surahTilawah}
-              onChange={(e) =>
-                setRubrikData((prev) => ({ ...prev, surahTilawah: e.target.value }))
-              }
-              placeholder="Contoh: Surah Al-Baqarah Ayat 255-257"
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800"
-            />
-          </div>
-          <div className="sm:col-span-4">
-            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-              Set Ujian:
-            </label>
-            <input
-              type="text"
-              disabled={isFormDisabled}
-              value={rubrikData.setUjianTilawah}
-              onChange={(e) =>
-                setRubrikData((prev) => ({ ...prev, setUjianTilawah: e.target.value }))
-              }
-              placeholder="Contoh: Set B"
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800"
-            />
-          </div>
+        {/* Surah / Julat Ayat Tilawah */}
+        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+            Surah / Julat Ayat Tilawah:
+          </label>
+          <input
+            type="text"
+            disabled={isFormDisabled}
+            value={rubrikData.surahTilawah}
+            onChange={(e) =>
+              setRubrikData((prev) => ({ ...prev, surahTilawah: e.target.value }))
+            }
+            placeholder="Contoh: Surah Al-Baqarah Ayat 255-257"
+            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800"
+          />
         </div>
 
         {/* Jadual 3 Aspek Tilawah */}

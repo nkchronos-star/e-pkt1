@@ -2035,20 +2035,13 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Susun Atur 2 Lajur: Menu Sebelah Kiri (Frozen) & Kandungan Analisis di Sebelah Kanan */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LAJUR KIRI: Menu Analisis (Sticky / Frozen) */}
-        <aside
-          style={{ top: 'calc(var(--header-height, 116px) + 76px)' }}
-          className="lg:col-span-4 xl:col-span-3 lg:sticky lg:self-start space-y-1.5 bg-white/90 backdrop-blur-xs p-2.5 rounded-2xl border border-slate-200/80 shadow-xs z-20"
-        >
-          <div className="px-3 py-2 border-b border-slate-100 mb-1">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-              Menu Analisis
-            </span>
-          </div>
-
+    <div className="space-y-5">
+      {/* MENU ANALISIS DI BAHAGIAN ATAS (Sticky / Frozen) */}
+      <div
+        style={{ top: 'calc(var(--header-height, 116px) + 56px)' }}
+        className="sticky z-30 bg-[#f4f7ee]/95 backdrop-blur-md py-1.5"
+      >
+        <div className="bg-white/95 p-2 rounded-2xl border border-slate-200/80 shadow-sm grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
             {
               id: 'TAHUN_SEMASA',
@@ -2072,35 +2065,32 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
                 key={item.id}
                 type="button"
                 onClick={() => setAnalisisSection(item.id as any)}
-                className={`relative w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left transition-all cursor-pointer group ${
+                className={`relative w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-left transition-all cursor-pointer group ${
                   isActive
-                    ? 'bg-slate-100/95 text-slate-950 shadow-2xs font-bold'
-                    : 'text-slate-700 hover:bg-slate-100/60 hover:text-slate-900 font-medium'
+                    ? 'bg-slate-900 text-white shadow-sm font-bold'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-medium border border-slate-200/60'
                 }`}
               >
-                {isActive && (
-                  <span className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-purple-600" />
-                )}
-
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs transition-transform group-hover:scale-105 ${item.iconBg}`}>
                   <Icon className="w-4 h-4" />
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className={`text-xs sm:text-[13.5px] leading-snug ${isActive ? 'font-extrabold text-slate-900' : 'font-semibold text-slate-700'}`}>
+                  <div className={`text-xs sm:text-[13.5px] leading-snug ${isActive ? 'font-extrabold text-white' : 'font-semibold text-slate-800'}`}>
                     {item.label}
                   </div>
-                  <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                  <div className={`text-[11px] truncate mt-0.5 ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>
                     {item.sub}
                   </div>
                 </div>
               </button>
             );
           })}
-        </aside>
+        </div>
+      </div>
 
-        {/* LAJUR KANAN: Paparan Analisis Terus Mengikut Pilihan Menu (Tanpa Header Berulang) */}
-        <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+      {/* KANDUNGAN ANALISIS TERUS MENGIKUT PILIHAN MENU (Penuh Lebar) */}
+      <div className="space-y-6">
           {analisisSection === 'TAHUN_SEMASA' && (
             <div className="animate-in fade-in duration-200">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -2222,7 +2212,6 @@ function AnalisisKemasukan({ candidates }: { candidates: any[] }) {
               </div>
             </div>
           )}
-        </div>
       </div>
     </div>
   );
