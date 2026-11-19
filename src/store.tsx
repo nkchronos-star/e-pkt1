@@ -861,6 +861,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
+        if (
+          raw.statusTawaran === 'BERJAYA' &&
+          !raw.maklumBalasTawaran &&
+          isOfferExpired(raw, state.settings)
+        ) {
+          raw.maklumBalasTawaran = 'TERBATAL';
+          updates.maklumBalasTawaran = 'TERBATAL';
+        }
+
         if (Object.keys(updates).length > 0) {
           toStandardizeInFirestore.push({ docId: docSnap.id, updates });
         }
@@ -875,13 +884,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         console.warn('Gagal menyimpan cache calon:', e);
       }
 
-      // Automatik kemas kini rekod calon yang sudah daftar di Firestore supaya daerah & negeri seragam
+      // Automatik kemas kini rekod calon yang sudah daftar di Firestore supaya daerah & negeri seragam serta kunci status TERBATAL
       if (toStandardizeInFirestore.length > 0) {
         Promise.allSettled(
           toStandardizeInFirestore.map(item =>
             setDoc(doc(db, 'candidates', item.docId), item.updates, { merge: true })
           )
-        ).catch(err => console.warn('Auto-standardize daerah/negeri:', err));
+        ).catch(err => console.warn('Auto-standardize daerah/negeri/terbatal:', err));
       }
     }, (error) => {
       console.error("Firestore candidates error:", error);
@@ -894,41 +903,39 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [state.currentUser?.id, state.currentUser?.username]);
 
   const updateSettings = async (newSettings: Partial<ApplicationSettings>) => {
-    let nextSettings: ApplicationSettings = defaultSettings;
     const fieldsToSave: Partial<ApplicationSettings> = { ...newSettings };
+    const mergedNow = { ...state.settings, ...newSettings };
+
+    if ('tarikhBukaBorang' in newSettings || 'tarikhTutupBorang' in newSettings) {
+      mergedNow.borangBuka = isDateActive(mergedNow.tarikhBukaBorang, mergedNow.tarikhTutupBorang);
+      fieldsToSave.borangBuka = mergedNow.borangBuka;
+    }
+    if ('tarikhBukaTemuduga' in newSettings || 'tarikhTutupTemuduga' in newSettings) {
+      mergedNow.temudugaBuka = isDateActive(mergedNow.tarikhBukaTemuduga, mergedNow.tarikhTutupTemuduga);
+      fieldsToSave.temudugaBuka = mergedNow.temudugaBuka;
+    }
+    if ('tarikhBukaTawaran' in newSettings || 'tarikhTutupTawaran' in newSettings) {
+      mergedNow.tawaranBuka = isDateActive(mergedNow.tarikhBukaTawaran, mergedNow.tarikhTutupTawaran);
+      fieldsToSave.tawaranBuka = mergedNow.tawaranBuka;
+    }
+
+    if (newSettings.tandatanganPengetua !== undefined) {
+      if (newSettings.tandatanganPengetua) {
+        try { localStorage.setItem(SIG_PENGETUA_KEY, newSettings.tandatanganPengetua); } catch {}
+      } else {
+        try { localStorage.removeItem(SIG_PENGETUA_KEY); } catch {}
+      }
+    }
+    if (newSettings.tandatanganPengarahTawaran !== undefined) {
+      if (newSettings.tandatanganPengarahTawaran) {
+        try { localStorage.setItem(SIG_PENGARAH_KEY, newSettings.tandatanganPengarahTawaran); } catch {}
+      } else {
+        try { localStorage.removeItem(SIG_PENGARAH_KEY); } catch {}
+      }
+    }
 
     setState(prev => {
-      const merged = { ...prev.settings, ...newSettings };
-      // If dates were changed, auto-compute corresponding status!
-      if ('tarikhBukaBorang' in newSettings || 'tarikhTutupBorang' in newSettings) {
-        merged.borangBuka = isDateActive(merged.tarikhBukaBorang, merged.tarikhTutupBorang);
-        fieldsToSave.borangBuka = merged.borangBuka;
-      }
-      if ('tarikhBukaTemuduga' in newSettings || 'tarikhTutupTemuduga' in newSettings) {
-        merged.temudugaBuka = isDateActive(merged.tarikhBukaTemuduga, merged.tarikhTutupTemuduga);
-        fieldsToSave.temudugaBuka = merged.temudugaBuka;
-      }
-      if ('tarikhBukaTawaran' in newSettings || 'tarikhTutupTawaran' in newSettings) {
-        merged.tawaranBuka = isDateActive(merged.tarikhBukaTawaran, merged.tarikhTutupTawaran);
-        fieldsToSave.tawaranBuka = merged.tawaranBuka;
-      }
-
-      if (newSettings.tandatanganPengetua !== undefined) {
-        if (newSettings.tandatanganPengetua) {
-          try { localStorage.setItem(SIG_PENGETUA_KEY, newSettings.tandatanganPengetua); } catch {}
-        } else {
-          try { localStorage.removeItem(SIG_PENGETUA_KEY); } catch {}
-        }
-      }
-      if (newSettings.tandatanganPengarahTawaran !== undefined) {
-        if (newSettings.tandatanganPengarahTawaran) {
-          try { localStorage.setItem(SIG_PENGARAH_KEY, newSettings.tandatanganPengarahTawaran); } catch {}
-        } else {
-          try { localStorage.removeItem(SIG_PENGARAH_KEY); } catch {}
-        }
-      }
-
-      nextSettings = merged;
+      const nextSettings = { ...prev.settings, ...fieldsToSave };
       try {
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
       } catch (e) {
@@ -948,12 +955,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const syncSettingsToServer = async (customPartial?: Partial<ApplicationSettings>) => {
     try {
-      let settingsToSave = defaultSettings;
-      setState(prev => {
-        const merged = customPartial ? { ...prev.settings, ...customPartial } : prev.settings;
-        settingsToSave = applyAutoDates(merged);
-        return { ...prev, settings: settingsToSave };
-      });
+      const merged = customPartial ? { ...state.settings, ...customPartial } : state.settings;
+      const settingsToSave = applyAutoDates(merged);
+      setState(prev => ({ ...prev, settings: settingsToSave }));
       const dataToPersist = customPartial ? sanitizeForFirestore(customPartial) : sanitizeForFirestore(settingsToSave);
       await setDoc(doc(db, 'config', 'main'), dataToPersist, { merge: true });
       try {
@@ -992,6 +996,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const updateCandidate = async (ic: string, data: Partial<Candidate>) => {
     try {
+      const clearMaklumBalas = 'maklumBalasTawaran' in data && !data.maklumBalasTawaran;
       const cleanData = JSON.parse(JSON.stringify(data));
       const safeId = String(ic).replace(/[^a-zA-Z0-9_-]/g, '');
 
@@ -1015,10 +1020,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
+      if (clearMaklumBalas) {
+        cleanData.maklumBalasTawaran = deleteField();
+      }
+
       await setDoc(doc(db, 'candidates', safeId), cleanData, { merge: true });
 
       setState(prev => {
-        const nextList = prev.candidates.map(c => (c.ic === ic || c.id === safeId) ? { ...c, ...cleanData } : c);
+        const nextList = prev.candidates.map(c => {
+          if (c.ic === ic || c.id === safeId) {
+            const updated = { ...c, ...data };
+            if (clearMaklumBalas) {
+              delete updated.maklumBalasTawaran;
+            }
+            return updated;
+          }
+          return c;
+        });
         return { ...prev, candidates: nextList };
       });
     } catch (e) {

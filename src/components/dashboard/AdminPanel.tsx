@@ -3228,23 +3228,44 @@ function PentadbirView({ readOnly = false }: { readOnly?: boolean }) {
                          </div>
                          {/* Maklum Balas Penerimaan Murid */}
                          {c.statusTawaran === 'BERJAYA' && (
-                           <div className="mt-0.5">
+                           <div className="mt-0.5 relative inline-block">
                              {c.maklumBalasTawaran === 'TERIMA' ? (
-                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="Calon telah menerima tawaran kemasukan">
-                                 ✓ Diterima
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300" title="Calon telah menerima tawaran kemasukan (Klik untuk tukar)">
+                                 ✓ Diterima {!isReadOnly && '▾'}
                                </span>
                              ) : c.maklumBalasTawaran === 'TOLAK' ? (
-                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-slate-100 text-slate-700 border border-slate-300" title="Calon telah menolak tawaran">
-                                 ✗ Ditolak
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-slate-100 text-slate-700 border border-slate-300" title="Calon telah menolak tawaran (Klik untuk tukar)">
+                                 ✗ Ditolak {!isReadOnly && '▾'}
                                </span>
                              ) : c.maklumBalasTawaran === 'TERBATAL' || (!c.maklumBalasTawaran && isOfferExpired(c, settings)) ? (
-                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-rose-100 text-rose-800 border border-rose-300" title="Tawaran terbatal secara automatik kerana gagal respon sebelum tarikh akhir">
-                                 ⚠ Terbatal
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-rose-100 text-rose-800 border border-rose-300" title="Tawaran terbatal (Klik untuk tukar)">
+                                 ⚠ Terbatal {!isReadOnly && '▾'}
                                </span>
                              ) : (
-                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-medium bg-amber-50 text-amber-700 border border-amber-200" title="Menunggu pengesahan calon sebelum tarikh akhir">
-                                 ⏳ Belum Respon
+                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-medium bg-amber-50 text-amber-700 border border-amber-200" title="Menunggu pengesahan calon sebelum tarikh akhir (Klik untuk tukar)">
+                                 ⏳ Belum Respon {!isReadOnly && '▾'}
                                </span>
+                             )}
+                             {!isReadOnly && (
+                               <select
+                                 value={
+                                   c.maklumBalasTawaran ||
+                                   (isOfferExpired(c, settings) ? 'TERBATAL' : '')
+                                 }
+                                 onChange={(e) => {
+                                   const val = e.target.value;
+                                   updateCandidate(c.ic, {
+                                     maklumBalasTawaran: (val ? val : null) as any
+                                   });
+                                 }}
+                                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                 title="Klik untuk tukar / kunci Maklum Balas Tawaran Calon"
+                               >
+                                 <option value="">⏳ Belum Respon</option>
+                                 <option value="TERIMA">✓ Diterima</option>
+                                 <option value="TOLAK">✗ Ditolak</option>
+                                 <option value="TERBATAL">⚠ Terbatal (Kunci)</option>
+                               </select>
                              )}
                            </div>
                          )}
@@ -4166,11 +4187,22 @@ function SuperAdminView({ onOpenChangePassword }: { onOpenChangePassword?: (u: U
         updated.ujianAkademikBuka = isDateActive(start, end);
       }
     } else if (name === 'tarikhAkhirTerimaTawaranDate') {
+      // Kunci dahulu mana-mana calon ambilan terdahulu yang telah tamat tempoh sebagai TERBATAL sebelum tarikh baharu dilanjutkan
+      candidates.forEach(c => {
+        if (c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && isOfferExpired(c, settings)) {
+          updateCandidate(c.ic, { maklumBalasTawaran: 'TERBATAL' });
+        }
+      });
       updated.tarikhAkhirTerimaTawaranDate = value;
       if (value) {
         updated.tarikhAkhirTerimaTawaran = formatIsoToMalayDate(value);
       }
     } else if (name === 'tarikhAkhirTerimaTawaran') {
+      candidates.forEach(c => {
+        if (c.statusTawaran === 'BERJAYA' && !c.maklumBalasTawaran && isOfferExpired(c, settings)) {
+          updateCandidate(c.ic, { maklumBalasTawaran: 'TERBATAL' });
+        }
+      });
       updated.tarikhAkhirTerimaTawaran = value;
       const parsedIso = parseMalayDateToIso(value);
       if (parsedIso) {

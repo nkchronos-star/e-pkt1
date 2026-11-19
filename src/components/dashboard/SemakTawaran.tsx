@@ -114,13 +114,52 @@ export default function SemakTawaran() {
     }
   };
 
-  const handleMaklumBalas = (status: 'TERIMA' | 'TOLAK') => {
+  const handleMaklumBalas = async (status: 'TERIMA' | 'TOLAK') => {
     if (result) {
-      if (isOfferExpired(result, settings)) {
-        alert('Maaf, tempoh masa untuk memberi maklum balas telah tamat. Tawaran ini telah terbatal secara automatik.');
+      if (
+        result.maklumBalasTawaran === 'TERBATAL' ||
+        result.maklumBalasTawaran === 'TERIMA' ||
+        result.maklumBalasTawaran === 'TOLAK' ||
+        isOfferExpired(result, settings)
+      ) {
+        alert('Maaf, tempoh masa untuk memberi maklum balas telah tamat atau status tawaran telah dikunci.');
         setShowPopup(false);
         return;
       }
+
+      // Semak terus dari pangkalan data Firestore sebelum menyimpan (elak cache lama pada pelayar calon)
+      try {
+        const cleanIc = result.ic.replace(/[^a-zA-Z0-9]/g, '');
+        const [candSnap, cfgSnap] = await Promise.all([
+          getDoc(doc(db, 'candidates', cleanIc)),
+          getDoc(doc(db, 'config', 'main'))
+        ]);
+        const freshCand = candSnap.exists()
+          ? ({ id: candSnap.id, ...candSnap.data() } as Candidate)
+          : result;
+        const freshCfg = cfgSnap.exists()
+          ? ({ ...settings, ...cfgSnap.data() } as any)
+          : settings;
+
+        if (
+          freshCand.maklumBalasTawaran === 'TERBATAL' ||
+          freshCand.maklumBalasTawaran === 'TERIMA' ||
+          freshCand.maklumBalasTawaran === 'TOLAK' ||
+          isOfferExpired(freshCand, freshCfg)
+        ) {
+          const finalStatus = freshCand.maklumBalasTawaran || 'TERBATAL';
+          if (!freshCand.maklumBalasTawaran && isOfferExpired(freshCand, freshCfg)) {
+            await updateCandidate(result.ic, { maklumBalasTawaran: 'TERBATAL' });
+          }
+          setResult({ ...result, ...freshCand, maklumBalasTawaran: finalStatus });
+          alert('Maaf, tempoh masa untuk memberi maklum balas telah tamat. Tawaran ini telah terbatal secara automatik.');
+          setShowPopup(false);
+          return;
+        }
+      } catch (err) {
+        console.warn('Semakan langsung Firestore:', err);
+      }
+
       const updated = { ...result, maklumBalasTawaran: status };
       updateCandidate(result.ic, { maklumBalasTawaran: status });
       setResult(updated);
@@ -180,7 +219,7 @@ export default function SemakTawaran() {
             <div className="bg-white rounded-[2rem] shadow-xl shadow-emerald-100/50 border border-emerald-100 p-8 md:p-12 text-center relative overflow-hidden print:p-0 print:shadow-none print:border-none print:overflow-visible print:bg-transparent">
                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-emerald-600 no-print"></div>
                <>
-                 {!isOfferExpired(result, settings) && (
+                 {result.maklumBalasTawaran !== 'TERBATAL' && !isOfferExpired(result, settings) && (
                    <div className="no-print">
                      <div className="inline-flex items-center justify-center p-4 bg-emerald-100 rounded-full mb-6">
                        <CheckCircle className="w-12 h-12 text-emerald-600" />
@@ -195,8 +234,7 @@ export default function SemakTawaran() {
                    </div>
                  )}
 
-                 {result.maklumBalasTawaran ? (
-                    result.maklumBalasTawaran === 'TERIMA' ? (
+                 {result.maklumBalasTawaran === 'TERIMA' ? (
                       <>
                       <div className="bg-slate-50/80 border border-emerald-200/60 rounded-2xl p-6 sm:p-8 animate-in zoom-in duration-300 shadow-inner no-print">
                          <h3 className="font-extrabold text-xl text-slate-900 mb-3">Anda Telah Menerima Tawaran Ini</h3>
@@ -340,13 +378,12 @@ export default function SemakTawaran() {
                          <SuratTawaran candidate={result} />
                       </div>
                       </>
-                    ) : (
+                    ) : result.maklumBalasTawaran === 'TOLAK' ? (
                       <div className="bg-red-50/80 border border-red-200/60 rounded-2xl p-8 shadow-inner no-print">
                          <h3 className="font-extrabold text-xl text-red-900 mb-2">Anda Telah Menolak Tawaran Ini</h3>
                          <p className="text-red-700 font-medium">Terima kasih atas maklum balas anda.</p>
                       </div>
-                    )
-                 ) : isOfferExpired(result, settings) ? (
+                    ) : result.maklumBalasTawaran === 'TERBATAL' || isOfferExpired(result, settings) ? (
                     <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-8 sm:p-10 shadow-lg shadow-rose-100/50 text-center no-print">
                        <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200 shadow-inner">
                          <XCircle className="w-10 h-10" />
