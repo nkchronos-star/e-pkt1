@@ -10,6 +10,8 @@ import { db } from '../../lib/firebase';
 export default function SemakTawaran() {
   const { settings, candidates, updateCandidate } = useAppContext();
   const [icInput, setIcInput] = useState('');
+  const [icEditable, setIcEditable] = useState(false);
+  const [icFieldKey] = useState(() => `ic_tawaran_${Math.random().toString(36).slice(2, 10)}`);
   const [result, setResult] = useState<Candidate | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
@@ -184,9 +186,25 @@ export default function SemakTawaran() {
       </div>
 
       <div className="bg-white rounded-2xl sm:rounded-[2.5rem] shadow-xl sm:shadow-2xl shadow-slate-200/50 p-4 sm:p-8 md:p-10 mb-8 sm:mb-12 border border-slate-100 no-print">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-2xl mx-auto relative">
+        <form onSubmit={handleSearch} autoComplete="off" className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-2xl mx-auto relative">
           <input 
-            type="text" 
+            type="text"
+            id={icFieldKey}
+            name={icFieldKey}
+            inputMode="numeric"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            aria-autocomplete="none"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-form-type="other"
+            readOnly={!icEditable}
+            onMouseDown={() => setIcEditable(true)}
+            onTouchStart={() => setIcEditable(true)}
+            onFocus={() => setIcEditable(true)}
+            onBlur={() => setIcEditable(false)}
             placeholder="Contoh: 140101061234"
             maxLength={12}
             value={icInput}

@@ -1733,7 +1733,7 @@ export function PortalUjianCalon({
             </p>
           </div>
 
-          <form onSubmit={handleCandidateLogin} className="p-6 sm:p-8 space-y-5">
+          <form onSubmit={handleCandidateLogin} autoComplete="off" className="p-6 sm:p-8 space-y-5">
             {loginError && (
               <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-xs font-bold flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -1747,6 +1747,17 @@ export function PortalUjianCalon({
               </label>
               <input
                 type="text"
+                name="ic_calon_ujian_session"
+                inputMode="numeric"
+                maxLength={12}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-autocomplete="none"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
                 required
                 value={icInput}
                 onChange={(e) => setIcInput(e.target.value)}
@@ -1762,6 +1773,15 @@ export function PortalUjianCalon({
                 </label>
                 <input
                   type="text"
+                  name="pin_bilik_ujian_session"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  aria-autocomplete="none"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
                   required
                   value={pinInput}
                   onChange={(e) => setPinInput(e.target.value)}

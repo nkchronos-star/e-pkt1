@@ -42,6 +42,39 @@ function AppContent() {
     }
   }, [activeView, settings?.ujianAkademikBuka]);
 
+  // Sekat klik kanan (right-click) dan kekunci pintas Inspect Element / View Source bagi melindungi maklumat sistem
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key?.toUpperCase();
+      // Sekat F12
+      if (e.key === 'F12') {
+        e.preventDefault();
+        return;
+      }
+      // Sekat Ctrl+Shift+I / J / C (Windows/Linux) atau Cmd+Option+I / J / C (Mac)
+      if ((e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(key)) || (e.metaKey && e.altKey && ['I', 'J', 'C'].includes(key))) {
+        e.preventDefault();
+        return;
+      }
+      // Sekat Ctrl+U / Cmd+U (View Source)
+      if ((e.ctrlKey || e.metaKey) && key === 'U') {
+        e.preventDefault();
+        return;
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   const navItems = [
     { id: 'utama', label: 'Utama', icon: Home },
     { id: 'borang', label: 'Permohonan', icon: FileText },

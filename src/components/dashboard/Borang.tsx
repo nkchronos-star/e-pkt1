@@ -899,7 +899,7 @@ export default function Borang({ onNavigate }: BorangProps) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-6">
+      <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-6">
         {/* =========================================================
             LANGKAH 1 : MUAT NAIK GAMBAR PASPORT
            ========================================================= */}
@@ -1035,6 +1035,14 @@ export default function Borang({ onNavigate }: BorangProps) {
                     type="text"
                     name="ic"
                     inputMode="numeric"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    aria-autocomplete="none"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    data-form-type="other"
                     value={formData.ic || ''}
                     onChange={handleChange}
                     className={`w-full border-2 rounded-xl px-4 py-3 focus:ring-4 transition-all font-mono font-bold text-slate-800 ${
@@ -1302,6 +1310,11 @@ export default function Borang({ onNavigate }: BorangProps) {
                     <input
                       type="text"
                       name="icBapa"
+                      autoComplete="off"
+                      aria-autocomplete="none"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
                       value={formData.icBapa || ''}
                       onChange={handleChange}
                       className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white"
@@ -1471,6 +1484,11 @@ export default function Borang({ onNavigate }: BorangProps) {
                     <input
                       type="text"
                       name="icIbu"
+                      autoComplete="off"
+                      aria-autocomplete="none"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
                       value={formData.icIbu || ''}
                       onChange={handleChange}
                       className="w-full border-2 border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all font-medium text-slate-800 bg-slate-50 focus:bg-white"

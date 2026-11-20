@@ -9,6 +9,8 @@ import { db } from '../../lib/firebase';
 export default function SemakTemuduga() {
   const { settings, candidates } = useAppContext();
   const [ic, setIc] = useState('');
+  const [icEditable, setIcEditable] = useState(false);
+  const [icFieldKey] = useState(() => `ic_temuduga_${Math.random().toString(36).slice(2, 10)}`);
   const [result, setResult] = useState<Candidate | null | 'NOT_FOUND'>(null);
   const [loading, setLoading] = useState(false);
   const [copiedWa, setCopiedWa] = useState(false);
@@ -110,12 +112,28 @@ export default function SemakTemuduga() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 md:p-10 mb-6 sm:mb-8 no-print print:hidden">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <form onSubmit={handleSearch} autoComplete="off" className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-grow">
-            <label htmlFor="ic" className="sr-only">No. Kad Pengenalan</label>
+            <label htmlFor={icFieldKey} className="sr-only">No. Kad Pengenalan</label>
             <input 
               type="text" 
-              id="ic"
+              id={icFieldKey}
+              name={icFieldKey}
+              inputMode="numeric"
+              maxLength={12}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-autocomplete="none"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-form-type="other"
+              readOnly={!icEditable}
+              onMouseDown={() => setIcEditable(true)}
+              onTouchStart={() => setIcEditable(true)}
+              onFocus={() => setIcEditable(true)}
+              onBlur={() => setIcEditable(false)}
               placeholder="Contoh: 140101061234"
               className="w-full text-base sm:text-lg border-2 border-slate-200 rounded-xl px-4 py-3 sm:px-5 sm:py-4 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all duration-300 font-medium text-slate-700 placeholder-slate-400 bg-slate-50 focus:bg-white"
               value={ic}
