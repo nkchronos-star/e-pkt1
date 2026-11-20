@@ -218,12 +218,17 @@ function ChangePasswordModal({ user, onClose }: { user: User; onClose: () => voi
             <p className="text-xs text-slate-500">Menutup tetingkap...</p>
           </div>
         ) : (
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave} autoComplete="off" className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Kata Laluan Baru (Min 6 aksara)</label>
               <div className="relative">
                 <input 
                   type={showNewPassword ? 'text' : 'password'} 
+                  autoComplete="new-password"
+                  aria-autocomplete="none"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   placeholder="Masukkan kata laluan baru..."
@@ -245,6 +250,11 @@ function ChangePasswordModal({ user, onClose }: { user: User; onClose: () => voi
               <div className="relative">
                 <input 
                   type={showConfirmPassword ? 'text' : 'password'} 
+                  autoComplete="new-password"
+                  aria-autocomplete="none"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   placeholder="Ulang kata laluan baru..."
@@ -301,6 +311,10 @@ export default function AdminPanel() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [userEditable, setUserEditable] = useState(false);
+  const [passEditable, setPassEditable] = useState(false);
+  const [userFieldKey] = useState(() => `usr_eq_${Math.random().toString(36).slice(2, 10)}`);
+  const [passFieldKey] = useState(() => `pwd_eq_${Math.random().toString(36).slice(2, 10)}`);
   const [error, setError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [passwordModalUser, setPasswordModalUser] = useState<User | null>(null);
@@ -386,7 +400,9 @@ export default function AdminPanel() {
     try {
       const success = await login(cleanU, cleanP);
       if (success) {
-        // Reset rekod percubaan gagal
+        // Kosongkan input log masuk & reset rekod percubaan gagal
+        setUsername('');
+        setPassword('');
         setFailedAttempts(0);
         try {
           sessionStorage.removeItem('eq_login_attempts');
@@ -437,31 +453,59 @@ export default function AdminPanel() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} autoComplete="off" className="space-y-5">
             <div>
-              <label className="block text-xs font-black text-slate-700 mb-1.5 tracking-wider uppercase">ID Pengguna</label>
+              <label htmlFor={userFieldKey} className="block text-xs font-black text-slate-700 mb-1.5 tracking-wider uppercase">ID Pengguna</label>
               <input 
-                type="text" 
+                type="text"
+                id={userFieldKey}
+                name={userFieldKey}
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 disabled={isLoggingIn || isLocked}
+                readOnly={!userEditable}
+                onMouseDown={() => setUserEditable(true)}
+                onTouchStart={() => setUserEditable(true)}
+                onFocus={() => setUserEditable(true)}
+                onBlur={() => setUserEditable(false)}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-autocomplete="none"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-form-type="other"
                 className="w-full px-4 py-3.5 text-base border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-50 disabled:bg-slate-100"
                 placeholder="cth: admin"
-                autoComplete="username"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-black text-slate-700 mb-1.5 tracking-wider uppercase">Kata Laluan</label>
+              <label htmlFor={passFieldKey} className="block text-xs font-black text-slate-700 mb-1.5 tracking-wider uppercase">Kata Laluan</label>
               <div className="relative">
                 <input 
-                  type={showPassword ? 'text' : 'password'} 
+                  type={showPassword ? 'text' : 'password'}
+                  id={passFieldKey}
+                  name={passFieldKey}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   disabled={isLoggingIn || isLocked}
+                  readOnly={!passEditable}
+                  onMouseDown={() => setPassEditable(true)}
+                  onTouchStart={() => setPassEditable(true)}
+                  onFocus={() => setPassEditable(true)}
+                  onBlur={() => setPassEditable(false)}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  aria-autocomplete="none"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
                   className="w-full pl-4 pr-12 py-3.5 text-base border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 bg-slate-50 focus:bg-white font-medium text-slate-800 disabled:opacity-50 disabled:bg-slate-100"
                   placeholder="Kata Laluan"
-                  autoComplete="current-password"
                   required
                 />
                 <button
